@@ -156,53 +156,52 @@ export async function POST(request: NextRequest) {
         return Response.json({ error: 'Source URI and DB name are required' }, { status: 400 });
       }
 
-      const { execSync } = await import('child_process');
-      const tempDumpPath = path.resolve(process.cwd(), 'temp_atlas_dump');
-
       try {
-        // 1. Run mongodump
-        const dumpCmd = `mongodump --uri="${sourceUri}" --db="${sourceDbName}" --out="${tempDumpPath}"`;
-        execSync(dumpCmd, { 
-          encoding: 'utf-8', 
-          timeout: 300000,
-          stdio: ['pipe', 'pipe', 'pipe']
-        });
-
-        // Validate dump path exists
-        const fullDumpPath = path.resolve(tempDumpPath, sourceDbName);
-        if (!fs.existsSync(fullDumpPath)) {
-          return Response.json({ 
-            error: `Failed to dump data from Atlas. Check your URI and DB name.` 
-          }, { status: 400 });
-        }
-
-        // 2. Run mongorestore
-        const uri = targetUri || 'mongodb://localhost:27017';
-        const db = targetDbName || 'gracemusic';
-        const restoreCmd = `mongorestore --uri="${uri}" --db="${db}" --drop "${fullDumpPath}"`;
+        const { MongoClient } = await import('mongodb');
         
-        const output = execSync(restoreCmd, { 
-          encoding: 'utf-8', 
-          timeout: 300000,
-          stdio: ['pipe', 'pipe', 'pipe']
-        });
-
-        // 3. Clean up temp dump
-        fs.rmSync(tempDumpPath, { recursive: true, force: true });
-
+        // 1. Connect to source Atlas DB
+        const sourceClient = new MongoClient(sourceUri, { serverSelectionTimeoutMS: 10000 });
+        await sourceClient.connect();
+        const sourceDb = sourceClient.db(sourceDbName);
+        
+        // 2. Connect to target Local DB
+        const uri = targetUri || 'mongodb://localhost:27017';
+        const dbName = targetDbName || 'gracemusic';
+        const targetClient = new MongoClient(uri, { serverSelectionTimeoutMS: 10000 });
+        await targetClient.connect();
+        const targetDb = targetClient.db(dbName);
+        
+        // 3. Get all collections from source
+        const collections = await sourceDb.listCollections().toArray();
+        let totalDocs = 0;
+        let copiedCollections = 0;
+        
+        // 4. Copy each collection
+        for (const colInfo of collections) {
+          const colName = colInfo.name;
+          if (colName.startsWith('system.')) continue;
+          
+          const docs = await sourceDb.collection(colName).find({}).toArray();
+          if (docs.length > 0) {
+            // Drop target collection if it exists
+            try { await targetDb.dropCollection(colName); } catch(e) { /* ignore if doesn't exist */ }
+            await targetDb.collection(colName).insertMany(docs);
+            totalDocs += docs.length;
+            copiedCollections++;
+          }
+        }
+        
+        await sourceClient.close();
+        await targetClient.close();
+        
         return Response.json({ 
           success: true, 
-          message: `Database dumped from Atlas and restored to ${db} successfully!`,
-          output 
+          message: `Database migrated successfully! Copied ${copiedCollections} collections (${totalDocs} documents) to ${dbName}.`
         });
       } catch (e: any) {
-        // Attempt cleanup on error
-        if (fs.existsSync(tempDumpPath)) {
-          fs.rmSync(tempDumpPath, { recursive: true, force: true });
-        }
         return Response.json({ 
           success: false, 
-          error: e.stderr || e.message 
+          error: e.message || 'Failed to migrate database using Node.js driver' 
         }, { status: 500 });
       }
     }

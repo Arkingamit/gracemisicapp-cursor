@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
 
       try {
         // 1. Run mongodump
-        const dumpCmd = \`mongodump --uri="\${sourceUri}" --db="\${sourceDbName}" --out="\${tempDumpPath}"\`;
+        const dumpCmd = `mongodump --uri="${sourceUri}" --db="${sourceDbName}" --out="${tempDumpPath}"`;
         execSync(dumpCmd, { 
           encoding: 'utf-8', 
           timeout: 300000,
@@ -172,14 +172,14 @@ export async function POST(request: NextRequest) {
         const fullDumpPath = path.resolve(tempDumpPath, sourceDbName);
         if (!fs.existsSync(fullDumpPath)) {
           return Response.json({ 
-            error: \`Failed to dump data from Atlas. Check your URI and DB name.\` 
+            error: `Failed to dump data from Atlas. Check your URI and DB name.` 
           }, { status: 400 });
         }
 
         // 2. Run mongorestore
         const uri = targetUri || 'mongodb://localhost:27017';
         const db = targetDbName || 'gracemusic';
-        const restoreCmd = \`mongorestore --uri="\${uri}" --db="\${db}" --drop "\${fullDumpPath}"\`;
+        const restoreCmd = `mongorestore --uri="${uri}" --db="${db}" --drop "${fullDumpPath}"`;
         
         const output = execSync(restoreCmd, { 
           encoding: 'utf-8', 
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
 
         return Response.json({ 
           success: true, 
-          message: \`Database dumped from Atlas and restored to \${db} successfully!\`,
+          message: `Database dumped from Atlas and restored to ${db} successfully!`,
           output 
         });
       } catch (e: any) {

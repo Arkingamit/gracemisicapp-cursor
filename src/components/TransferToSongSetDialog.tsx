@@ -257,7 +257,7 @@ const TransferToSongSetDialog: React.FC<TransferToSongSetDialogProps> = ({
                     placeholder="Search songs..."
                     value={songSearchTerm}
                     onChange={(e) => setSongSearchTerm(e.target.value)}
-                    className="h-8 text-xs pl-8 bg-zinc-950 border-white/10"
+                    className="h-8 text-xs pl-8 bg-transparent border-white/10"
                   />
                 </div>
                 <Button
@@ -482,3 +482,4 @@ const TransferToSongSetDialog: React.FC<TransferToSongSetDialogProps> = ({
 };
 
 export default TransferToSongSetDialog;
+

@@ -288,7 +288,7 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
                         Settings
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[500px] bg-zinc-950 border-zinc-800 text-zinc-100 p-0 overflow-hidden">
+                    <DialogContent className="sm:max-w-[500px] bg-transparent border-zinc-800 text-zinc-100 p-0 overflow-hidden">
                       <DialogHeader className="p-6 border-b border-white/5 bg-zinc-900/30">
                         <DialogTitle className="text-xl">Organization Settings</DialogTitle>
                       </DialogHeader>
@@ -299,7 +299,7 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
                               Musician Stats Visibility
                             </label>
                             <select
-                              className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary"
+                              className="w-full bg-transparent border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary"
                               value={organization?.musicianStatsVisibility || 'all'}
                               onChange={async (e) => {
                                 await updateOrganization(organization!.id, { 
@@ -322,7 +322,7 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
                             </label>
                             <p className="text-xs text-muted-foreground mb-2">Limit how far back the Song Usage and Musician Stats panels fetch data.</p>
                             <select
-                              className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary"
+                              className="w-full bg-transparent border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary"
                               value={organization?.statsDataRetentionMonths === null ? 'infinite' : String(organization?.statsDataRetentionMonths || 'infinite')}
                               onChange={async (e) => {
                                 const val = e.target.value === 'infinite' ? null : parseInt(e.target.value, 10);
@@ -375,18 +375,19 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
                 <p className="text-muted-foreground">Loading members...</p>
               ) : members.length > 0 ? (
                 <div className="relative border rounded-lg overflow-hidden">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-muted/50">
-                        <th className="text-left px-4 py-2 text-sm font-medium">Name</th>
-                        <th className="text-left px-4 py-2 text-sm font-medium">Email</th>
-                        <th className="text-left px-4 py-2 text-sm font-medium">Org Role</th>
-                        {canManage() && (
-                          <th className="text-right px-4 py-2 text-sm font-medium">Actions</th>
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <div className="overflow-x-auto w-full">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-muted/50 whitespace-nowrap">
+                          <th className="text-left px-4 py-2 text-sm font-medium">Name</th>
+                          <th className="text-left px-4 py-2 text-sm font-medium">Email</th>
+                          <th className="text-left px-4 py-2 text-sm font-medium">Org Role</th>
+                          {canManage() && (
+                            <th className="text-right px-4 py-2 text-sm font-medium">Actions</th>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
                       {(() => {
                         const filtered = members.filter(member => member.role !== 'super_admin');
                         const INITIAL_LIMIT = 4;
@@ -395,7 +396,7 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
                         return (
                           <>
                             {displayMembers.map((member) => (
-                        <tr key={member.id} className="border-t">
+                        <tr key={member.id} className="border-t whitespace-nowrap">
                           <td className="px-4 py-3 flex items-center gap-2">
                             {member.name || member.username}
                             {member.isManager && (
@@ -453,6 +454,7 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
                       })()}
                     </tbody>
                   </table>
+                  </div>
                   {/* Glassy fade overlay + View More */}
                   {(() => {
                     const filtered = members.filter(m => m.role !== 'super_admin');
@@ -647,3 +649,4 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
   );
 };
 export default OrganizationDetail;
+

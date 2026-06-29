@@ -1003,9 +1003,9 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
        ═══════════════════════════════════════ */
 
     const MobileStep2 = () => (
-        <div className="flex flex-col md:hidden overflow-y-auto flex-1 border rounded-lg bg-white dark:bg-zinc-950 shadow-inner">
+        <div className="flex flex-col md:hidden overflow-y-auto flex-1 border rounded-lg bg-white dark:bg-transparent shadow-inner">
             {/* ── Mobile Editor Toolbar ── */}
-            <div className="sticky top-0 z-10 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm border-b px-3 py-2 space-y-2">
+            <div className="sticky top-0 z-10 bg-white/95 dark:bg-transparent/95 backdrop-blur-sm border-b px-3 py-2 space-y-2">
                 <div className="flex items-center gap-1 flex-wrap">
                     <div className="flex items-center gap-1 text-[10px] text-muted-foreground mr-1">
                         <MousePointerClick className="h-3 w-3" />
@@ -1596,7 +1596,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
                     </div>
 
                     {/* ── Right: Interactive Canvas Preview ── */}
-                    <div className="flex-1 overflow-y-auto border rounded-lg p-6 bg-white dark:bg-zinc-950 shadow-inner">
+                    <div className="flex-1 overflow-y-auto border rounded-lg p-6 bg-white dark:bg-transparent shadow-inner">
                         {/* Song header */}
                         <div className="mb-6 pb-4 border-b">
                             <h2 className="text-2xl font-bold text-foreground">{currentSong.title}</h2>

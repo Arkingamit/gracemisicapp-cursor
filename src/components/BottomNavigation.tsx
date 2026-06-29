@@ -28,7 +28,7 @@ const BottomNavigation = () => {
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-white/5 bg-zinc-950/80 backdrop-blur-2xl saturate-[1.8] pointer-events-auto bottom-nav-container shadow-[0_-4px_20px_rgba(0,0,0,0.6)]">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-white/5 bg-transparent/80 backdrop-blur-2xl saturate-[1.8] pointer-events-auto bottom-nav-container shadow-[0_-4px_20px_rgba(0,0,0,0.6)]">
       <div className="grid grid-cols-5 h-16 w-full mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -58,3 +58,4 @@ const BottomNavigation = () => {
 };
 
 export default BottomNavigation;
+

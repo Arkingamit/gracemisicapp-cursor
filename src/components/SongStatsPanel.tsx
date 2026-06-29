@@ -160,7 +160,7 @@ export default function SongStatsPanel({ organizationId }: SongStatsPanelProps) 
               <input
                 type="text"
                 placeholder="Search songs..."
-                className="bg-zinc-950 border border-zinc-800 rounded-md pl-8 pr-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary w-full"
+                className="bg-transparent border border-zinc-800 rounded-md pl-8 pr-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary w-full"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -169,7 +169,7 @@ export default function SongStatsPanel({ organizationId }: SongStatsPanelProps) 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="flex items-center gap-1 bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary hover:bg-zinc-900 transition-colors h-8"
+                  className="flex items-center gap-1 bg-transparent border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary hover:bg-zinc-900 transition-colors h-8"
                   title="Export Options"
                 >
                   <Download className="w-3.5 h-3.5 text-zinc-400" />
@@ -177,7 +177,7 @@ export default function SongStatsPanel({ organizationId }: SongStatsPanelProps) 
                   <ChevronDown className="w-3 h-3 text-zinc-500 ml-0.5" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-zinc-200 min-w-[140px]">
+              <DropdownMenuContent align="end" className="bg-transparent border-zinc-800 text-zinc-200 min-w-[140px]">
                 <DropdownMenuItem onClick={handleExportCSV} className="text-xs cursor-pointer hover:bg-zinc-800 focus:bg-zinc-800 focus:text-zinc-100">
                   <FileSpreadsheet className="w-3.5 h-3.5 mr-2 text-emerald-400" />
                   Excel (CSV)
@@ -191,7 +191,7 @@ export default function SongStatsPanel({ organizationId }: SongStatsPanelProps) 
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 sm:flex-none">
               <select
-                className="bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary w-full sm:w-auto"
+                className="bg-transparent border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary w-full sm:w-auto"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
               >
@@ -208,14 +208,14 @@ export default function SongStatsPanel({ organizationId }: SongStatsPanelProps) 
                 <div className="flex items-center gap-1 w-full sm:w-auto">
                   <input
                     type="date"
-                    className="bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary flex-1 sm:flex-none"
+                    className="bg-transparent border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary flex-1 sm:flex-none"
                     value={customStart}
                     onChange={(e) => setCustomStart(e.target.value)}
                   />
                   <span className="text-zinc-500 text-xs">to</span>
                   <input
                     type="date"
-                    className="bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary flex-1 sm:flex-none"
+                    className="bg-transparent border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary flex-1 sm:flex-none"
                     value={customEnd}
                     onChange={(e) => setCustomEnd(e.target.value)}
                   />
@@ -311,3 +311,4 @@ export default function SongStatsPanel({ organizationId }: SongStatsPanelProps) 
     </Card>
   );
 }
+

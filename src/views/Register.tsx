@@ -10,7 +10,7 @@ const Register = () => {
   }, [router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#09090b]">
+    <div className="flex min-h-screen items-center justify-center bg-transparent">
       <div className="flex flex-col items-center gap-4 text-center">
         <div className="w-12 h-12 rounded-full border-t-2 border-primary animate-spin" />
         <p className="text-zinc-400 font-medium">Redirecting to Secure Sign-in...</p>
@@ -20,3 +20,4 @@ const Register = () => {
 };
 
 export default Register;
+

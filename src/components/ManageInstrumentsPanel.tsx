@@ -77,7 +77,7 @@ export default function ManageInstrumentsPanel({ organization }: ManageInstrumen
           placeholder="Add new instrument (e.g. Kazoo)"
           value={newInstrument}
           onChange={(e) => setNewInstrument(e.target.value)}
-          className="flex-1 bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary"
+          className="flex-1 bg-transparent border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary"
           disabled={isAdding}
         />
         <Button 
@@ -116,3 +116,4 @@ export default function ManageInstrumentsPanel({ organization }: ManageInstrumen
     </div>
   );
 }
+

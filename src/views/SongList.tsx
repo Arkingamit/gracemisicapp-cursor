@@ -25,6 +25,7 @@ import { Pencil, Trash2, Globe, Lock, X, ArrowLeft, Heart, ListMusic, Copy, Chev
 import { Badge } from '@/components/ui/badge';
 import { detectKey } from '@/lib/keyDetection';
 import { getKeyDisplayName } from '@/lib/chordUtils';
+import CopyToOrgButton from '@/components/CopyToOrgButton';
 import {
   Select,
   SelectContent,
@@ -72,6 +73,7 @@ const SongList = () => {
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
+  const [showActionBar, setShowActionBar] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -110,6 +112,26 @@ const SongList = () => {
       router.replace(`/songs?language=${encodeURIComponent(val)}`);
     }
   };
+
+  // Scroll detection for hiding/showing the actions bar
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY > lastScrollY && currentScrollY > 20) {
+        setShowActionBar(false);
+      } else if (currentScrollY < lastScrollY) {
+        setShowActionBar(true);
+      }
+      
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Pre-calculate keys to make searching fast and avoid re-calculating on every render
   const songKeys = useMemo(() => {
@@ -194,7 +216,7 @@ const SongList = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-950 pb-20">
+    <div className="min-h-screen bg-transparent pb-20">
       {/* Header / Banner Area */}
       <div className="bg-gradient-to-b from-primary/10 via-primary/5 to-zinc-950 pt-8 pb-6">
         <div className="container mx-auto px-4">
@@ -229,8 +251,11 @@ const SongList = () => {
         </div>
       </div>
 
-      {/* Actions Bar */}
-      <div className="sticky top-0 z-20 bg-zinc-950/80 backdrop-blur-md border-b border-white/5 py-4">
+      <div 
+        className={`sticky top-0 z-20 bg-transparent/80 backdrop-blur-md border-b border-white/5 py-4 transition-transform duration-150 ${
+          showActionBar ? 'translate-y-0' : '-translate-y-full'
+        }`}
+      >
         <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Filter Tabs */}
           <div className="flex p-0.5 border border-zinc-800 rounded-lg bg-zinc-900/60 w-full sm:w-auto">
@@ -353,6 +378,12 @@ const SongList = () => {
                                   songId={song.id} 
                                   songTitle={song.title} 
                                 />
+                                <CopyToOrgButton
+                                  songId={song.id}
+                                  songTitle={song.title}
+                                  songOrgId={song.organizationId}
+                                  variant="icon"
+                                />
                               </>
                             )}
                             {canEdit(song.createdBy) && (
@@ -422,3 +453,4 @@ const SongList = () => {
 };
 
 export default SongList;
+

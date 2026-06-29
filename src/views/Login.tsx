@@ -36,7 +36,7 @@ const Login = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-[#09090b]">
+    <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-transparent">
       {/* Premium background effects */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] animation-delay-2000" />
@@ -131,3 +131,4 @@ const Login = () => {
 };
 
 export default Login;
+

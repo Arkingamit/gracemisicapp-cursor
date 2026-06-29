@@ -162,6 +162,28 @@ export class SongModel {
     }
   }
 
+  // Copy a song to an organization's private library
+  static async copyToOrg(id: string, organizationId: string, userId: string): Promise<Song | null> {
+    try {
+      const collection = await getCollection(COLLECTIONS.SONGS);
+      
+      const originalSong = await collection.findOne({ _id: new ObjectId(id) });
+      if (!originalSong) return null;
+
+      const { _id, ...songWithoutId } = originalSong;
+      songWithoutId.organizationId = organizationId;
+      songWithoutId.createdBy = userId;
+      songWithoutId.createdAt = new Date();
+      songWithoutId.updatedAt = new Date();
+
+      const result = await collection.insertOne(songWithoutId);
+      return await this.findById(result.insertedId.toString());
+    } catch (error) {
+      console.error("Error copying song to org:", error);
+      throw error;
+    }
+  }
+
   // Delete a song
   static async delete(id: string): Promise<boolean> {
     try {

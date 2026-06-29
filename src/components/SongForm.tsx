@@ -603,7 +603,7 @@ There's no one like You`}
     </Card>
 
     <AlertDialog open={limitErrorModalOpen} onOpenChange={setLimitErrorModalOpen}>
-      <AlertDialogContent className="bg-zinc-950 border border-white/10 text-white">
+      <AlertDialogContent className="bg-transparent border border-white/10 text-white">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-destructive flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
@@ -627,3 +627,4 @@ There's no one like You`}
 };
 
 export default SongForm;
+

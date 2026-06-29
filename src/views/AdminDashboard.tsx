@@ -710,18 +710,18 @@ const AdminDashboard = () => {
                     placeholder="Search name..."
                     value={userFilterName}
                     onChange={(e) => setUserFilterName(e.target.value)}
-                    className="h-8 text-xs w-[140px] bg-zinc-950 border-white/10"
+                    className="h-8 text-xs w-[140px] bg-transparent border-white/10"
                   />
                   <Input
                     placeholder="Search email..."
                     value={userFilterEmail}
                     onChange={(e) => setUserFilterEmail(e.target.value)}
-                    className="h-8 text-xs w-[160px] bg-zinc-950 border-white/10"
+                    className="h-8 text-xs w-[160px] bg-transparent border-white/10"
                   />
                   <select
                     value={userFilterRole}
                     onChange={(e) => setUserFilterRole(e.target.value)}
-                    className="h-8 text-xs rounded-md bg-zinc-950 border border-white/10 px-2 text-zinc-300"
+                    className="h-8 text-xs rounded-md bg-transparent border border-white/10 px-2 text-zinc-300"
                   >
                     <option value="all">All Roles</option>
                     <option value="super_admin">Super Admin</option>
@@ -731,7 +731,7 @@ const AdminDashboard = () => {
                   <select
                     value={userFilterGlobal}
                     onChange={(e) => setUserFilterGlobal(e.target.value)}
-                    className="h-8 text-xs rounded-md bg-zinc-950 border border-white/10 px-2 text-zinc-300"
+                    className="h-8 text-xs rounded-md bg-transparent border border-white/10 px-2 text-zinc-300"
                   >
                     <option value="all">Global Library: All</option>
                     <option value="granted">Granted</option>
@@ -973,13 +973,13 @@ const AdminDashboard = () => {
                     placeholder="Search name..."
                     value={orgFilterName}
                     onChange={(e) => setOrgFilterName(e.target.value)}
-                    className="h-8 text-xs w-[160px] bg-zinc-950 border-white/10"
+                    className="h-8 text-xs w-[160px] bg-transparent border-white/10"
                   />
                   <Input
                     placeholder="Search manager..."
                     value={orgFilterManager}
                     onChange={(e) => setOrgFilterManager(e.target.value)}
-                    className="h-8 text-xs w-[160px] bg-zinc-950 border-white/10"
+                    className="h-8 text-xs w-[160px] bg-transparent border-white/10"
                   />
                   {(orgFilterName || orgFilterManager) && (
                     <Button
@@ -1089,13 +1089,13 @@ const AdminDashboard = () => {
                     placeholder="Search set name..."
                     value={groupFilterName}
                     onChange={(e) => setGroupFilterName(e.target.value)}
-                    className="h-8 text-xs w-[160px] bg-zinc-950 border-white/10"
+                    className="h-8 text-xs w-[160px] bg-transparent border-white/10"
                   />
                   <Input
                     placeholder="Search organization..."
                     value={groupFilterOrg}
                     onChange={(e) => setGroupFilterOrg(e.target.value)}
-                    className="h-8 text-xs w-[160px] bg-zinc-950 border-white/10"
+                    className="h-8 text-xs w-[160px] bg-transparent border-white/10"
                   />
                   <div className="relative">
                     <Input
@@ -1104,10 +1104,10 @@ const AdminDashboard = () => {
                       onChange={(e) => setGroupFilterExcludeOrg(e.target.value)}
                       onFocus={() => setIsExcludeOrgFocused(true)}
                       onBlur={() => setIsExcludeOrgFocused(false)}
-                      className="h-8 text-xs w-[160px] bg-zinc-950 border-white/10 border-red-500/20 focus-visible:ring-red-500/30"
+                      className="h-8 text-xs w-[160px] bg-transparent border-white/10 border-red-500/20 focus-visible:ring-red-500/30"
                     />
                     {isExcludeOrgFocused && (
-                      <div className="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-md border border-white/10 bg-zinc-950 p-1 text-white shadow-md">
+                      <div className="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-md border border-white/10 bg-transparent p-1 text-white shadow-md">
                         {!excludedOrgIds.includes('_system') && (
                           <div
                             onMouseDown={(e) => {
@@ -1177,7 +1177,7 @@ const AdminDashboard = () => {
                     return (
                       <div
                         key={id}
-                        className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-zinc-950 border border-red-500/20 text-red-300 shadow-sm"
+                        className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-transparent border border-red-500/20 text-red-300 shadow-sm"
                       >
                         <span>{name}</span>
                         <button
@@ -1296,7 +1296,7 @@ const AdminDashboard = () => {
                     placeholder="Search user..."
                     value={auditFilterUser}
                     onChange={(e) => setAuditFilterUser(e.target.value)}
-                    className="h-8 text-xs w-[140px] bg-zinc-950 border-white/10"
+                    className="h-8 text-xs w-[140px] bg-transparent border-white/10"
                   />
                   <div className="relative">
                     <Input
@@ -1305,10 +1305,10 @@ const AdminDashboard = () => {
                       onChange={(e) => setAuditFilterExcludeUser(e.target.value)}
                       onFocus={() => setIsExcludeUserFocused(true)}
                       onBlur={() => setIsExcludeUserFocused(false)}
-                      className="h-8 text-xs w-[140px] bg-zinc-950 border-white/10 border-red-500/20 focus-visible:ring-red-500/30"
+                      className="h-8 text-xs w-[140px] bg-transparent border-white/10 border-red-500/20 focus-visible:ring-red-500/30"
                     />
                     {isExcludeUserFocused && (
-                      <div className="absolute z-50 left-0 mt-1 max-h-60 overflow-y-auto rounded-md border border-white/10 bg-zinc-950 p-1 text-white shadow-md w-[220px]">
+                      <div className="absolute z-50 left-0 mt-1 max-h-60 overflow-y-auto rounded-md border border-white/10 bg-transparent p-1 text-white shadow-md w-[220px]">
                         {!excludedUserIds.includes('_system') && (
                           <div
                             onMouseDown={(e) => {
@@ -1353,7 +1353,7 @@ const AdminDashboard = () => {
                   <select
                     value={auditFilterAction}
                     onChange={(e) => setAuditFilterAction(e.target.value)}
-                    className="h-8 text-xs rounded-md bg-zinc-950 border border-white/10 px-2 text-zinc-300"
+                    className="h-8 text-xs rounded-md bg-transparent border border-white/10 px-2 text-zinc-300"
                   >
                     <option value="all">All Actions</option>
                     <option value="create">Create</option>
@@ -1363,7 +1363,7 @@ const AdminDashboard = () => {
                   <select
                     value={auditFilterModule}
                     onChange={(e) => setAuditFilterModule(e.target.value)}
-                    className="h-8 text-xs rounded-md bg-zinc-950 border border-white/10 px-2 text-zinc-300"
+                    className="h-8 text-xs rounded-md bg-transparent border border-white/10 px-2 text-zinc-300"
                   >
                     <option value="all">All Modules</option>
                     <option value="songs">Songs</option>
@@ -1376,20 +1376,20 @@ const AdminDashboard = () => {
                     placeholder="Search item..."
                     value={auditFilterItem}
                     onChange={(e) => setAuditFilterItem(e.target.value)}
-                    className="h-8 text-xs w-[140px] bg-zinc-950 border-white/10"
+                    className="h-8 text-xs w-[140px] bg-transparent border-white/10"
                   />
                   <input
                     type="date"
                     value={auditFilterDateFrom}
                     onChange={(e) => setAuditFilterDateFrom(e.target.value)}
-                    className="h-8 text-xs rounded-md bg-zinc-950 border border-white/10 px-2 text-zinc-300"
+                    className="h-8 text-xs rounded-md bg-transparent border border-white/10 px-2 text-zinc-300"
                     title="From date"
                   />
                   <input
                     type="date"
                     value={auditFilterDateTo}
                     onChange={(e) => setAuditFilterDateTo(e.target.value)}
-                    className="h-8 text-xs rounded-md bg-zinc-950 border border-white/10 px-2 text-zinc-300"
+                    className="h-8 text-xs rounded-md bg-transparent border border-white/10 px-2 text-zinc-300"
                     title="To date"
                   />
                   {(auditFilterUser || auditFilterAction !== 'all' || auditFilterModule !== 'all' || auditFilterItem || auditFilterDateFrom || auditFilterDateTo || auditFilterExcludeUser || excludedUserIds.length > 0) && (
@@ -1426,7 +1426,7 @@ const AdminDashboard = () => {
                     return (
                       <div
                         key={id}
-                        className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-zinc-950 border border-red-500/20 text-red-300 shadow-sm"
+                        className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-transparent border border-red-500/20 text-red-300 shadow-sm"
                       >
                         <span>{name}</span>
                         <button
@@ -1542,7 +1542,7 @@ const AdminDashboard = () => {
 
                     {/* Dialog for Log Changes */}
                     <Dialog open={!!selectedLogChanges} onOpenChange={(open) => { if (!open) setSelectedLogChanges(null); }}>
-                      <DialogContent className="max-w-2xl bg-zinc-950 border border-zinc-800">
+                      <DialogContent className="max-w-2xl bg-transparent border border-zinc-800">
                         <DialogHeader>
                           <DialogTitle>Activity Log Details</DialogTitle>
                           <DialogDescription>
@@ -1551,13 +1551,13 @@ const AdminDashboard = () => {
                         </DialogHeader>
                         <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
                           {selectedLogChanges?.changes && (
-                            <div className="bg-zinc-950/50 border border-white/10 rounded-xl p-4">
+                            <div className="bg-transparent/50 border border-white/10 rounded-xl p-4">
                               <h4 className="text-sm font-bold text-zinc-200 mb-4 pb-2 border-b border-white/5">Changes Made</h4>
                               <LogObjectViewer obj={selectedLogChanges.changes} />
                             </div>
                           )}
                           {selectedLogChanges?.previousState && (
-                            <div className="bg-zinc-950/50 border border-white/10 rounded-xl p-4">
+                            <div className="bg-transparent/50 border border-white/10 rounded-xl p-4">
                               <h4 className="text-sm font-bold text-zinc-200 mb-4 pb-2 border-b border-white/5">Previous State</h4>
                               <LogObjectViewer obj={selectedLogChanges.previousState} />
                             </div>
@@ -1795,7 +1795,7 @@ const AdminDashboard = () => {
                       placeholder="e.g. Acoustic, Rock Gospel"
                       value={newGenreName}
                       onChange={(e) => setNewGenreName(e.target.value)}
-                      className="bg-zinc-950/50 border-white/10 text-white placeholder-zinc-500"
+                      className="bg-transparent/50 border-white/10 text-white placeholder-zinc-500"
                     />
                   </div>
                   <Button 
@@ -1822,7 +1822,7 @@ const AdminDashboard = () => {
                       placeholder="Search genres..."
                       value={genreSearch}
                       onChange={(e) => setGenreSearch(e.target.value)}
-                      className="pl-9 bg-zinc-950/50 border-white/10 text-white placeholder-zinc-500 text-sm"
+                      className="pl-9 bg-transparent/50 border-white/10 text-white placeholder-zinc-500 text-sm"
                     />
                     {genreSearch && (
                       <button
@@ -1874,7 +1874,7 @@ const AdminDashboard = () => {
                                         <Trash2 className="w-4 h-4" />
                                       </Button>
                                     </AlertDialogTrigger>
-                                    <AlertDialogContent className="bg-zinc-950 border border-white/10 text-white">
+                                    <AlertDialogContent className="bg-transparent border border-white/10 text-white">
                                       <AlertDialogHeader>
                                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                         <AlertDialogDescription className="text-zinc-400">
@@ -1974,7 +1974,7 @@ const AdminDashboard = () => {
                       placeholder="gsk_..."
                       value={systemSettings.groq_api_key || ''}
                       onChange={(e) => setSystemSettings(s => ({ ...s, groq_api_key: e.target.value }))}
-                      className="bg-zinc-950 border-white/10"
+                      className="bg-transparent border-white/10"
                     />
                     <Button 
                       variant="secondary" 
@@ -1986,7 +1986,7 @@ const AdminDashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 space-y-3">
+                  <div className="p-4 rounded-xl bg-transparent/50 border border-white/5 space-y-3">
                     <div>
                       <h4 className="text-sm font-bold text-zinc-300">Max Groups Per User</h4>
                       <p className="text-xs text-zinc-500">Maximum number of song sets a standard user can create.<br/>Leave empty or 0 for unlimited.</p>
@@ -2011,7 +2011,7 @@ const AdminDashboard = () => {
                       </Button>
                     </div>
                   </div>
-                  <div className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 space-y-3">
+                  <div className="p-4 rounded-xl bg-transparent/50 border border-white/5 space-y-3">
                     <div>
                       <h4 className="text-sm font-bold text-zinc-300">Max Custom Songs</h4>
                       <p className="text-xs text-zinc-500">Maximum number of custom songs an organization can add (excluding global library).<br/>Leave empty or 0 for unlimited.</p>
@@ -2036,7 +2036,7 @@ const AdminDashboard = () => {
                       </Button>
                     </div>
                   </div>
-                  <div className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 space-y-3">
+                  <div className="p-4 rounded-xl bg-transparent/50 border border-white/5 space-y-3">
                     <div>
                       <h4 className="text-sm font-bold text-zinc-300">Global AI Chat Limit</h4>
                       <p className="text-xs text-zinc-500">Maximum chat history stored per user (in MB).</p>
@@ -2063,7 +2063,7 @@ const AdminDashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 space-y-3">
+                  <div className="p-4 rounded-xl bg-transparent/50 border border-white/5 space-y-3">
                     <div>
                       <h4 className="text-sm font-bold text-zinc-300">Max Songs Per Song Set</h4>
                       <p className="text-xs text-zinc-500">Leave empty or 0 for unlimited.</p>
@@ -2088,7 +2088,7 @@ const AdminDashboard = () => {
                       </Button>
                     </div>
                   </div>
-                  <div className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 space-y-3">
+                  <div className="p-4 rounded-xl bg-transparent/50 border border-white/5 space-y-3">
                     <div>
                       <h4 className="text-sm font-bold text-zinc-300">Max Collections Per User</h4>
                       <p className="text-xs text-zinc-500">Organize favorite songs limit. Leave empty for unlimited.</p>
@@ -2113,7 +2113,7 @@ const AdminDashboard = () => {
                       </Button>
                     </div>
                   </div>
-                  <div className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 space-y-3">
+                  <div className="p-4 rounded-xl bg-transparent/50 border border-white/5 space-y-3">
                     <div>
                       <h4 className="text-sm font-bold text-zinc-300">Max Songs Per Collection</h4>
                       <p className="text-xs text-zinc-500">Maximum limit of songs in a personal collection. Leave empty for unlimited.</p>
@@ -2138,7 +2138,7 @@ const AdminDashboard = () => {
                       </Button>
                     </div>
                   </div>
-                  <div className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 space-y-3">
+                  <div className="p-4 rounded-xl bg-transparent/50 border border-white/5 space-y-3">
                     <div>
                       <h4 className="text-sm font-bold text-zinc-300">Max Members Per Org</h4>
                       <p className="text-xs text-zinc-500">Leave empty or 0 for unlimited.</p>
@@ -2163,7 +2163,7 @@ const AdminDashboard = () => {
                       </Button>
                     </div>
                   </div>
-                  <div className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 space-y-3">
+                  <div className="p-4 rounded-xl bg-transparent/50 border border-white/5 space-y-3">
                     <div>
                       <h4 className="text-sm font-bold text-zinc-300">Max Activity Logs Limit</h4>
                       <p className="text-xs text-zinc-500">Auto-deletes older logs when exceeded. Leave empty for unlimited.</p>
@@ -2203,7 +2203,7 @@ const AdminDashboard = () => {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                    <div className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 space-y-3">
+                    <div className="p-4 rounded-xl bg-transparent/50 border border-white/5 space-y-3">
                       <div>
                         <div className="flex items-center gap-1.5">
                           <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
@@ -2227,7 +2227,7 @@ const AdminDashboard = () => {
                         </Button>
                       </div>
                     </div>
-                    <div className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 space-y-3">
+                    <div className="p-4 rounded-xl bg-transparent/50 border border-white/5 space-y-3">
                       <div>
                         <h4 className="text-sm font-bold text-zinc-300">Latest Version</h4>
                         <p className="text-xs text-zinc-500 mt-1">Users below this (but above minimum) get an <span className="text-emerald-400 font-semibold">optional update</span> prompt.</p>
@@ -2251,7 +2251,7 @@ const AdminDashboard = () => {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                    <div className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 space-y-3">
+                    <div className="p-4 rounded-xl bg-transparent/50 border border-white/5 space-y-3">
                       <div>
                         <h4 className="text-sm font-bold text-zinc-300">Android Store URL</h4>
                         <p className="text-xs text-zinc-500 mt-1">Google Play Store link for the app.</p>
@@ -2273,7 +2273,7 @@ const AdminDashboard = () => {
                         </Button>
                       </div>
                     </div>
-                    <div className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 space-y-3">
+                    <div className="p-4 rounded-xl bg-transparent/50 border border-white/5 space-y-3">
                       <div>
                         <h4 className="text-sm font-bold text-zinc-300">iOS Store URL</h4>
                         <p className="text-xs text-zinc-500 mt-1">Apple App Store link for the app.</p>
@@ -2297,7 +2297,7 @@ const AdminDashboard = () => {
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 space-y-3">
+                  <div className="p-4 rounded-xl bg-transparent/50 border border-white/5 space-y-3">
                     <div>
                       <h4 className="text-sm font-bold text-zinc-300">Force Update Message</h4>
                       <p className="text-xs text-zinc-500 mt-1">Custom message shown when a force update is required.</p>
@@ -2348,7 +2348,7 @@ const AdminDashboard = () => {
                   placeholder="Search user or message..."
                   value={chatSearchQuery}
                   onChange={(e) => setChatSearchQuery(e.target.value)}
-                  className="h-8 text-xs w-full sm:w-[200px] bg-zinc-950 border-white/10"
+                  className="h-8 text-xs w-full sm:w-[200px] bg-transparent border-white/10"
                 />
                 <Button variant="outline" size="sm" onClick={fetchAdminData} disabled={loadingData} className="whitespace-nowrap">Refresh</Button>
               </div>
@@ -2438,7 +2438,7 @@ const AdminDashboard = () => {
 
                       {/* Expanded Chat Messages */}
                       {expandedChatUserId === history.userId && (
-                        <div className="border-t border-white/5 bg-zinc-950/50 max-h-[500px] overflow-y-auto">
+                        <div className="border-t border-white/5 bg-transparent/50 max-h-[500px] overflow-y-auto">
                           <div className="p-4 space-y-3">
                             {history.messages.length === 0 ? (
                               <p className="text-center text-sm text-muted-foreground py-4">No messages</p>
@@ -2496,7 +2496,7 @@ const AdminDashboard = () => {
 
       {/* Organization Limits Modal */}
       <Dialog open={orgLimitModalOpen} onOpenChange={setOrgLimitModalOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-zinc-950 border-white/10 text-white">
+        <DialogContent className="sm:max-w-[425px] bg-transparent border-white/10 text-white">
           <DialogHeader>
             <DialogTitle>Set Organization Limits</DialogTitle>
             <DialogDescription className="text-zinc-400 text-xs">
@@ -2551,3 +2551,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

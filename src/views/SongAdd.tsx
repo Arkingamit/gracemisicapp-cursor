@@ -48,7 +48,7 @@ const SongAdd = () => {
                     <div className="bg-background/80 p-3 rounded-lg border border-border">
                       <strong className="text-foreground block mb-1">Format 1: Auto-detect (Chords on top)</strong>
                       <p className="text-xs text-muted-foreground mb-2">Simply paste standard lyrics with chords written on the line above.</p>
-                      <pre className="text-xs text-zinc-300 font-mono bg-zinc-950 p-2 rounded mb-2">
+                      <pre className="text-xs text-zinc-300 font-mono bg-transparent p-2 rounded mb-2">
 G      D       Em{'\n'}
 This is how we paste
                       </pre>
@@ -60,7 +60,7 @@ This is how we paste
                     <div className="bg-background/80 p-3 rounded-lg border border-border">
                       <strong className="text-foreground block mb-1">Format 2: ChordPro (Bracketed)</strong>
                       <p className="text-xs text-muted-foreground mb-2">Write chords inside brackets exactly before the syllable.</p>
-                      <pre className="text-xs text-zinc-300 font-mono bg-zinc-950 p-2 rounded">
+                      <pre className="text-xs text-zinc-300 font-mono bg-transparent p-2 rounded">
 [G]This is [D]how we [Em]paste
                       </pre>
                     </div>
@@ -84,3 +84,4 @@ This is how we paste
 };
 
 export default SongAdd;
+

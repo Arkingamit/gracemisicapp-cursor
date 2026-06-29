@@ -190,7 +190,7 @@ export default function SetupPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen bg-transparent flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-zinc-400">Checking setup status...</p>
@@ -201,7 +201,7 @@ export default function SetupPage() {
 
   if (status?.setupComplete) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen bg-transparent flex items-center justify-center">
         <div className="bg-zinc-900 border border-white/10 rounded-2xl p-8 max-w-md text-center">
           <div className="text-4xl mb-4">✅</div>
           <h2 className="text-xl font-bold text-white mb-2">Setup Already Complete</h2>
@@ -220,7 +220,7 @@ export default function SetupPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="min-h-screen bg-transparent text-white">
       {/* Header */}
       <div className="bg-gradient-to-r from-violet-900/40 to-indigo-900/40 border-b border-white/10 py-6 px-4">
         <div className="max-w-3xl mx-auto">
@@ -570,7 +570,7 @@ export default function SetupPage() {
 
             <div className="bg-zinc-800/50 rounded-xl p-4 text-left space-y-2 text-sm">
               <h3 className="font-bold text-zinc-300">Nginx Config for graceahmedabad.org:</h3>
-              <pre className="bg-zinc-950 text-green-400 p-3 rounded-lg overflow-x-auto text-xs whitespace-pre-wrap">
+              <pre className="bg-transparent text-green-400 p-3 rounded-lg overflow-x-auto text-xs whitespace-pre-wrap">
 {`server {
     listen 80;
     server_name graceahmedabad.org www.graceahmedabad.org;
@@ -594,7 +594,7 @@ export default function SetupPage() {
 
             <div className="bg-zinc-800/50 rounded-xl p-4 text-left space-y-2 text-sm">
               <h3 className="font-bold text-zinc-300">systemd Service File:</h3>
-              <pre className="bg-zinc-950 text-green-400 p-3 rounded-lg overflow-x-auto text-xs whitespace-pre-wrap">
+              <pre className="bg-transparent text-green-400 p-3 rounded-lg overflow-x-auto text-xs whitespace-pre-wrap">
 {`# /etc/systemd/system/gracemusic.service
 [Unit]
 Description=Grace Music App
@@ -630,3 +630,4 @@ WantedBy=multi-user.target
     </div>
   );
 }
+

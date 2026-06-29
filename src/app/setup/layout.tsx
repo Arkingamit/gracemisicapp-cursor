@@ -12,9 +12,10 @@ export default function SetupLayout({
         <title>Grace Music — Server Setup</title>
         <meta name="robots" content="noindex, nofollow" />
       </head>
-      <body className="bg-zinc-950 text-white">
+      <body className="bg-transparent text-white">
         {children}
       </body>
     </html>
   );
 }
+

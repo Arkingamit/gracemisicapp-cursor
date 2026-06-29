@@ -24,6 +24,7 @@ interface SongContextType {
   fetchSongDetails: (id: string) => Promise<Song>;
   makeSongGlobal: (id: string) => Promise<void>;
   copySongToGlobal: (id: string) => Promise<void>;
+  copySongToOrg: (id: string, organizationId: string) => Promise<void>;
   deleteMultipleSongs: (ids: string[]) => Promise<void>;
 }
 
@@ -310,6 +311,40 @@ export const SongProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const copySongToOrg = async (id: string, organizationId: string) => {
+    setLoading(true);
+    try {
+      if (!currentUser) {
+        throw new Error('You must be logged in');
+      }
+
+      const res = await authFetch(`/api/songs/${id}/copy-to-org`, {
+        method: 'POST',
+        body: JSON.stringify({ organizationId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to copy song');
+
+      // Add the new song to the local list
+      setSongs(prev => [...prev, data.song]);
+
+      toast({
+        title: 'Song Added to Library',
+        description: `${data.song.title} has been added to your organization's library.`
+      });
+    } catch (error) {
+      toast({
+        title: 'Copy Failed',
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        variant: 'destructive'
+      });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getAllSongs = () => songs;
 
   const value: SongContextType = {
@@ -324,6 +359,7 @@ export const SongProvider = ({ children }: { children: ReactNode }) => {
     fetchSongDetails,
     makeSongGlobal,
     copySongToGlobal,
+    copySongToOrg,
     deleteMultipleSongs
   };
 

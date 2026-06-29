@@ -44,7 +44,7 @@ export default function PlaylistsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 pb-20">
+    <div className="min-h-screen bg-transparent pb-20">
       {/* Header / Banner Area */}
       <div className="bg-gradient-to-b from-primary/10 via-primary/5 to-zinc-950 pt-8 pb-6">
         <div className="container mx-auto px-4 max-w-5xl">
@@ -238,3 +238,4 @@ export default function PlaylistsPage() {
     </div>
   );
 }
+

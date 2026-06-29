@@ -13,6 +13,7 @@ import { getTransposedKeyName } from '@/lib/chordUtils';
 import { detectKey } from '@/lib/keyDetection';
 import { Badge } from '@/components/ui/badge';
 import { Download, ChevronLeft, History, FileText, Edit2 } from 'lucide-react';
+import CopyToOrgButton from '@/components/CopyToOrgButton';
 
 const SongDetail = () => {
   const searchParams = useSearchParams();
@@ -78,7 +79,7 @@ const SongDetail = () => {
   const currentKey = getTransposedKeyName(originalKey, transposition);
 
   return (
-    <div className="min-h-screen bg-zinc-950 pb-20">
+    <div className="min-h-screen bg-transparent pb-20">
       {/* Header / Banner Area */}
       <div className="bg-gradient-to-b from-primary/10 via-primary/5 to-zinc-950 pt-8 pb-6">
         <div className="container mx-auto px-4">
@@ -116,11 +117,20 @@ const SongDetail = () => {
       </div>
 
       {/* Actions Bar */}
-      <div className="sticky top-0 z-20 bg-zinc-950/80 backdrop-blur-md border-b border-white/5 py-4">
+      <div className="sticky top-0 z-20 bg-transparent/80 backdrop-blur-md border-b border-white/5 py-4">
         <div className="container mx-auto px-4 flex items-center justify-end gap-4">
           <div className="flex flex-wrap items-center gap-2">
             {currentUser && (
-              <AddToGroupButton songId={song.id} songTitle={song.title} showText={true} />
+              <>
+                <AddToGroupButton songId={song.id} songTitle={song.title} showText={true} />
+                <CopyToOrgButton
+                  songId={song.id}
+                  songTitle={song.title}
+                  songOrgId={song.organizationId}
+                  showText={true}
+                  variant="default"
+                />
+              </>
             )}
             
             <Button
@@ -188,3 +198,4 @@ const SongDetail = () => {
 };
 
 export default SongDetail;
+

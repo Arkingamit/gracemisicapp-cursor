@@ -61,7 +61,7 @@ function PlaylistDetailContent() {
   const playlistSongs = songs.filter(s => playlist.songs.includes(s.id));
 
   return (
-    <div className="min-h-screen bg-zinc-950 pb-20">
+    <div className="min-h-screen bg-transparent pb-20">
       {/* Header / Banner Area */}
       <div className="bg-gradient-to-b from-primary/10 via-primary/5 to-zinc-950 pt-8 pb-6">
         <div className="container mx-auto px-4">
@@ -132,7 +132,7 @@ function PlaylistDetailContent() {
       </div>
 
       {/* Actions Bar */}
-      <div className="sticky top-0 z-20 bg-zinc-950/80 backdrop-blur-md border-b border-white/5 py-4">
+      <div className="sticky top-0 z-20 bg-transparent/80 backdrop-blur-md border-b border-white/5 py-4">
         <div className="container mx-auto px-4 flex items-center justify-end gap-4">
           <div className="flex items-center gap-2">
             {/* Transfer to Song Set button */}
@@ -208,3 +208,4 @@ export default function PlaylistDetailPage() {
     </React.Suspense>
   );
 }
+

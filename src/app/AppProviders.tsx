@@ -53,7 +53,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
                   <Suspense fallback={<div className="h-16 border-b bg-background/80" />}>
                     <Navigation />
                   </Suspense>
-                  <main className="min-h-[calc(100vh-64px)] bg-background pb-24 md:pb-0">
+                  <main className="min-h-[calc(100vh-64px)] pb-24 md:pb-0 relative">
                     {children}
                   </main>
                   <Suspense fallback={null}>

@@ -40,7 +40,7 @@ const InviteMemberForm = ({ organizationId }: InviteMemberFormProps) => {
   };
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex flex-col gap-3">
       <Input
         type="email"
         placeholder="Enter member's email address"
@@ -48,9 +48,9 @@ const InviteMemberForm = ({ organizationId }: InviteMemberFormProps) => {
         onChange={(e) => setEmail(e.target.value)}
         disabled={inviting}
         onKeyDown={(e) => { if (e.key === 'Enter') handleInvite(); }}
-        className="flex-1"
+        className="w-full"
       />
-      <Button onClick={handleInvite} disabled={inviting} className="shrink-0">
+      <Button onClick={handleInvite} disabled={inviting} className="w-full">
         <UserPlus className="w-4 h-4 mr-2" />
         {inviting ? 'Adding...' : 'Add Member'}
       </Button>

@@ -21,7 +21,7 @@ import { useGroups } from '@/contexts/groups';
 import { useOrganizations } from '@/contexts/OrganizationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Group } from '@/lib/types';
-import { Building, Pencil, Trash2 } from 'lucide-react';
+import { Building, Pencil, Trash2, Music } from 'lucide-react';
 
 const GroupList = () => {
   const { groups, loading, deleteGroup, updateGroup } = useGroups();
@@ -154,14 +154,27 @@ const GroupList = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="table-fixed w-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Organization</TableHead>
-                    <TableHead>Members</TableHead>
-                    <TableHead>Songs</TableHead>
-                    {hasAnyActions && <TableHead className="text-right">Actions</TableHead>}
+                    <TableHead className="w-[42%] px-2 sm:px-4 text-base">Name</TableHead>
+                    <TableHead className="w-[28%] px-2 sm:px-4 text-base">
+                      <div className="flex items-center">
+                        <Building className="h-4 w-4" />
+                        <span className="sr-only">Organization</span>
+                      </div>
+                    </TableHead>
+                    <TableHead className="w-[15%] px-2 sm:px-4 text-base">
+                      <div className="flex items-center">
+                        <Music className="h-4 w-4" />
+                        <span className="sr-only">Songs</span>
+                      </div>
+                    </TableHead>
+                    {hasAnyActions && (
+                      <TableHead className="w-[15%] px-2 sm:px-4 text-right text-base">
+                        <span className="sr-only sm:not-sr-only">Actions</span>
+                      </TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -171,7 +184,7 @@ const GroupList = () => {
                       className="cursor-pointer"
                       onClick={() => router.push(`/groups/view?id=${group.id}`)}
                     >
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium px-2 sm:px-4 text-base">
                         <div className="flex items-center gap-2">
                           {editingGroupId === group.id ? (
                             <Input
@@ -180,12 +193,12 @@ const GroupList = () => {
                               onKeyDown={(e) => handleKeyDown(e, group.id)}
                               onBlur={() => handleUpdateName(group.id)}
                               autoFocus
-                              className="h-8 max-w-[200px]"
+                              className="h-8 min-w-[50px] w-full"
                               onClick={(e) => e.stopPropagation()}
                             />
                           ) : (
                             <>
-                              <span>{group.name}</span>
+                              <span className="line-clamp-2 break-words" title={group.name}>{group.name}</span>
                               {canManage(group) && (
                                 <Pencil 
                                   className="h-4 w-4 text-zinc-500 hover:text-white transition-colors cursor-pointer shrink-0 animate-in fade-in duration-200" 
@@ -200,19 +213,20 @@ const GroupList = () => {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="flex items-center gap-1">
-                        <Building className="h-4 w-4" />
-                        <span 
-                          className="hover:underline cursor-pointer"
-                          onClick={(e) => { e.stopPropagation(); router.push(`/organizations/view?id=${group.organizationId}`); }}
-                        >
-                          {getOrganizationName(group.organizationId)}
-                        </span>
+                      <TableCell className="px-2 sm:px-4 text-base">
+                        <div className="flex items-center gap-1 w-full">
+                          <span 
+                            className="hover:underline cursor-pointer line-clamp-2 break-words"
+                            title={getOrganizationName(group.organizationId)}
+                            onClick={(e) => { e.stopPropagation(); router.push(`/organizations/view?id=${group.organizationId}`); }}
+                          >
+                            {getOrganizationName(group.organizationId)}
+                          </span>
+                        </div>
                       </TableCell>
-                      <TableCell>{group.members.length}</TableCell>
-                      <TableCell>{group.songs.length}</TableCell>
+                      <TableCell className="px-2 sm:px-4 text-base">{group.songs.length}</TableCell>
                       {hasAnyActions && (
-                        <TableCell className="text-right">
+                        <TableCell className="text-right px-2 sm:px-4">
                           <div
                             className="flex flex-nowrap items-center justify-end gap-1 overflow-x-auto"
                             onClick={(e) => e.stopPropagation()}

@@ -7,6 +7,7 @@ import { BarChart3, Music, ChevronDown, ChevronRight, Hash, Search, FileSpreadsh
 import { useSongs } from '@/contexts/SongContext';
 import { exportToCSV, exportToPDF } from '@/lib/exportUtils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface SongStat {
   songId: string;
@@ -71,21 +72,23 @@ export default function SongStatsPanel({ organizationId }: SongStatsPanelProps) 
 
   if (stats.length === 0) {
     return (
-      <Card className="bg-zinc-900/50 border-zinc-800/60">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-zinc-100 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-violet-400" />
-            Song Usage Stats
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-zinc-500">
-            <Music className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">No song usage data yet</p>
-            <p className="text-xs mt-1 text-zinc-600">Add songs to Song Sets to see stats here</p>
-          </div>
-        </CardContent>
-      </Card>
+      <Accordion type="single" collapsible className="mt-6 border border-zinc-800 rounded-xl bg-zinc-900/20 overflow-hidden">
+        <AccordionItem value="song-stats" className="border-none">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-zinc-800/30">
+            <div className="flex items-center justify-center flex-1 gap-2">
+              <BarChart3 className="w-5 h-5 text-violet-400 shrink-0" />
+              <span className="text-xl font-semibold text-center">Song Usage Stats</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6 pt-2">
+            <div className="text-center py-8 text-zinc-500">
+              <Music className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No song usage data yet</p>
+              <p className="text-xs mt-1 text-zinc-600">Add songs to Song Sets to see stats here</p>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     );
   }
 
@@ -146,13 +149,16 @@ export default function SongStatsPanel({ organizationId }: SongStatsPanelProps) 
   };
 
   return (
-    <Card className="bg-zinc-900/50 border-zinc-800/60 mt-6">
-      <CardHeader className="pb-3">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <CardTitle className="text-base font-semibold text-zinc-100 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-violet-400" />
-            Song Usage Stats
-          </CardTitle>
+    <Accordion type="single" collapsible className="mt-6 border border-zinc-800 rounded-xl bg-zinc-900/20 overflow-hidden">
+      <AccordionItem value="song-stats" className="border-none">
+        <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-zinc-800/30">
+          <div className="flex items-center justify-center flex-1 gap-2">
+            <BarChart3 className="w-5 h-5 text-violet-400 shrink-0" />
+            <span className="text-xl font-semibold text-center">Song Usage Stats</span>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="px-6 pb-6 pt-2">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           
           <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
             <div className="relative flex-1 sm:flex-none">
@@ -224,8 +230,7 @@ export default function SongStatsPanel({ organizationId }: SongStatsPanelProps) 
             </div>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
+        <div className="space-y-2">
         {sorted.length === 0 ? (
           <div className="text-center py-6 text-zinc-500 text-sm">
             No stats found for the selected month.
@@ -307,8 +312,9 @@ export default function SongStatsPanel({ organizationId }: SongStatsPanelProps) 
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }
-

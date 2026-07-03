@@ -1,8 +1,16 @@
-
 import { ObjectId } from 'mongodb';
 import { getCollection } from '../db/connection';
 import { COLLECTIONS } from '../db/collections';
 import { Organization, OrganizationInput, OrganizationUpdateInput, MongoOrganization } from '@/lib/types';
+
+const generateJoinCode = () => {
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let result = '';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
 
 export class OrganizationModel {
   // Convert MongoDB document to application Organization type
@@ -31,7 +39,8 @@ export class OrganizationModel {
       maxCustomSongsLimit: doc.maxCustomSongsLimit,
       customInstruments: doc.customInstruments,
       musicianStatsVisibility: doc.musicianStatsVisibility || 'all',
-      statsDataRetentionMonths: doc.statsDataRetentionMonths || null
+      statsDataRetentionMonths: doc.statsDataRetentionMonths || null,
+      joinCode: doc.joinCode
     };
   }
 
@@ -47,6 +56,19 @@ export class OrganizationModel {
     }
   }
 
+  // Find an organization by join code
+  static async findByJoinCode(joinCode: string): Promise<Organization | null> {
+    try {
+      if (!joinCode) return null;
+      const collection = await getCollection(COLLECTIONS.ORGANIZATIONS);
+      const result = await collection.findOne({ joinCode: joinCode.toUpperCase() });
+      return result ? this.toOrganization(result as MongoOrganization) : null;
+    } catch (error) {
+      console.error("Error finding organization by join code:", error);
+      throw error;
+    }
+  }
+
   // Create a new organization
   static async create(orgInput: OrganizationInput, createdBy: string): Promise<Organization> {
     try {
@@ -58,6 +80,18 @@ export class OrganizationModel {
       
       const managerIds = orgInput.managerIds || [createdBy];
       const editorIds = orgInput.editorIds || [];
+      
+      // Generate a unique join code
+      let joinCode = '';
+      let isUnique = false;
+      while (!isUnique) {
+        joinCode = generateJoinCode();
+        const existing = await collection.findOne({ joinCode });
+        if (!existing) {
+          isUnique = true;
+        }
+      }
+
       const newOrg = {
         name: orgInput.name,
         members,
@@ -67,7 +101,8 @@ export class OrganizationModel {
         editorIds,
         createdAt: now,
         updatedAt: now,
-        customInstruments: []
+        customInstruments: [],
+        joinCode
       };
       
       const result = await collection.insertOne(newOrg);
@@ -82,7 +117,8 @@ export class OrganizationModel {
         createdAt: now.toISOString(),
         customInstruments: [],
         musicianStatsVisibility: 'all',
-        statsDataRetentionMonths: null
+        statsDataRetentionMonths: null,
+        joinCode
       };
     } catch (error) {
       console.error("Error creating organization:", error);

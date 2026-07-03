@@ -10,5 +10,6 @@ export const COLLECTIONS = {
   PLAYLISTS: 'playlists',
   FAVORITES: 'favorites',
   AUDIT_LOGS: 'auditLogs',
-  CHAT_HISTORY: 'chatHistory'
+  CHAT_HISTORY: 'chatHistory',
+  JOIN_REQUESTS: 'joinRequests'
 } as const;

@@ -17,10 +17,19 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { useOrganizations } from '@/contexts/OrganizationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Organization } from '@/lib/types';
-import { Building, Plus, Pencil, Trash2, Mail, Info } from 'lucide-react';
+import { Building, Plus, Pencil, Trash2, Mail, Info, Users, ListMusic, Key } from 'lucide-react';
 
 const OrganizationList = () => {
   const { organizations, loading, deleteOrganization, updateOrganization } = useOrganizations();
@@ -28,6 +37,9 @@ const OrganizationList = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingOrgId, setEditingOrgId] = useState<string | null>(null);
   const [editingOrgName, setEditingOrgName] = useState('');
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
   const router = useRouter();
 
   // Filter organizations based on search query
@@ -83,8 +95,24 @@ const OrganizationList = () => {
 
   const hasAnyActions = isSuperAdmin || filteredOrganizations.some(o => canManage(o));
 
+  const { submitJoinRequest } = useOrganizations();
+
+  const handleJoinOrganization = async () => {
+    if (!joinCode.trim()) return;
+    try {
+      setIsJoining(true);
+      await submitJoinRequest(joinCode.trim());
+      setJoinModalOpen(false);
+      setJoinCode('');
+    } catch (error) {
+      // Error is handled in context
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
   return (
-    <div className="container mx-auto px-0 sm:px-4 py-8">
+    <div className="container mx-auto px-0 sm:px-4 pt-20 md:pt-28 pb-8">
       <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x">
         <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4 sm:p-6">
           <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
@@ -113,6 +141,37 @@ const OrganizationList = () => {
                 Contact Admin to Create
               </Button>
             )}
+            <Dialog open={joinModalOpen} onOpenChange={setJoinModalOpen}>
+              <DialogTrigger asChild>
+                <Button variant="secondary" className="w-full sm:w-auto gap-2 bg-zinc-800 text-zinc-100 hover:bg-zinc-700">
+                  <Key className="h-4 w-4" />
+                  Join via Code
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px] bg-zinc-950 border border-zinc-800 text-white">
+                <DialogHeader>
+                  <DialogTitle>Join an Organization</DialogTitle>
+                  <DialogDescription className="text-zinc-400">
+                    Enter the 6-character code provided by your organization's manager to request access.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <Input
+                    placeholder="e.g., 7X9K2P"
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    className="text-center text-2xl tracking-widest uppercase bg-zinc-900 border-zinc-700 focus-visible:ring-primary h-14"
+                    maxLength={6}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setJoinModalOpen(false)}>Cancel</Button>
+                  <Button onClick={handleJoinOrganization} disabled={isJoining || joinCode.length < 6}>
+                    {isJoining ? 'Sending...' : 'Request to Join'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardHeader>
         
@@ -149,13 +208,27 @@ const OrganizationList = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="table-fixed w-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Members</TableHead>
-                    <TableHead>Groups</TableHead>
-                    {hasAnyActions && <TableHead className="text-right">Actions</TableHead>}
+                    <TableHead className="w-[42%] px-2 sm:px-4 text-base">Name</TableHead>
+                    <TableHead className="w-[21%] px-2 sm:px-4 text-base">
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4" />
+                        <span className="sr-only">Members</span>
+                      </div>
+                    </TableHead>
+                    <TableHead className="w-[22%] px-2 sm:px-4 text-base">
+                      <div className="flex items-center">
+                        <ListMusic className="h-4 w-4" />
+                        <span className="sr-only">Groups</span>
+                      </div>
+                    </TableHead>
+                    {hasAnyActions && (
+                      <TableHead className="w-[15%] px-2 sm:px-4 text-right text-base">
+                        <span className="sr-only sm:not-sr-only">Actions</span>
+                      </TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -165,7 +238,7 @@ const OrganizationList = () => {
                       className="cursor-pointer"
                       onClick={() => router.push(`/organizations/view?id=${organization.id}`)}
                     >
-                       <TableCell className="font-medium">
+                      <TableCell className="font-medium px-2 sm:px-4 text-base">
                         <div className="flex items-center gap-2">
                           {editingOrgId === organization.id ? (
                             <Input
@@ -174,12 +247,12 @@ const OrganizationList = () => {
                               onKeyDown={(e) => handleKeyDown(e, organization.id)}
                               onBlur={() => handleUpdateName(organization.id)}
                               autoFocus
-                              className="h-8 max-w-[200px]"
+                              className="h-8 min-w-[50px] w-full"
                               onClick={(e) => e.stopPropagation()}
                             />
                           ) : (
                             <>
-                              <span>{organization.name}</span>
+                              <span className="line-clamp-2 break-words" title={organization.name}>{organization.name}</span>
                               {canManage(organization) && (
                                 <Pencil 
                                   className="h-4 w-4 text-zinc-500 hover:text-white transition-colors cursor-pointer shrink-0 animate-in fade-in duration-200" 
@@ -194,10 +267,10 @@ const OrganizationList = () => {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{organization.members.length}</TableCell>
-                      <TableCell>{organization.groups.length}</TableCell>
+                      <TableCell className="px-2 sm:px-4 text-base">{organization.members.length}</TableCell>
+                      <TableCell className="px-2 sm:px-4 text-base">{organization.groups.length}</TableCell>
                       {hasAnyActions && (
-                        <TableCell className="text-right">
+                        <TableCell className="text-right px-2 sm:px-4">
                           <div
                             className="flex flex-nowrap items-center justify-end gap-1 overflow-x-auto"
                             onClick={(e) => e.stopPropagation()}

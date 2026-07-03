@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,12 +14,32 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, X, User, LogOut, Settings, Music, Users, Building2, Heart, ListMusic, Info } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, Music, Users, Building2, Heart, ListMusic, Info, Plus } from 'lucide-react';
 const Navigation = () => {
   const { currentUser, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolledDown, setIsScrolledDown] = useState(false);
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY > lastScrollY && currentScrollY > 80) {
+        setIsScrolledDown(true);
+      } else {
+        setIsScrolledDown(false);
+      }
+      
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -51,14 +71,22 @@ const Navigation = () => {
     { name: 'Orgs', path: '/organizations', icon: <Building2 className="h-4 w-4" /> },
   ];
   return (
-    <header className="bg-background border-b border-border">
-      <div className="container mx-auto px-4 flex justify-between items-center h-16">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="text-xl font-bold">
-            Grace Music
-          </Link>
+    <header 
+      className={`fixed top-0 left-0 right-0 z-50 w-full transition-[transform,opacity] duration-300 ease-in-out md:pt-4 md:px-4 pointer-events-none ${
+        isScrolledDown 
+          ? '-translate-y-24 opacity-0' 
+          : 'translate-y-0 opacity-100'
+      }`}
+    >
+      <div className="w-full md:max-w-5xl mx-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b md:border border-border/40 md:shadow-lg md:rounded-full pointer-events-auto">
+        <div className="container mx-auto px-4 md:px-6 flex justify-between items-center h-16">
+          <div className="flex items-center md:flex-1">
+            <Link href="/" className="text-xl font-bold">
+              Grace Music
+            </Link>
+          </div>
           
-          <nav className="hidden md:flex items-center gap-4">
+          <nav className="hidden md:flex items-center justify-center gap-6 md:flex-auto">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
@@ -74,9 +102,8 @@ const Navigation = () => {
               </Link>
             ))}
           </nav>
-        </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 md:flex-1 justify-end">
           
 
 
@@ -85,11 +112,14 @@ const Navigation = () => {
           {currentUser ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Button variant="ghost" className="relative h-10 w-auto rounded-full flex items-center gap-2 pl-1 pr-3 md:pr-4 border border-transparent md:border-border/50 hover:bg-zinc-800/50 transition-colors">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={currentUser.photoURL || ''} alt={currentUser.displayName || currentUser.name} />
                     <AvatarFallback>{getInitials(currentUser.displayName || currentUser.name || 'User')}</AvatarFallback>
                   </Avatar>
+                  <span className="text-sm font-medium hidden md:block">
+                    {currentUser.displayName?.split(' ')[0] || currentUser.name?.split(' ')[0] || 'User'}
+                  </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -108,6 +138,12 @@ const Navigation = () => {
                   <Info className="mr-2 h-4 w-4" />
                   <span>About & Contact</span>
                 </DropdownMenuItem>
+                {currentUser.role !== 'user' && (
+                  <DropdownMenuItem onClick={() => router.push('/songs/new')}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    <span>Add Song</span>
+                  </DropdownMenuItem>
+                )}
                 {currentUser.role === 'super_admin' && (
                   <DropdownMenuItem onClick={() => router.push('/admin')}>
                     <Settings className="mr-2 h-4 w-4" />
@@ -138,6 +174,7 @@ const Navigation = () => {
             </div>
           )}
         </div>
+      </div>
       </div>
     </header>
   );

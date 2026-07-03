@@ -7,14 +7,12 @@ import { useSongs } from '@/contexts/SongContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { Song } from '@/lib/types';
-import { ChangePasswordModal } from '@/components/ChangePasswordModal';
 
 
 const Profile = () => {
   const { currentUser, logout } = useAuth();
   const { songs } = useSongs();
   const router = useRouter();
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   const userSongs = useMemo(() => {
     if (!currentUser) return [];
@@ -59,9 +57,7 @@ const Profile = () => {
             </div>
             
             <div className="flex gap-4 mt-4">
-              <Button variant="outline" onClick={() => setIsPasswordModalOpen(true)}>
-                Change Password
-              </Button>
+
               <Button variant="destructive" onClick={handleLogout}>
                 Logout
               </Button>
@@ -69,10 +65,7 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        <ChangePasswordModal 
-          open={isPasswordModalOpen} 
-          onOpenChange={setIsPasswordModalOpen} 
-        />
+
 
         {(currentUser.role === 'super_admin' || currentUser.role === 'manager') && (
           <Card>

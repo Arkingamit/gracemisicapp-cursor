@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AddToGroupButton from '@/components/AddToGroupButton';
 import LikeButton from '@/components/LikeButton';
 import AddToPlaylistDialog from '@/components/AddToPlaylistDialog';
-import { Pencil, Trash2, Globe, Lock, X, ArrowLeft, Heart, ListMusic, Copy, ChevronLeft, Plus, Music } from 'lucide-react';
+import { Pencil, Trash2, Globe, Lock, X, ArrowLeft, Heart, ListMusic, Copy, ChevronLeft, Plus, Music, MoreVertical } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { detectKey } from '@/lib/keyDetection';
 import { getKeyDisplayName } from '@/lib/chordUtils';
@@ -33,6 +33,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const MUSICAL_KEYS = [
   // Major keys
@@ -73,9 +79,40 @@ const SongList = () => {
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
-  const [showActionBar, setShowActionBar] = useState(true);
+  const [isScrolledDown, setIsScrolledDown] = useState(false);
+
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Long press state
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isLongPressRef = useRef(false);
+
+  const handleTouchStart = (id: string) => {
+    isLongPressRef.current = false;
+    if (pressTimerRef.current) clearTimeout(pressTimerRef.current);
+    pressTimerRef.current = setTimeout(() => {
+      isLongPressRef.current = true;
+      setExpandedRow(id);
+      if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(50);
+      }
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (pressTimerRef.current) clearTimeout(pressTimerRef.current);
+    setExpandedRow(null);
+  };
+
+  const handleRowClick = (songId: string) => {
+    if (isLongPressRef.current) {
+      isLongPressRef.current = false;
+      return;
+    }
+    router.push(`/songs/view?id=${songId}`);
+  };
 
   // Read genre or search from URL on mount / param change
   useEffect(() => {
@@ -113,17 +150,18 @@ const SongList = () => {
     }
   };
 
-  // Scroll detection for hiding/showing the actions bar
+  // Scroll detection for hiding/showing the filter bar
   useEffect(() => {
     let lastScrollY = window.scrollY;
     
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
-      if (currentScrollY > lastScrollY && currentScrollY > 20) {
-        setShowActionBar(false);
-      } else if (currentScrollY < lastScrollY) {
-        setShowActionBar(true);
+      // Only hide if we've scrolled down far enough that the bar is sticky
+      if (currentScrollY > lastScrollY && currentScrollY > 250) {
+        setIsScrolledDown(true);
+      } else {
+        setIsScrolledDown(false);
       }
       
       lastScrollY = currentScrollY;
@@ -152,23 +190,29 @@ const SongList = () => {
 
   // Filter songs based on genre filter, search query, key filter + tab filter
   const filteredSongs = songs.filter(song => {
-    // Genre filter takes priority when set
-    if (genreFilter) {
-      if (!song.genre.some(g => g.toLowerCase() === genreFilter.toLowerCase())) return false;
-    } else if (languageFilter) {
-      if (song.language?.toLowerCase() !== languageFilter.toLowerCase()) return false;
-    } else {
-      const q = searchQuery.toLowerCase().trim();
-      const songKey = songKeys[song.id] || '';
-      
-      // key dropdown filter (handle grouped keys e.g., 'C# / Db')
-      if (keyFilter !== 'all') {
-        const allowedKeys = keyFilter.split(/ \/ /);
-        if (!allowedKeys.includes(songKey)) {
-          return false;
-        }
+    // 1. Genre filter
+    if (genreFilter && !song.genre.some(g => g.toLowerCase() === genreFilter.toLowerCase())) {
+      return false;
+    }
+
+    // 2. Language filter
+    if (languageFilter && song.language?.toLowerCase() !== languageFilter.toLowerCase()) {
+      return false;
+    }
+
+    const songKey = songKeys[song.id] || '';
+    
+    // 3. Key filter
+    if (keyFilter !== 'all') {
+      const allowedKeys = keyFilter.split(/ \/ /);
+      if (!allowedKeys.includes(songKey)) {
+        return false;
       }
-      
+    }
+
+    // 4. Search query
+    const q = searchQuery.toLowerCase().trim();
+    if (q) {
       let matchesSearch = false;
       if (q.startsWith('key:')) {
         // Explicit key search (e.g. "key:G")
@@ -185,9 +229,11 @@ const SongList = () => {
       if (!matchesSearch) return false;
     }
 
+    // 5. Tab filter
     if (activeFilter === 'global') return !song.organizationId;
     if (activeFilter === 'org') return !!song.organizationId;
-    return true; // 'all'
+    
+    return true; // matches all active filters
   });
 
   const handleDeleteSong = async (id: string) => {
@@ -218,7 +264,7 @@ const SongList = () => {
   return (
     <div className="min-h-screen bg-transparent pb-20">
       {/* Header / Banner Area */}
-      <div className="bg-gradient-to-b from-primary/10 via-primary/5 to-zinc-950 pt-8 pb-6">
+      <div className="bg-gradient-to-b from-primary/10 via-primary/5 to-zinc-950 pt-20 md:pt-28 pb-6">
         <div className="container mx-auto px-4">
           {(genreFilter || languageFilter) && (
             <Button 
@@ -252,8 +298,10 @@ const SongList = () => {
       </div>
 
       <div 
-        className={`sticky top-0 z-20 bg-transparent/80 backdrop-blur-md border-b border-white/5 py-4 transition-transform duration-150 ${
-          showActionBar ? 'translate-y-0' : '-translate-y-full'
+        className={`sticky top-0 z-20 bg-zinc-950/90 backdrop-blur-md border-b border-white/5 py-4 transition-all duration-300 ease-in-out ${
+          isScrolledDown 
+            ? '-translate-y-full opacity-0 pointer-events-none' 
+            : 'translate-y-0 opacity-100 pointer-events-auto'
         }`}
       >
         <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -275,16 +323,32 @@ const SongList = () => {
             ))}
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            <Input
-              placeholder="Search songs..."
-              className="w-full sm:w-[200px] border-zinc-800 bg-zinc-900/60 text-zinc-100 rounded-full h-9 px-4 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
+          <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:items-center">
+            {/* Search and Add Song Row */}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Input
+                placeholder="Search songs..."
+                className="flex-1 sm:w-[200px] border-zinc-800 bg-zinc-900/60 text-zinc-100 rounded-full h-9 px-4 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {currentUser && currentUser.role !== 'user' && (
+                <Button 
+                  onClick={() => router.push('/songs/new')} 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-9 px-0 sm:w-auto sm:px-4 shrink-0 rounded-full border-zinc-800 bg-zinc-900/60 text-zinc-100 hover:bg-zinc-800 hover:text-white transition-all font-medium h-9 flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <span className="hidden sm:inline">Add Song</span>
+                </Button>
+              )}
+            </div>
+
+            {/* Filters Row */}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <Select value={languageFilter || 'all'} onValueChange={handleLanguageChange}>
-                <SelectTrigger className="w-[120px] shrink-0 border-zinc-800 bg-zinc-900/60 text-zinc-100 rounded-full h-9 font-medium hover:bg-zinc-800 transition-colors">
+                <SelectTrigger className="flex-1 sm:w-[120px] shrink-0 border-zinc-800 bg-zinc-900/60 text-zinc-100 rounded-full h-9 font-medium hover:bg-zinc-800 transition-colors px-2 sm:px-4">
                   <SelectValue placeholder="Language" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-900 border border-zinc-800 text-zinc-100">
@@ -295,7 +359,7 @@ const SongList = () => {
                 </SelectContent>
               </Select>
               <Select value={keyFilter} onValueChange={setKeyFilter}>
-                <SelectTrigger className="w-[110px] shrink-0 border-zinc-800 bg-zinc-900/60 text-zinc-100 rounded-full h-9 font-medium hover:bg-zinc-800 transition-colors">
+                <SelectTrigger className="flex-1 sm:w-[110px] shrink-0 border-zinc-800 bg-zinc-900/60 text-zinc-100 rounded-full h-9 font-medium hover:bg-zinc-800 transition-colors px-2 sm:px-4">
                   <SelectValue placeholder="Key" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-900 border border-zinc-800 text-zinc-100">
@@ -305,23 +369,12 @@ const SongList = () => {
                   ))}
                 </SelectContent>
               </Select>
-              {currentUser && currentUser.role !== 'user' && (
-                <Button 
-                  onClick={() => router.push('/songs/new')} 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-2 rounded-full border-zinc-800 bg-zinc-900/60 text-zinc-100 hover:bg-zinc-800 hover:text-white transition-all font-medium h-9 px-4 shrink-0"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Song</span>
-                </Button>
-              )}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-0 sm:px-4 py-8">
+      <div className="container mx-auto px-2 sm:px-4 py-8">
           {loading ? (
             <div className="text-center py-4">Loading songs...</div>
           ) : filteredSongs.length === 0 ? (
@@ -333,111 +386,119 @@ const SongList = () => {
                   : 'No songs available. Add some songs to get started!'}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="overflow-x-auto border border-zinc-800/60 rounded-xl bg-zinc-950/30">
+              <Table className="table-fixed w-full border-collapse">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Artist</TableHead>
-                    <TableHead>Key</TableHead>
-                    <TableHead>Language</TableHead>
-                    <TableHead>Genre</TableHead>
-                    {hasActions && <TableHead className="text-right">Actions</TableHead>}
+                    <TableHead className="w-[42%] px-2 sm:px-4 text-base">Title</TableHead>
+                    <TableHead className="w-[28%] px-2 sm:px-4 text-base">Artist</TableHead>
+                    <TableHead className="w-[15%] px-2 sm:px-4 text-base">Key</TableHead>
+                    {hasActions && (
+                      <TableHead className="w-[15%] px-2 sm:px-4 text-right text-base">
+                        <span className="sr-only sm:not-sr-only">Actions</span>
+                      </TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredSongs.map((song) => (
                     <TableRow
                       key={song.id}
-                      className="cursor-pointer"
-                      onClick={() => router.push(`/songs/view?id=${song.id}`)}
+                      className="cursor-pointer select-none"
+                      onClick={() => handleRowClick(song.id)}
+                      onTouchStart={() => handleTouchStart(song.id)}
+                      onTouchEnd={handleTouchEnd}
+                      onTouchCancel={handleTouchEnd}
+                      onMouseDown={() => handleTouchStart(song.id)}
+                      onMouseUp={handleTouchEnd}
+                      onMouseLeave={handleTouchEnd}
+                      onContextMenu={(e) => {
+                        if (isLongPressRef.current) e.preventDefault();
+                      }}
                     >
-                      <TableCell className="font-medium">{song.title}</TableCell>
-                      <TableCell>{song.artist}</TableCell>
-                      <TableCell className="text-muted-foreground">{getKeyDisplayName(songKeys[song.id]) || '-'}</TableCell>
-                      <TableCell>{song.language || 'English'}</TableCell>
-                      <TableCell>{song.genre.join(', ')}</TableCell>
+                      <TableCell className="font-medium px-2 sm:px-4 text-base">
+                        <div className={expandedRow === song.id ? "whitespace-normal break-words" : "line-clamp-2"} title={song.title}>
+                          {song.title}
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-2 sm:px-4 text-base">
+                        <div className={expandedRow === song.id ? "whitespace-normal break-words" : "line-clamp-2"} title={song.artist}>
+                          {song.artist}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap px-2 sm:px-4 text-base">
+                        {getKeyDisplayName(songKeys[song.id]) || '-'}
+                      </TableCell>
                       {hasActions && (
-                        <TableCell className="text-right">
-                          <div
-                            className="flex flex-nowrap items-center justify-end gap-1 overflow-x-auto"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {currentUser && (
-                              <>
-                                <LikeButton songId={song.id} size="icon" className="h-8 w-8 shrink-0" />
-                                <AddToPlaylistDialog 
-                                  songId={song.id} 
-                                  trigger={
-                                    <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
-                                      <ListMusic className="h-4 w-4" />
-                                    </Button>
-                                  }
-                                />
-                                <AddToGroupButton 
-                                  songId={song.id} 
-                                  songTitle={song.title} 
-                                />
-                                <CopyToOrgButton
-                                  songId={song.id}
-                                  songTitle={song.title}
-                                  songOrgId={song.organizationId}
-                                  variant="icon"
-                                />
-                              </>
-                            )}
-                            {canEdit(song.createdBy) && (
-                              <>
-                                <Button 
-                                  variant="outline" 
-                                  size="icon"
-                                  className="h-8 w-8 shrink-0"
-                                  title="Edit"
-                                  onClick={() => router.push(`/songs/edit?id=${song.id}`)}
-                                >
-                                  <Pencil className="h-4 w-4" />
+                        <TableCell className="text-right px-2 sm:px-4">
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreVertical className="h-4 w-4 text-zinc-400" />
                                 </Button>
-                                <Button 
-                                  variant="destructive" 
-                                  size="icon"
-                                  className="h-8 w-8 shrink-0"
-                                  title="Delete"
-                                  onClick={() => handleDeleteSong(song.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                            {currentUser && currentUser.role === 'super_admin' && song.organizationId && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-8 w-8 shrink-0 bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200"
-                                  title="Transfer to Global (Moves the song)"
-                                  onClick={() => {
-                                    if (confirm(`Are you sure you want to MOVE "${song.title}" to the global library? It will no longer belong to this organization.`)) {
-                                      makeSongGlobal(song.id);
-                                    }
-                                  }}
-                                >
-                                  <Globe className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-8 w-8 shrink-0 bg-green-50 hover:bg-green-100 text-green-600 border-green-200"
-                                  title="Copy to Global (Duplicates the song)"
-                                  onClick={() => {
-                                    if (confirm(`Are you sure you want to COPY "${song.title}" to the global library? A duplicate will be created in the public library.`)) {
-                                      copySongToGlobal(song.id);
-                                    }
-                                  }}
-                                >
-                                  <Copy className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-zinc-100">
+                                {currentUser && (
+                                  <>
+                                    <div className="flex items-center gap-2 p-2 pb-0">
+                                      <LikeButton songId={song.id} size="icon" className="h-8 w-8 shrink-0" />
+                                      <AddToPlaylistDialog 
+                                        songId={song.id} 
+                                        trigger={
+                                          <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
+                                            <ListMusic className="h-4 w-4" />
+                                          </Button>
+                                        }
+                                      />
+                                      <AddToGroupButton 
+                                        songId={song.id} 
+                                        songTitle={song.title} 
+                                      />
+                                      <CopyToOrgButton
+                                        songId={song.id}
+                                        songTitle={song.title}
+                                        songOrgId={song.organizationId}
+                                        variant="icon"
+                                      />
+                                    </div>
+                                    <div className="h-px bg-zinc-800 my-2" />
+                                  </>
+                                )}
+                                {canEdit(song.createdBy) && (
+                                  <>
+                                    <DropdownMenuItem onClick={() => router.push(`/songs/edit?id=${song.id}`)}>
+                                      <Pencil className="mr-2 h-4 w-4" />
+                                      <span>Edit</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleDeleteSong(song.id)} className="text-red-400 focus:text-red-400 focus:bg-red-500/10">
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      <span>Delete</span>
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                                {currentUser && currentUser.role === 'super_admin' && song.organizationId && (
+                                  <>
+                                    <DropdownMenuItem onClick={() => {
+                                      if (confirm(`Are you sure you want to MOVE "${song.title}" to the global library? It will no longer belong to this organization.`)) {
+                                        makeSongGlobal(song.id);
+                                      }
+                                    }}>
+                                      <Globe className="mr-2 h-4 w-4 text-blue-400" />
+                                      <span>Move to Global</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => {
+                                      if (confirm(`Are you sure you want to COPY "${song.title}" to the global library? A duplicate will be created in the public library.`)) {
+                                        copySongToGlobal(song.id);
+                                      }
+                                    }}>
+                                      <Copy className="mr-2 h-4 w-4 text-green-400" />
+                                      <span>Copy to Global</span>
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </TableCell>
                       )}

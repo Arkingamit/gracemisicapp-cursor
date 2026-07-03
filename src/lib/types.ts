@@ -202,6 +202,7 @@ export interface Organization {
   customInstruments?: string[];
   musicianStatsVisibility?: 'all' | 'editors' | 'managers';
   statsDataRetentionMonths?: number | null;
+  joinCode?: string;
 }
 
 export interface OrganizationInput {
@@ -209,6 +210,7 @@ export interface OrganizationInput {
   members: string[];
   managerIds?: string[];
   editorIds?: string[];
+  joinCode?: string;
 }
 
 export interface OrganizationUpdateInput {
@@ -239,6 +241,17 @@ export interface MongoOrganization {
   customInstruments?: string[];
   musicianStatsVisibility?: 'all' | 'editors' | 'managers';
   statsDataRetentionMonths?: number | null;
+  joinCode?: string;
+}
+
+export interface JoinRequest {
+  id: string;
+  organizationId: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
 }
 
 export interface Message {

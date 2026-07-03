@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { Organization, OrganizationInput, OrganizationUpdateInput } from '@/lib/types';
+import { Organization, OrganizationInput, OrganizationUpdateInput, JoinRequest } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, authFetch } from './AuthContext';
 import { getFullUrl } from '@/lib/api';
@@ -35,6 +35,10 @@ interface OrganizationContextType {
   addInstrument: (organizationId: string, instrument: string) => Promise<void>;
   removeInstrument: (organizationId: string, instrument: string) => Promise<void>;
   allowUserOrgCreation: boolean;
+  submitJoinRequest: (joinCode: string) => Promise<void>;
+  getJoinRequests: (organizationId: string) => Promise<JoinRequest[]>;
+  approveJoinRequest: (organizationId: string, requestId: string) => Promise<void>;
+  rejectJoinRequest: (organizationId: string, requestId: string) => Promise<void>;
 }
 
 const OrganizationContext = createContext<OrganizationContextType | null>(null);
@@ -365,6 +369,67 @@ export const OrganizationProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const submitJoinRequest = async (joinCode: string) => {
+    try {
+      setLoading(true);
+      const res = await authFetch('/api/organizations/join-request', {
+        method: 'POST',
+        body: JSON.stringify({ joinCode }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to submit join request');
+      toast({ title: 'Request Sent', description: 'Your request to join has been sent to the organization managers.' });
+    } catch (error) {
+      toast({ title: 'Join Request Failed', description: error instanceof Error ? error.message : 'An unknown error occurred', variant: 'destructive' });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getJoinRequests = async (organizationId: string): Promise<JoinRequest[]> => {
+    try {
+      const res = await authFetch(`/api/organizations/${organizationId}/requests`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch join requests');
+      return data.requests;
+    } catch (error) {
+      console.error('Failed to get join requests', error);
+      return [];
+    }
+  };
+
+  const approveJoinRequest = async (organizationId: string, requestId: string) => {
+    try {
+      const res = await authFetch(`/api/organizations/${organizationId}/requests/${requestId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'approved' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to approve request');
+      toast({ title: 'Request Approved', description: 'The user has been added to the organization.' });
+      await refreshOrganizations(); // Refresh to show new member
+    } catch (error) {
+      toast({ title: 'Approval Failed', description: error instanceof Error ? error.message : 'An unknown error occurred', variant: 'destructive' });
+      throw error;
+    }
+  };
+
+  const rejectJoinRequest = async (organizationId: string, requestId: string) => {
+    try {
+      const res = await authFetch(`/api/organizations/${organizationId}/requests/${requestId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'rejected' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to reject request');
+      toast({ title: 'Request Rejected', description: 'The join request was rejected.' });
+    } catch (error) {
+      toast({ title: 'Rejection Failed', description: error instanceof Error ? error.message : 'An unknown error occurred', variant: 'destructive' });
+      throw error;
+    }
+  };
+
   const value = {
     organizations,
     loading,
@@ -384,7 +449,11 @@ export const OrganizationProvider = ({ children }: { children: ReactNode }) => {
     refreshOrganizations,
     addInstrument,
     removeInstrument,
-    allowUserOrgCreation
+    allowUserOrgCreation,
+    submitJoinRequest,
+    getJoinRequests,
+    approveJoinRequest,
+    rejectJoinRequest
   };
 
   return <OrganizationContext.Provider value={value}>{children}</OrganizationContext.Provider>;

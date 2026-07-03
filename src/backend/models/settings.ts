@@ -13,6 +13,7 @@ export interface SystemSettings {
   max_collections_per_user?: number | null;
   max_songs_per_collection?: number | null;
   groq_api_key?: string;
+  ai_model?: string;
   // App version control (force update mechanism)
   app_minimum_version?: string;
   app_latest_version?: string;
@@ -43,6 +44,7 @@ export class SettingsModel {
           max_collections_per_user: 20,
           max_songs_per_collection: 50,
           groq_api_key: '',
+          ai_model: 'llama-3.3-70b-versatile',
           app_minimum_version: '0.1.0',
           app_latest_version: '0.1.0',
           app_update_url_android: '',
@@ -65,6 +67,7 @@ export class SettingsModel {
         max_collections_per_user: settings.max_collections_per_user ?? null,
         max_songs_per_collection: settings.max_songs_per_collection ?? null,
         groq_api_key: settings.groq_api_key ?? '',
+        ai_model: settings.ai_model || 'llama-3.3-70b-versatile',
         app_minimum_version: settings.app_minimum_version ?? '0.1.0',
         app_latest_version: settings.app_latest_version ?? '0.1.0',
         app_update_url_android: settings.app_update_url_android ?? '',
@@ -85,6 +88,7 @@ export class SettingsModel {
         max_collections_per_user: null,
         max_songs_per_collection: null,
         groq_api_key: '',
+        ai_model: 'llama-3.3-70b-versatile',
         app_minimum_version: '0.1.0',
         app_latest_version: '0.1.0',
         app_update_url_android: '',

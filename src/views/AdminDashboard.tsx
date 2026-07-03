@@ -45,6 +45,13 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -1981,6 +1988,53 @@ const AdminDashboard = () => {
                       onClick={() => handleUpdateSettings({ groq_api_key: systemSettings.groq_api_key })}
                     >
                       Save Key
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 p-6 rounded-2xl bg-white/5 border border-white/5 transition-all hover:bg-white/[0.07]">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-purple-400" />
+                      <Label className="text-base font-bold text-white cursor-pointer" htmlFor="ai-model">
+                        Groq AI Model
+                      </Label>
+                    </div>
+                    <p className="text-sm text-zinc-400 max-w-md">
+                      Select a preset or enter the exact model ID for Grace Copilot (e.g. 'llama-3.3-70b-versatile', 'qwen-2.5-32b').
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 max-w-md mt-2">
+                    <Input
+                      id="ai-model"
+                      type="text"
+                      placeholder="llama-3.3-70b-versatile"
+                      value={systemSettings.ai_model || ''}
+                      onChange={(e) => setSystemSettings((s: any) => ({ ...s, ai_model: e.target.value }))}
+                      className="bg-zinc-900 border-white/10 flex-1 min-w-0"
+                    />
+                    <Select 
+                      value={systemSettings.ai_model || 'llama-3.3-70b-versatile'} 
+                      onValueChange={(val) => setSystemSettings((s: any) => ({ ...s, ai_model: val }))}
+                    >
+                      <SelectTrigger className="w-full sm:w-[150px] bg-zinc-900 border-white/10 text-white flex-shrink-0">
+                        <SelectValue placeholder="Presets" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                        <SelectItem value="llama-3.3-70b-versatile">Llama 3.3 70B</SelectItem>
+                        <SelectItem value="llama-3.1-8b-instant">Llama 3.1 8B</SelectItem>
+                        <SelectItem value="mixtral-8x7b-32768">Mixtral 8x7B</SelectItem>
+                        <SelectItem value="gemma2-9b-it">Gemma 2 9B</SelectItem>
+                        <SelectItem value="qwen-2.5-32b">Qwen 2.5 32B</SelectItem>
+                        <SelectItem value="deepseek-r1-distill-llama-70b">DeepSeek R1 70B</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      variant="secondary" 
+                      onClick={() => handleUpdateSettings({ ai_model: systemSettings.ai_model })}
+                      className="flex-shrink-0"
+                    >
+                      Save Model
                     </Button>
                   </div>
                 </div>

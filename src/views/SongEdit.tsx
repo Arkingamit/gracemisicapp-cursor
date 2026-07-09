@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import SongForm from '@/components/SongForm';
+import SongForm from '@/components/songs/SongForm';
 import { useSongs } from '@/contexts/SongContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Song } from '@/lib/types';

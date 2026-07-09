@@ -1,5 +1,5 @@
 
-import OrganizationList from '@/components/OrganizationList';
+import OrganizationList from '@/components/organizations/OrganizationList';
 
 const OrganizationListPage = () => {
   return (

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { UserModel } from '@/backend/models/user';
+import { UserModel } from '@/server/models/user';
 
 // GET /api/admin/seed-users - Setup default admin and editor accounts
 // This should only be used for initial setup or debugging
@@ -33,3 +33,4 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

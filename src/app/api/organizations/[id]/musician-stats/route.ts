@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
-import { GroupModel } from '@/backend/models/group';
-import { OrganizationModel } from '@/backend/models/organization';
-import { UserModel } from '@/backend/models/user';
+import { GroupModel } from '@/server/models/group';
+import { OrganizationModel } from '@/server/models/organization';
+import { UserModel } from '@/server/models/user';
 import { getAuthUser } from '@/lib/auth';
 
 // GET /api/organizations/[id]/musician-stats — Get aggregated musician stats

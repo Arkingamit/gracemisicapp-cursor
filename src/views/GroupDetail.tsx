@@ -7,12 +7,12 @@ import { Group, Song } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import GroupSongList from '@/components/GroupSongList';
-import AddSongsToGroup from '@/components/AddSongsToGroup';
-import PdfPreviewModal from '@/components/PdfPreviewModal';
+import GroupSongList from '@/components/groups/GroupSongList';
+import AddSongsToGroup from '@/components/groups/AddSongsToGroup';
+import PdfPreviewModal from '@/components/songs/PdfPreviewModal';
 import { Plus, Building, FileText, ChevronLeft, History, ListMusic, Edit2, Share2, MessageCircle } from 'lucide-react';
 import { useSongs } from '@/contexts/SongContext';
-import MusicianAssignmentPanel from '@/components/MusicianAssignmentPanel';
+import MusicianAssignmentPanel from '@/components/groups/MusicianAssignmentPanel';
 import { useToast } from '@/hooks/use-toast';
 
 const GroupDetail = () => {

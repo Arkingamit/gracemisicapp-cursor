@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { GenreModel } from '@/backend/models/genre';
-import { UserModel } from '@/backend/models/user';
+import { GenreModel } from '@/server/models/genre';
+import { UserModel } from '@/server/models/user';
 import { verifyToken } from '@/lib/auth';
 
 export async function GET() {
@@ -53,3 +53,4 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import OrganizationForm from '@/components/OrganizationForm';
+import OrganizationForm from '@/components/organizations/OrganizationForm';
 import { useOrganizations } from '@/contexts/OrganizationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Organization } from '@/lib/types';

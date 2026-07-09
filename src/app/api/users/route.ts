@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { UserModel } from '@/backend/models/user';
+import { UserModel } from '@/server/models/user';
 import { getAuthUser, authError } from '@/lib/auth';
 
 // GET /api/users - List all users (super_admin only)
@@ -23,3 +23,4 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

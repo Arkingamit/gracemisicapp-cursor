@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { UserModel } from '@/backend/models/user';
-import { OrganizationModel } from '@/backend/models/organization';
+import { UserModel } from '@/server/models/user';
+import { OrganizationModel } from '@/server/models/organization';
 import { SYSTEM_ADMIN_EMAIL } from '@/lib/constants';
 import { verifyToken } from '@/lib/auth';
 

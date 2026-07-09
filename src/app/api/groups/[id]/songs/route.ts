@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server';
-import { GroupModel } from '@/backend/models/group';
-import { OrganizationModel } from '@/backend/models/organization';
-import { SongModel } from '@/backend/models/song';
-import { SettingsModel } from '@/backend/models/settings';
+import { GroupModel } from '@/server/models/group';
+import { OrganizationModel } from '@/server/models/organization';
+import { SongModel } from '@/server/models/song';
+import { SettingsModel } from '@/server/models/settings';
 import { getAuthUser, authError } from '@/lib/auth';
-import { AuditLogModel } from '@/backend/models/auditLog';
-import { COLLECTIONS } from '@/backend/db/collections';
+import { AuditLogModel } from '@/server/models/auditLog';
+import { COLLECTIONS } from '@/server/db/collections';
 
 // POST /api/groups/[id]/songs - Add a song to the group
 export async function POST(

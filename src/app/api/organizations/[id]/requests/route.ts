@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { OrganizationModel } from '@/backend/models/organization';
-import { JoinRequestModel } from '@/backend/models/joinRequest';
+import { OrganizationModel } from '@/server/models/organization';
+import { JoinRequestModel } from '@/server/models/joinRequest';
 import { getAuthUser, authError } from '@/lib/auth';
 
 export async function GET(

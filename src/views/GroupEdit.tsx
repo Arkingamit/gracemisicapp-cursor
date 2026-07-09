@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import GroupForm from '@/components/GroupForm';
+import GroupForm from '@/components/groups/GroupForm';
 import { useGroups } from '@/contexts/groups';
 import { useAuth } from '@/contexts/AuthContext';
 import { Group } from '@/lib/types';

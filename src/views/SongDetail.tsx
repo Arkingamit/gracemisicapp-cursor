@@ -2,9 +2,9 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import SongDisplay from '@/components/SongDisplay';
-import AddToGroupButton from '@/components/AddToGroupButton';
-import PdfPreviewModal from '@/components/PdfPreviewModal';
+import SongDisplay from '@/components/songs/SongDisplay';
+import AddToGroupButton from '@/components/groups/AddToGroupButton';
+import PdfPreviewModal from '@/components/songs/PdfPreviewModal';
 import { useSongs } from '@/contexts/SongContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -13,7 +13,7 @@ import { getTransposedKeyName } from '@/lib/chordUtils';
 import { detectKey } from '@/lib/keyDetection';
 import { Badge } from '@/components/ui/badge';
 import { Download, ChevronLeft, History, FileText, Edit2 } from 'lucide-react';
-import CopyToOrgButton from '@/components/CopyToOrgButton';
+import CopyToOrgButton from '@/components/organizations/CopyToOrgButton';
 
 const SongDetail = () => {
   const searchParams = useSearchParams();

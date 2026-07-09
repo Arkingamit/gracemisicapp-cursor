@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
-import { UserModel } from '@/backend/models/user';
+import { UserModel } from '@/server/models/user';
 import { createToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
@@ -33,3 +33,4 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server';
-import { GroupModel } from '@/backend/models/group';
-import { OrganizationModel } from '@/backend/models/organization';
+import { GroupModel } from '@/server/models/group';
+import { OrganizationModel } from '@/server/models/organization';
 import { getAuthUser, authError } from '@/lib/auth';
-import { AuditLogModel } from '@/backend/models/auditLog';
-import { COLLECTIONS } from '@/backend/db/collections';
-import { SettingsModel } from '@/backend/models/settings';
-import { getCollection } from '@/backend/db/connection';
+import { AuditLogModel } from '@/server/models/auditLog';
+import { COLLECTIONS } from '@/server/db/collections';
+import { SettingsModel } from '@/server/models/settings';
+import { getCollection } from '@/server/db/connection';
 
 // GET /api/groups - List groups with visibility restrictions
 export async function GET(request: NextRequest) {
@@ -103,3 +103,4 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

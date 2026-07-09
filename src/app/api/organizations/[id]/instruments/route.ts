@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { OrganizationModel } from '@/backend/models/organization';
-import { GroupModel } from '@/backend/models/group';
+import { OrganizationModel } from '@/server/models/organization';
+import { GroupModel } from '@/server/models/group';
 import { getAuthUser } from '@/lib/auth';
 
 // POST /api/organizations/[id]/instruments — Add a new custom instrument

@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
-import { SongModel } from '@/backend/models/song';
+import { SongModel } from '@/server/models/song';
 import { getAuthUser, authError } from '@/lib/auth';
-import { AuditLogModel } from '@/backend/models/auditLog';
-import { UserModel } from '@/backend/models/user';
-import { COLLECTIONS } from '@/backend/db/collections';
-import { appCache } from '@/backend/cache';
+import { AuditLogModel } from '@/server/models/auditLog';
+import { UserModel } from '@/server/models/user';
+import { COLLECTIONS } from '@/server/db/collections';
+import { appCache } from '@/server/cache';
 
 // GET /api/songs/[id] - Get a song by ID
 export async function GET(

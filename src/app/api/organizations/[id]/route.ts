@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server';
-import { OrganizationModel } from '@/backend/models/organization';
+import { OrganizationModel } from '@/server/models/organization';
 import { getAuthUser, authError } from '@/lib/auth';
-import { AuditLogModel } from '@/backend/models/auditLog';
-import { COLLECTIONS } from '@/backend/db/collections';
+import { AuditLogModel } from '@/server/models/auditLog';
+import { COLLECTIONS } from '@/server/db/collections';
 
 // GET /api/organizations/[id]
 export async function GET(

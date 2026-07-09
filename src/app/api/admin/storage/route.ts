@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getAuthUser, authError } from '@/lib/auth';
-import { connectToDatabase } from '@/backend/db/connection';
-import { COLLECTIONS } from '@/backend/db/collections';
+import { connectToDatabase } from '@/server/db/connection';
+import { COLLECTIONS } from '@/server/db/collections';
 
 export async function GET(request: NextRequest) {
   try {
@@ -160,3 +160,4 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

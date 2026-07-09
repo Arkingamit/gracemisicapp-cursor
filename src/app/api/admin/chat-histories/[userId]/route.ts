@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getAuthUser, authError } from '@/lib/auth';
-import { getCollection } from '@/backend/db/connection';
-import { COLLECTIONS } from '@/backend/db/collections';
+import { getCollection } from '@/server/db/connection';
+import { COLLECTIONS } from '@/server/db/collections';
 
 // DELETE /api/admin/chat-histories/[userId] — Super admin: delete a user's chat history
 export async function DELETE(

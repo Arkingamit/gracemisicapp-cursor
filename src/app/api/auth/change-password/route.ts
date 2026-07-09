@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { UserModel } from '@/backend/models/user';
+import { UserModel } from '@/server/models/user';
 import { getAuthUser, authError } from '@/lib/auth';
 
 // POST /api/auth/change-password - Change own password (authenticated users only)
@@ -37,3 +37,4 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

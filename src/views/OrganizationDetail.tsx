@@ -1,6 +1,6 @@
 
 import { useSearchParams } from 'next/navigation';
-import OrganizationDetailComponent from '@/components/OrganizationDetail';
+import OrganizationDetailComponent from '@/components/organizations/OrganizationDetail';
 
 const OrganizationDetailPage = () => {
   const searchParams = useSearchParams();

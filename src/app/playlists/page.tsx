@@ -21,8 +21,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
-import TransferToSongSetDialog from '@/components/TransferToSongSetDialog';
-import PdfPreviewModal from '@/components/PdfPreviewModal';
+import TransferToSongSetDialog from '@/components/groups/TransferToSongSetDialog';
+import PdfPreviewModal from '@/components/songs/PdfPreviewModal';
 
 export default function PlaylistsPage() {
   const { playlists, deletePlaylist, createPlaylist, loading } = usePlaylists();

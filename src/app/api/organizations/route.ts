@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server';
-import { OrganizationModel } from '@/backend/models/organization';
-import { SettingsModel } from '@/backend/models/settings';
+import { OrganizationModel } from '@/server/models/organization';
+import { SettingsModel } from '@/server/models/settings';
 import { getAuthUser, authError } from '@/lib/auth';
-import { AuditLogModel } from '@/backend/models/auditLog';
-import { COLLECTIONS } from '@/backend/db/collections';
+import { AuditLogModel } from '@/server/models/auditLog';
+import { COLLECTIONS } from '@/server/db/collections';
 
 // GET /api/organizations - List all organizations
 export async function GET(request: NextRequest) {
@@ -86,3 +86,4 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

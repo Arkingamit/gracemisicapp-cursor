@@ -1,6 +1,6 @@
 import type { Viewport } from "next";
 import { AppProviders } from "./AppProviders";
-import AIChatBot from "@/components/AIChatBot";
+import AIChatBot from "@/components/common/AIChatBot";
 import "@/index.css";
 
 export const viewport: Viewport = {

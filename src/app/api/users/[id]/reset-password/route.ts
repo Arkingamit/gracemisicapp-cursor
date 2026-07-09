@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { UserModel } from '@/backend/models/user';
+import { UserModel } from '@/server/models/user';
 import { getAuthUser, authError } from '@/lib/auth';
 
 // POST /api/users/[id]/reset-password - Reset a user's password to password123 (super_admin only)

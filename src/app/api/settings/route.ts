@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { SettingsModel } from '@/backend/models/settings';
+import { SettingsModel } from '@/server/models/settings';
 import { getAuthUser } from '@/lib/auth';
 
 export async function GET() {
@@ -31,3 +31,4 @@ export async function PATCH(request: NextRequest) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

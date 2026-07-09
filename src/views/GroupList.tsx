@@ -1,5 +1,5 @@
 
-import GroupList from '@/components/GroupList';
+import GroupList from '@/components/groups/GroupList';
 
 const GroupListPage = () => {
   return (

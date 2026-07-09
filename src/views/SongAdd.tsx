@@ -1,5 +1,5 @@
 
-import SongForm from '@/components/SongForm';
+import SongForm from '@/components/songs/SongForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Lightbulb } from 'lucide-react';
 

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { GroupModel } from '@/backend/models/group';
-import { OrganizationModel } from '@/backend/models/organization';
+import { GroupModel } from '@/server/models/group';
+import { OrganizationModel } from '@/server/models/organization';
 import { getAuthUser } from '@/lib/auth';
 
 // GET /api/groups/[id]/musicians — Get musician assignments for a group

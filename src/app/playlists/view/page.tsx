@@ -17,9 +17,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
-import TransferToSongSetDialog from '@/components/TransferToSongSetDialog';
-import PdfPreviewModal from '@/components/PdfPreviewModal';
-import CollectionSongList from '@/components/CollectionSongList';
+import TransferToSongSetDialog from '@/components/groups/TransferToSongSetDialog';
+import PdfPreviewModal from '@/components/songs/PdfPreviewModal';
+import CollectionSongList from '@/components/playlists/CollectionSongList';
 
 function PlaylistDetailContent() {
   const searchParams = useSearchParams();

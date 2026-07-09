@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { OrganizationModel } from '@/backend/models/organization';
+import { OrganizationModel } from '@/server/models/organization';
 import { getAuthUser, authError } from '@/lib/auth';
 
 // POST /api/organizations/[id]/appoint-org-editor — Manager sets a member's org role

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { getCollection } from '@/backend/db/connection';
-import { COLLECTIONS } from '@/backend/db/collections';
+import { getCollection } from '@/server/db/connection';
+import { COLLECTIONS } from '@/server/db/collections';
 import { generateKeywords } from '@/lib/keywords';
 import { getAuthUser } from '@/lib/auth';
 
@@ -42,3 +42,4 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+

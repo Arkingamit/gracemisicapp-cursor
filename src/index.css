@@ -65,6 +65,14 @@
     @apply bg-background text-foreground;
     padding-left: var(--safe-area-inset-left);
     padding-right: var(--safe-area-inset-right);
+    /* Hide scrollbar for IE, Edge and Firefox */
+    -ms-overflow-style: none;  
+    scrollbar-width: none;  
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  body::-webkit-scrollbar {
+    display: none;
   }
 
   header {
@@ -205,7 +213,7 @@
   }
 
   .home-search-wrapper {
-    @apply sticky top-0 z-40 py-4 bg-[#09090b]/80 backdrop-blur-md mb-6;
+    @apply relative z-40 py-4 mb-6;
   }
 
   .home-search-bar {

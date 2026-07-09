@@ -1,6 +1,6 @@
 
 import { NextRequest } from 'next/server';
-import { FavoriteModel } from '@/backend/models/favorite';
+import { FavoriteModel } from '@/server/models/favorite';
 import { getAuthUser, authError } from '@/lib/auth';
 
 // GET /api/favorites - List current user's favorite song IDs
@@ -41,3 +41,4 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

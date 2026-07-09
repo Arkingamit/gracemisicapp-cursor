@@ -1,5 +1,5 @@
 
-import OrganizationForm from '@/components/OrganizationForm';
+import OrganizationForm from '@/components/organizations/OrganizationForm';
 
 const OrganizationAdd = () => {
   return (

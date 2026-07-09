@@ -1,5 +1,5 @@
 
-import GroupForm from '@/components/GroupForm';
+import GroupForm from '@/components/groups/GroupForm';
 
 const GroupAdd = () => {
   return (

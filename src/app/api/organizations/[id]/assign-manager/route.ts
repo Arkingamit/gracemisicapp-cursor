@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { OrganizationModel } from '@/backend/models/organization';
-import { UserModel } from '@/backend/models/user';
+import { OrganizationModel } from '@/server/models/organization';
+import { UserModel } from '@/server/models/user';
 import { getAuthUser, authError } from '@/lib/auth';
 
 // POST /api/organizations/[id]/assign-manager — Assign a new manager

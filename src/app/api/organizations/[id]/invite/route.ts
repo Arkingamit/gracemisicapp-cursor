@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
-import { OrganizationModel } from '@/backend/models/organization';
-import { UserModel } from '@/backend/models/user';
-import { SettingsModel } from '@/backend/models/settings';
+import { OrganizationModel } from '@/server/models/organization';
+import { UserModel } from '@/server/models/user';
+import { SettingsModel } from '@/server/models/settings';
 import { getAuthUser, authError } from '@/lib/auth';
 
 // POST /api/organizations/[id]/invite — Add a member by email

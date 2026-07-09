@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server';
 import { getAuthUser, authError } from '@/lib/auth';
-import { getCollection } from '@/backend/db/connection';
-import { COLLECTIONS } from '@/backend/db/collections';
-import { SettingsModel } from '@/backend/models/settings';
-import { UserModel } from '@/backend/models/user';
+import { getCollection } from '@/server/db/connection';
+import { COLLECTIONS } from '@/server/db/collections';
+import { SettingsModel } from '@/server/models/settings';
+import { UserModel } from '@/server/models/user';
 
 // GET /api/ai/chat/history — Load chat history for the current user
 export async function GET(req: NextRequest) {
@@ -86,3 +86,4 @@ export async function DELETE(req: NextRequest) {
     return Response.json({ error: 'Failed to clear chat history' }, { status: 500 });
   }
 }
+

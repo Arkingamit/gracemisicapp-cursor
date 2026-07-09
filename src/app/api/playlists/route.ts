@@ -1,6 +1,6 @@
 
 import { NextRequest } from 'next/server';
-import { PlaylistModel } from '@/backend/models/playlist';
+import { PlaylistModel } from '@/server/models/playlist';
 import { getAuthUser, authError } from '@/lib/auth';
 
 // GET /api/playlists - List current user's playlists
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check system limits
-    const { SettingsModel } = await import('@/backend/models/settings');
+    const { SettingsModel } = await import('@/server/models/settings');
     const settings = await SettingsModel.getSettings();
     
     if (settings.max_collections_per_user && settings.max_collections_per_user > 0) {
@@ -67,3 +67,4 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

@@ -1,12 +1,12 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { SongModel } from '@/backend/models/song';
+import { SongModel } from '@/server/models/song';
 import { getAuthUser, authError } from '@/lib/auth';
-import { getCollection } from '@/backend/db/connection';
-import { COLLECTIONS } from '@/backend/db/collections';
-import { OrganizationModel } from '@/backend/models/organization';
-import { SettingsModel } from '@/backend/models/settings';
-import { AuditLogModel } from '@/backend/models/auditLog';
-import { appCache } from '@/backend/cache';
+import { getCollection } from '@/server/db/connection';
+import { COLLECTIONS } from '@/server/db/collections';
+import { OrganizationModel } from '@/server/models/organization';
+import { SettingsModel } from '@/server/models/settings';
+import { AuditLogModel } from '@/server/models/auditLog';
+import { appCache } from '@/server/cache';
 
 export async function POST(
   request: NextRequest,

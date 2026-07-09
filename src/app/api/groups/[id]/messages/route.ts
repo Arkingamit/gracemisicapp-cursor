@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { MessageModel } from '@/backend/models/message';
+import { MessageModel } from '@/server/models/message';
 import { getAuthUser, authError } from '@/lib/auth';
 
 // GET /api/groups/[id]/messages - Get messages for a group

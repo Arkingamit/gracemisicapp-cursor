@@ -1,6 +1,6 @@
 
 import { NextRequest } from 'next/server';
-import { PlaylistModel } from '@/backend/models/playlist';
+import { PlaylistModel } from '@/server/models/playlist';
 import { getAuthUser, authError } from '@/lib/auth';
 
 // POST /api/playlists/[id]/songs - Add a song to a playlist
@@ -32,7 +32,7 @@ export async function POST(
     }
 
     // Check system limits
-    const { SettingsModel } = await import('@/backend/models/settings');
+    const { SettingsModel } = await import('@/server/models/settings');
     const settings = await SettingsModel.getSettings();
     if (settings.max_songs_per_collection && settings.max_songs_per_collection > 0) {
       if (playlist.songs && playlist.songs.length >= settings.max_songs_per_collection) {

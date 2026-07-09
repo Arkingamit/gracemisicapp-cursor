@@ -18,14 +18,14 @@ import {
 } from '@/components/ui/card';
 import { useSongs } from '@/contexts/SongContext';
 import { useAuth } from '@/contexts/AuthContext';
-import AddToGroupButton from '@/components/AddToGroupButton';
-import LikeButton from '@/components/LikeButton';
-import AddToPlaylistDialog from '@/components/AddToPlaylistDialog';
+import AddToGroupButton from '@/components/groups/AddToGroupButton';
+import LikeButton from '@/components/songs/LikeButton';
+import AddToPlaylistDialog from '@/components/playlists/AddToPlaylistDialog';
 import { Pencil, Trash2, Globe, Lock, X, ArrowLeft, Heart, ListMusic, Copy, ChevronLeft, Plus, Music, MoreVertical } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { detectKey } from '@/lib/keyDetection';
 import { getKeyDisplayName } from '@/lib/chordUtils';
-import CopyToOrgButton from '@/components/CopyToOrgButton';
+import CopyToOrgButton from '@/components/organizations/CopyToOrgButton';
 import {
   Select,
   SelectContent,

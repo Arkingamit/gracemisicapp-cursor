@@ -1,14 +1,14 @@
 import { NextRequest } from 'next/server';
-import { SongModel } from '@/backend/models/song';
+import { SongModel } from '@/server/models/song';
 import { getAuthUser, authError } from '@/lib/auth';
-import { getCollection } from '@/backend/db/connection';
-import { COLLECTIONS } from '@/backend/db/collections';
-import { AuditLogModel } from '@/backend/models/auditLog';
-import { SettingsModel } from '@/backend/models/settings';
-import { OrganizationModel } from '@/backend/models/organization';
-import { UserModel } from '@/backend/models/user';
+import { getCollection } from '@/server/db/connection';
+import { COLLECTIONS } from '@/server/db/collections';
+import { AuditLogModel } from '@/server/models/auditLog';
+import { SettingsModel } from '@/server/models/settings';
+import { OrganizationModel } from '@/server/models/organization';
+import { UserModel } from '@/server/models/user';
 
-import { appCache } from '@/backend/cache';
+import { appCache } from '@/server/cache';
 
 // GET /api/songs - List songs (global + user's org songs)
 export async function GET(request: NextRequest) {
@@ -175,3 +175,4 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

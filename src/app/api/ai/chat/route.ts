@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
 import Groq from 'groq-sdk';
-import { SongModel } from '@/backend/models/song';
+import { SongModel } from '@/server/models/song';
 import { getAuthUser } from '@/lib/auth';
-import { getCollection } from '@/backend/db/connection';
-import { COLLECTIONS } from '@/backend/db/collections';
-import { SettingsModel } from '@/backend/models/settings';
+import { getCollection } from '@/server/db/connection';
+import { COLLECTIONS } from '@/server/db/collections';
+import { SettingsModel } from '@/server/models/settings';
 
 export async function POST(req: NextRequest) {
   try {
@@ -214,3 +214,4 @@ RULES:
     );
   }
 }
+

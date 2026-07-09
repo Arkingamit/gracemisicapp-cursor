@@ -1,4 +1,4 @@
-import { SettingsModel } from '@/backend/models/settings';
+import { SettingsModel } from '@/server/models/settings';
 
 // Public endpoint — no auth required
 // Mobile apps call this on launch to check if an update is needed
@@ -25,3 +25,4 @@ export async function GET() {
     });
   }
 }
+

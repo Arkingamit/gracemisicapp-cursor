@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
 import { getAuthUser, authError } from '@/lib/auth';
-import { AuditLogModel } from '@/backend/models/auditLog';
-import { UserModel } from '@/backend/models/user';
-import { SongModel } from '@/backend/models/song';
-import { getCollection } from '@/backend/db/connection';
-import { COLLECTIONS } from '@/backend/db/collections';
+import { AuditLogModel } from '@/server/models/auditLog';
+import { UserModel } from '@/server/models/user';
+import { SongModel } from '@/server/models/song';
+import { getCollection } from '@/server/db/connection';
+import { COLLECTIONS } from '@/server/db/collections';
 import { ObjectId } from 'mongodb';
 
 // Resolve a document ID to a human-readable name based on the collection
@@ -83,3 +83,4 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

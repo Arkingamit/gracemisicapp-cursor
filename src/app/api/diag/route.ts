@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/backend/db/connection';
+import { connectToDatabase } from '@/server/db/connection';
 
 export async function GET(request: NextRequest) {
   const diagnostics = {
@@ -26,3 +26,4 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(diagnostics);
 }
+

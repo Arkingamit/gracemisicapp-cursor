@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getAuthUser, authError } from '@/lib/auth';
-import { getAdminStats } from '@/backend/api/admin';
+import { getAdminStats } from '@/server/api/admin';
 
 // GET /api/admin/stats - Get admin dashboard statistics
 export async function GET(request: NextRequest) {
@@ -22,3 +22,4 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

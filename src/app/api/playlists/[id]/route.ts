@@ -1,6 +1,6 @@
 
 import { NextRequest } from 'next/server';
-import { PlaylistModel } from '@/backend/models/playlist';
+import { PlaylistModel } from '@/server/models/playlist';
 import { getAuthUser, authError } from '@/lib/auth';
 
 // GET /api/playlists/[id] - Get a specific playlist

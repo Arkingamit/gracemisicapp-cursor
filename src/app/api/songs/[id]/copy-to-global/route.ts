@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { SongModel } from '@/backend/models/song';
+import { SongModel } from '@/server/models/song';
 import { getAuthUser, authError } from '@/lib/auth';
 
 export async function POST(

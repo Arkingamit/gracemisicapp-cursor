@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getAuthUser, authError } from '@/lib/auth';
-import { getCollection } from '@/backend/db/connection';
-import { COLLECTIONS } from '@/backend/db/collections';
+import { getCollection } from '@/server/db/connection';
+import { COLLECTIONS } from '@/server/db/collections';
 
 // GET /api/admin/chat-histories — Super admin: list all users' chat histories
 export async function GET(req: NextRequest) {
@@ -47,3 +47,4 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: 'Failed to fetch chat histories' }, { status: 500 });
   }
 }
+

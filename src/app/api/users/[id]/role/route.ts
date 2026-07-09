@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { UserModel } from '@/backend/models/user';
+import { UserModel } from '@/server/models/user';
 import { getAuthUser, authError } from '@/lib/auth';
 
 // PATCH /api/users/[id]/role - Update a user's role (super_admin only)

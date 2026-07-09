@@ -7,8 +7,8 @@ import { useSongs } from '@/contexts/SongContext';
 import { Button } from '@/components/ui/button';
 import { Heart, Music, ChevronRight, ListMusic, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
-import LikeButton from '@/components/LikeButton';
-import AddToPlaylistDialog from '@/components/AddToPlaylistDialog';
+import LikeButton from '@/components/songs/LikeButton';
+import AddToPlaylistDialog from '@/components/playlists/AddToPlaylistDialog';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 

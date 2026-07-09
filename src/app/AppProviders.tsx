@@ -13,7 +13,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Capacitor } from "@capacitor/core";
 import { GoogleSignIn } from "@capawesome/capacitor-google-sign-in";
 
-const Navigation = dynamic(() => import("@/components/Navigation"), {
+const Navigation = dynamic(() => import("@/components/layout/Navigation"), {
   ssr: false,
   loading: () => (
     <div className="h-16 border-b bg-background/80 backdrop-blur-sm" />
@@ -21,12 +21,12 @@ const Navigation = dynamic(() => import("@/components/Navigation"), {
 });
 
 const BottomNavigation = dynamic(
-  () => import("@/components/BottomNavigation"),
+  () => import("@/components/layout/BottomNavigation"),
   { ssr: false }
 );
 
 const ForceUpdateModal = dynamic(
-  () => import("@/components/ForceUpdateModal"),
+  () => import("@/components/common/ForceUpdateModal"),
   { ssr: false }
 );
 
@@ -53,7 +53,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
                   <Suspense fallback={<div className="h-16 border-b bg-background/80" />}>
                     <Navigation />
                   </Suspense>
-                  <main className="min-h-[calc(100vh-64px)] pb-24 md:pb-0 relative">
+                  <main className="min-h-[calc(100vh-64px)] pt-16 md:pt-24 pb-24 md:pb-0 relative">
                     {children}
                   </main>
                   <Suspense fallback={null}>

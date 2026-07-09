@@ -1,14 +1,13 @@
 module.exports = {
   apps: [
     {
-      name: "grace-music-app",
-      script: "node_modules/next/dist/bin/next",
-      args: "start",
-      instances: 1, // Change to "max" to utilize all CPU cores in cluster mode
-      exec_mode: "fork", // Change to "cluster" if instances is > 1
+      name: 'grace-music-app',
+      script: 'node_modules/next/dist/bin/next',
+      args: 'start -p 4001',
+      instances: 'max', // Must be a string "max", not {max}
+      exec_mode: 'cluster',
       env: {
-        NODE_ENV: "production",
-        PORT: 4001,
+        NODE_ENV: 'production',
       },
     },
   ],

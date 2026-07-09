@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Music, Heart, Users, ListMusic, Building2 } from 'lucide-react';
+import { VapourTextEffect } from '@/components/ui/vapour-text-effect';
 
 const About = () => {
   return (
@@ -156,6 +157,10 @@ const About = () => {
             </div>
           </CardContent>
         </Card>
+
+        <div className="pt-16 pb-8 flex flex-col items-center justify-center border-t border-white/5 mt-8">
+          <VapourTextEffect text="developer ARKIN & SHINE" textSize={40} className="text-zinc-400" />
+        </div>
       </div>
     </div>
   );

@@ -19,7 +19,7 @@ import {
   Crown, UserPlus, Users, Shield, Trash2, Pencil, AlertTriangle,
   BarChart3, Settings, User, Mail, MoreVertical, Music, Plus, Check, X,
   LogIn, LogOut, Copy, ChevronDown, ChevronUp, Hash, UsersRound,
-  BookOpen, TrendingUp, Layers,
+  BookOpen, TrendingUp, Layers, ArrowLeft,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -290,12 +290,7 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
   const managers = visibleMembers.filter(m => m.isManager);
   const regularMembers = visibleMembers.filter(m => !m.isManager);
 
-  const TABS: { key: ActiveTab; label: string; icon: React.ReactNode }[] = [
-    { key: 'overview', label: 'Overview', icon: <Layers className="w-4 h-4" /> },
-    { key: 'members', label: `Members${visibleMembers.length > 0 ? ` (${visibleMembers.length})` : ''}`, icon: <UsersRound className="w-4 h-4" /> },
-    { key: 'song-sets', label: `Song Sets${groups.length > 0 ? ` (${groups.length})` : ''}`, icon: <Music className="w-4 h-4" /> },
-    ...(canViewStats ? [{ key: 'stats' as ActiveTab, label: 'Statistics', icon: <TrendingUp className="w-4 h-4" /> }] : []),
-  ];
+
 
   return (
     <div className="min-h-screen bg-transparent">
@@ -497,25 +492,7 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
           </div>
         </div>
 
-        {/* Tab bar */}
-        <div className="container mx-auto px-4">
-          <div className="flex gap-1 overflow-x-auto scrollbar-hide -mb-px">
-            {TABS.map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === tab.key
-                    ? 'border-white text-white'
-                    : 'border-transparent text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
+
       </div>
 
       {/* ─── TAB CONTENT ─── */}
@@ -658,6 +635,9 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
         {/* ── MEMBERS TAB ── */}
         {activeTab === 'members' && (
           <div className="space-y-6">
+            <Button variant="ghost" className="text-zinc-400 hover:text-white -ml-4 -mb-2" onClick={() => setActiveTab('overview')}>
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back to Overview
+            </Button>
             {/* Add members (manager only) */}
             {canManage() && (
               <div className="rounded-xl bg-zinc-900/40 border border-white/8 overflow-hidden">
@@ -795,6 +775,9 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
         {/* ── SONG SETS TAB ── */}
         {activeTab === 'song-sets' && (
           <div className="space-y-5">
+            <Button variant="ghost" className="text-zinc-400 hover:text-white -ml-4 mb-1" onClick={() => setActiveTab('overview')}>
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back to Overview
+            </Button>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-zinc-200">Song Sets</h2>
               {canManage() && (
@@ -864,6 +847,9 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
         {/* ── STATS TAB ── */}
         {activeTab === 'stats' && canViewStats && (
           <div className="space-y-6">
+            <Button variant="ghost" className="text-zinc-400 hover:text-white -ml-4 -mb-2" onClick={() => setActiveTab('overview')}>
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back to Overview
+            </Button>
             <MusicianStatsPanel organizationId={id} />
             {(canManage() || isOrgEditor) && (
               <SongStatsPanel organizationId={id} />

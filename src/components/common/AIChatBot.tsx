@@ -358,8 +358,8 @@ export default function AIChatBot() {
                               ol: ({ node, ...props }) => (
                                 <ol className="flex flex-col gap-2 my-4 list-none p-0 w-full" style={{ counterReset: "options" }} {...props} />
                               ),
-                              li: ({ node, children, ...props }: { node?: any, children?: React.ReactNode, [key: string]: any }) => {
-                                // @ts-ignore - hast Element type is too complex to inline
+                              li: ({ node, children, ...props }: React.ComponentPropsWithoutRef<'li'> & { node?: unknown }) => {
+                                // @ts-expect-error - hast Element type is too complex to inline
                                 const isOrdered = node?.parent?.tagName === 'ol' || node?.parent?.type === 'element' && node?.parent?.tagName === 'ol';
 
                                 if (isOrdered) {

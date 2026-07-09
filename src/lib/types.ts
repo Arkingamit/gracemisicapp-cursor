@@ -209,7 +209,7 @@ export interface MongoGroup {
   createdAt: Date;
   updatedAt: Date;
   songTranspositions?: SongTransposition[];
-  songEditStates?: Record<string, any>; // stored as plain JSON in MongoDB
+  songEditStates?: Record<string, unknown>; // stored as plain JSON in MongoDB
   musicianAssignments?: MusicianAssignment[];
 }
 

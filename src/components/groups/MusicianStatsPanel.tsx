@@ -75,7 +75,7 @@ export default function MusicianStatsPanel({ organizationId }: MusicianStatsPane
         <AccordionItem value="musician-stats" className="border-none">
           <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-zinc-800/30">
             <div className="flex items-center justify-center flex-1 gap-2">
-              <BarChart3 className="w-5 h-5 text-violet-400 shrink-0" />
+              <BarChart3 className="w-5 h-5 text-zinc-400 shrink-0" />
               <span className="text-xl font-semibold text-center">Individual Musician Details</span>
             </div>
           </AccordionTrigger>
@@ -257,7 +257,7 @@ export default function MusicianStatsPanel({ organizationId }: MusicianStatsPane
                 onClick={() => setExpandedUser(isExpanded ? null : member.userId)}
               >
                 <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500/30 to-purple-600/30 flex items-center justify-center text-sm font-bold text-violet-300 flex-shrink-0 mt-0.5 sm:mt-0">
+                  <div className="w-8 h-8 rounded-full bg-white/8 border border-white/10 flex items-center justify-center text-sm font-bold text-zinc-300 flex-shrink-0 mt-0.5 sm:mt-0">
                     {(member.userName || '?')[0].toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -277,7 +277,7 @@ export default function MusicianStatsPanel({ organizationId }: MusicianStatsPane
                               className="bg-zinc-800/80 text-zinc-300 text-[10px] px-2 py-0.5 border border-zinc-700/40 flex items-center gap-1 font-normal hover:bg-zinc-800/80"
                             >
                               <span className="capitalize">{instr}</span>
-                              <span className="bg-zinc-700/60 text-violet-300 font-bold text-[9px] px-1 rounded-sm ml-0.5 min-w-[14px] text-center">
+                              <span className="bg-zinc-700/60 text-zinc-300 font-bold text-[9px] px-1 rounded-sm ml-0.5 min-w-[14px] text-center">
                                 {count}
                               </span>
                             </Badge>
@@ -339,7 +339,7 @@ export default function MusicianStatsPanel({ organizationId }: MusicianStatsPane
             {sorted.length > visibleCount && (
               <button
                 onClick={() => setVisibleCount(prev => prev + 5)}
-                className="w-full mt-2 py-2 text-xs font-medium text-violet-400 hover:text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 rounded-md transition-colors"
+                className="w-full mt-2 py-2 text-xs font-medium text-zinc-400 hover:text-zinc-200 bg-white/5 hover:bg-white/10 rounded-md transition-colors"
               >
                 View More ({sorted.length - visibleCount} remaining)
               </button>

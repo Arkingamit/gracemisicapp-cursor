@@ -192,7 +192,7 @@ const EditableSection: React.FC<EditableSectionProps> = ({
             onClick={onAddAnnotation}
             title="Add annotation"
           >
-            <MessageSquarePlus className="h-3 w-3 text-purple-500" />
+            <MessageSquarePlus className="h-3 w-3 text-zinc-400" />
           </Button>
           <Button
             variant="ghost"

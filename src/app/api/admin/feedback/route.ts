@@ -1,19 +1,13 @@
 import { NextRequest } from 'next/server';
 import { FeedbackModel } from '@/server/models/feedback';
 import { UserModel } from '@/server/models/user';
-import { verifyToken } from '@/lib/auth';
+import { getAuthUser } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
+    const decoded = getAuthUser(request);
     if (!decoded) {
-      return Response.json({ error: 'Invalid token' }, { status: 401 });
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const requester = await UserModel.findById(decoded.userId);

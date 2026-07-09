@@ -379,11 +379,11 @@ const AdminSongList = ({ songs, organizations = [] }: AdminSongListProps) => {
           <div 
             key={orgId} 
             className={`border rounded-lg px-4 py-3 flex items-center gap-3 cursor-pointer transition-colors ${
-              activeOrgFilter === orgId ? 'bg-purple-500/10 border-purple-500/50' : 'bg-secondary/20 border-white/5 hover:bg-secondary/30'
+              activeOrgFilter === orgId ? 'bg-white/8 border-white/20' : 'bg-secondary/20 border-white/5 hover:bg-secondary/30'
             }`}
             onClick={() => setActiveOrgFilter(prev => prev === orgId ? null : orgId)}
           >
-            <Building className="h-5 w-5 text-purple-500 shrink-0" />
+            <Building className="h-5 w-5 text-zinc-400 shrink-0" />
             <div className="min-w-0">
               <div className="text-xs text-muted-foreground truncate">{orgNameMap[orgId] || 'Unknown Org'}</div>
               <div className="text-lg font-semibold">{orgSongList.length}</div>

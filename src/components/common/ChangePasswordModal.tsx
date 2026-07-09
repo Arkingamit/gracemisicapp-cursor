@@ -141,7 +141,7 @@ export function ChangePasswordModal({ open, onOpenChange }: ChangePasswordModalP
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-purple-600 hover:bg-purple-700">
+              <Button type="submit" disabled={isSubmitting} className="bg-zinc-700 hover:bg-zinc-600">
                 {isSubmitting ? 'Updating...' : 'Change Password'}
               </Button>
             </DialogFooter>

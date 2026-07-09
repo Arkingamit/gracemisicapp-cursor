@@ -145,7 +145,7 @@ const AddSongsToGroup = ({ groupId, existingSongIds, onCancel }: AddSongsToGroup
             size="sm"
             disabled={selectedSongs.size === 0 || isSubmitting} 
             onClick={handleAddSongs}
-            className="bg-purple-600 hover:bg-purple-700 text-white"
+            className="bg-zinc-700 hover:bg-zinc-600 text-white"
           >
             {isSubmitting 
               ? 'Adding...' 

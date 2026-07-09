@@ -141,7 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       // Decode Google JWT to extract user info
-      const decoded: any = jwtDecode(credential);
+      const decoded = jwtDecode<{ email: string, sub: string, name: string }>(credential);
 
       // Register or login the Google user via our API
       // First try to login, if that fails, register

@@ -449,7 +449,7 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
                               {field.value.includes(genre.name) ? `✓ ${genre.name}` : genre.name}
                             </SelectItem>
                           ))}
-                          <SelectItem value="___new___" className="text-purple-600 font-medium font-bold">
+                          <SelectItem value="___new___" className="text-white font-medium font-bold">
                             + Add New Genre
                           </SelectItem>
                         </SelectContent>

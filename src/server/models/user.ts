@@ -106,7 +106,7 @@ export class UserModel {
   }
 
   // Update user - new method
-  static async update(id: string, updates: any): Promise<User | null> {
+  static async update(id: string, updates: Record<string, unknown>): Promise<User | null> {
     try {
       const collection = await getCollection(COLLECTIONS.USERS);
       const user = await this.findById(id);
@@ -153,7 +153,7 @@ export class UserModel {
       if (!user) return null;
       
       const isValid = await bcrypt.compare(password, user.passwordHash);
-      return isValid ? this.toUser(user as MongoUser) : null;
+      return isValid ? this.toUser(user as unknown as MongoUser) : null;
     } catch (error) {
       console.error("Error verifying password:", error);
       throw error;
@@ -234,7 +234,7 @@ export class UserModel {
       ]).toArray();
       
       const usersByRole: Record<string, number> = {};
-      roleAggregation.forEach((item: any) => {
+      roleAggregation.forEach((item: { _id: string, count: number }) => {
         usersByRole[item._id] = item.count;
       });
       

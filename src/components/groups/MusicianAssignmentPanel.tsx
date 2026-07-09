@@ -163,8 +163,8 @@ export default function MusicianAssignmentPanel({
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-600/20 flex items-center justify-center">
-              <Users className="w-4.5 h-4.5 text-violet-400" />
+            <div className="w-9 h-9 rounded-lg bg-white/8 border border-white/10 flex items-center justify-center">
+              <Users className="w-4.5 h-4.5 text-zinc-400" />
             </div>
             <div>
               <CardTitle className="text-base font-semibold text-zinc-100">Musicians</CardTitle>
@@ -238,7 +238,7 @@ export default function MusicianAssignmentPanel({
                 <select
                   value={newUserId}
                   onChange={e => setNewUserId(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-white/20"
                 >
                   <option value="">Select member...</option>
                   {members.map(m => (
@@ -249,7 +249,7 @@ export default function MusicianAssignmentPanel({
                 <select
                   value={newInstrument}
                   onChange={e => { setNewInstrument(e.target.value); if (e.target.value !== '__custom__') setCustomInstrument(''); }}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-white/20"
                 >
                   <option value="">Select instrument...</option>
                   {availableInstruments.map(i => (
@@ -265,7 +265,7 @@ export default function MusicianAssignmentPanel({
                   placeholder="Enter custom instrument name..."
                   value={customInstrument}
                   onChange={e => setCustomInstrument(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-white/20"
                 />
               )}
 
@@ -282,7 +282,7 @@ export default function MusicianAssignmentPanel({
                   size="sm"
                   onClick={handleAddAssignment}
                   disabled={!newUserId || (!newInstrument || (newInstrument === '__custom__' && !customInstrument.trim()))}
-                  className="h-7 px-3 text-xs bg-violet-600 hover:bg-violet-700 text-white rounded-full"
+                  className="h-7 px-3 text-xs bg-zinc-700 hover:bg-zinc-600 text-white rounded-full"
                 >
                   Add
                 </Button>
@@ -296,7 +296,7 @@ export default function MusicianAssignmentPanel({
               variant="outline"
               size="sm"
               onClick={() => setShowAddRow(true)}
-              className="w-full border-dashed border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 hover:border-violet-500/50 transition-all rounded-lg h-9"
+              className="w-full border-dashed border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 hover:border-white/20 transition-all rounded-lg h-9"
             >
               <Plus className="w-3.5 h-3.5 mr-1.5" />
               Add Musician

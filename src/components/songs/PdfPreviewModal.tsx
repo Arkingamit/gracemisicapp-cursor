@@ -691,9 +691,9 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
                     <button
                         onClick={() => setMobileStep(i)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${mobileStep === i
-                                ? 'bg-purple-600 text-white shadow-md'
+                                ? 'bg-zinc-700 text-white shadow-md'
                                 : mobileStep > i
-                                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                                    ? 'bg-white/10 text-zinc-300'
                                     : 'bg-secondary text-muted-foreground'
                             }`}
                     >
@@ -701,7 +701,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
                         {label}
                     </button>
                     {i < stepLabels.length - 1 && (
-                        <div className={`flex-1 h-0.5 rounded-full transition-colors ${mobileStep > i ? 'bg-purple-400' : 'bg-secondary'}`} />
+                        <div className={`flex-1 h-0.5 rounded-full transition-colors ${mobileStep > i ? 'bg-white/30' : 'bg-secondary'}`} />
                     )}
                 </React.Fragment>
             ))}
@@ -801,12 +801,12 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
                         key={song.id}
                         onClick={() => handleMobileSongClick(song.id)}
                         className={`w-full text-left px-4 py-3 rounded-lg transition-all active:scale-[0.98] ${selectedSongId === song.id
-                                ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-100 font-medium ring-1 ring-purple-300 dark:ring-purple-700'
+                                ? 'bg-white/10 text-zinc-100 font-medium ring-1 ring-white/20'
                                 : 'bg-secondary/30 hover:bg-secondary text-foreground'
                             }`}
                     >
                         <div className="flex items-center gap-3">
-                            <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-300 flex items-center justify-center text-xs font-bold shrink-0">
+                            <span className="w-6 h-6 rounded-full bg-white/10 text-zinc-300 flex items-center justify-center text-xs font-bold shrink-0">
                                 {i + 1}
                             </span>
                             <div className="min-w-0 flex-1">
@@ -827,7 +827,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
     const MobileStep1 = () => (
         <div className="flex flex-col gap-4 md:hidden overflow-y-auto flex-1">
             {/* Song header */}
-            <div className="p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-900 dark:text-purple-100 rounded-lg">
+            <div className="p-3 bg-white/5 border border-white/10 text-zinc-200 rounded-lg">
                 <p className="text-xs uppercase tracking-wider font-bold opacity-70 mb-1">Settings for:</p>
                 <p className="font-semibold">{currentSong.title}</p>
                 <p className="text-xs text-muted-foreground">{currentSong.artist}</p>
@@ -1192,7 +1192,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
             )}
             {mobileStep < 2 ? (
                 <Button
-                    className="flex-1 gap-1 bg-purple-600 hover:bg-purple-700 text-white"
+                    className="flex-1 gap-1 bg-zinc-700 hover:bg-zinc-600 text-white"
                     onClick={() => setMobileStep(mobileStep + 1)}
                 >
                     {stepLabels[mobileStep + 1]}
@@ -1202,7 +1202,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
                 <Button
                     onClick={handleExport}
                     disabled={isExporting}
-                    className="flex-1 gap-1 bg-purple-600 hover:bg-purple-700 text-white"
+                    className="flex-1 gap-1 bg-zinc-700 hover:bg-zinc-600 text-white"
                 >
                     {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                     {isExporting ? 'Exporting...' : 'Export PDF'}
@@ -1338,7 +1338,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
                                         key={song.id}
                                         onClick={() => setSelectedSongId(song.id)}
                                         className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${selectedSongId === song.id
-                                                ? 'bg-purple-100 text-purple-900 font-medium dark:bg-purple-900/30 dark:text-purple-100'
+                                                ? 'bg-white/10 text-white font-medium'
                                                 : 'hover:bg-secondary text-muted-foreground'
                                             }`}
                                     >
@@ -1682,7 +1682,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
                     <div className="text-sm text-muted-foreground hidden sm:flex items-center gap-2">
                         {songs.length > 1 ? `Exporting PDF with ${songs.length} songs` : 'Exporting PDF'}
                         {hasEdits && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-semibold rounded-full">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/10 text-zinc-300 text-[10px] font-semibold rounded-full">
                                 <Paintbrush className="h-2.5 w-2.5" />
                                 Custom edits applied
                             </span>
@@ -1695,7 +1695,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
                         <Button
                             onClick={handleExport}
                             disabled={isExporting}
-                            className="bg-purple-600 hover:bg-purple-700 text-white flex gap-2 flex-1 sm:flex-none"
+                            className="bg-zinc-700 hover:bg-zinc-600 text-white flex gap-2 flex-1 sm:flex-none"
                         >
                             {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                             {isExporting ? 'Exporting...' : `Export ${songs.length > 1 ? 'Group ' : ''}PDF`}

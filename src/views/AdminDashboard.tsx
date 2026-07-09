@@ -1,5 +1,5 @@
-
-import React, { useEffect, useState } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSongs } from '@/contexts/SongContext';
@@ -148,6 +148,10 @@ const AdminDashboard = () => {
     app_update_url_android?: string;
     app_update_url_ios?: string;
     app_force_update_message?: string;
+    ai_model?: string;
+    max_collections_per_user?: number | null;
+    max_songs_per_collection?: number | null;
+    max_activity_logs?: number | null;
   }>({
     allow_user_org_creation: true,
     enable_ai_chat: true,
@@ -222,7 +226,7 @@ const AdminDashboard = () => {
   );
 
 
-  const fetchAdminData = async () => {
+  const fetchAdminData = useCallback(async () => {
     setLoadingData(true);
     try {
       const { authFetch } = await import('@/contexts/AuthContext');
@@ -240,21 +244,22 @@ const AdminDashboard = () => {
       ]);
 
       if (usersRes.ok && orgsRes.ok && groupsRes.ok && settingsRes.ok) {
-        const [usersData, orgsData, groupsData, settingsData] = await Promise.all([
-          usersRes.json(),
-          orgsRes.json(),
-          groupsRes.json(),
-          settingsRes.json()
-        ]);
-
-        if (auditRes.ok) {
-          const data = await auditRes.json();
-          setAuditLogs(data.logs || []);
-        }
-        if (storageRes.ok) {
-          const data = await storageRes.json();
-          setStorageStats(data);
-        }
+        try {
+          const [usersData, orgsData, groupsData, settingsData] = await Promise.all([
+            usersRes.json(),
+            orgsRes.json(),
+            groupsRes.json(),
+            settingsRes.json()
+          ]);
+          
+          if (auditRes.ok) {
+            const data = await auditRes.json();
+            setAuditLogs(data.logs || []);
+          }
+          if (storageRes.ok) {
+            const data = await storageRes.json();
+            setStorageStats(data);
+          }
         if (genresRes.ok) {
           const data = await genresRes.json();
           setGenres(data);
@@ -285,6 +290,10 @@ const AdminDashboard = () => {
           recentlyAddedSongs: songs.slice(0, 5),
           usersByRole: calculateRoleStats(usersData.users)
         });
+        } catch (innerError) {
+          console.error("Inner error:", innerError);
+          toast({ title: "Data Error", description: String(innerError), variant: "destructive" });
+        }
       }
     } catch (error) {
       console.error('Failed to fetch admin data:', error);
@@ -292,7 +301,7 @@ const AdminDashboard = () => {
     } finally {
       setLoadingData(false);
     }
-  };
+  }, [songs, toast]);
 
   const calculateGenreStats = (songList: any[]) => {
     const counts: Record<string, number> = {};
@@ -313,7 +322,7 @@ const AdminDashboard = () => {
     if (currentUser?.role === 'super_admin') {
       fetchAdminData();
     }
-  }, [currentUser, songs]);
+  }, [currentUser, songs, fetchAdminData]);
 
   const handleUpdateUserRole = async (userId: string, newRole: string) => {
     try {
@@ -330,6 +339,7 @@ const AdminDashboard = () => {
         toast({ title: "Error", description: data.error || "Failed to update role", variant: "destructive" });
       }
     } catch (error) {
+      console.error('Failed to update user role:', error);
     }
   };
 
@@ -1673,7 +1683,7 @@ const AdminDashboard = () => {
                             // For Songs, show org sub-rows
                             const isSongs = coll.name === 'songs';
                             let globalSongs = { count: 0, sizeKB: 0 };
-                            let privateSongs = { count: 0, sizeKB: 0 };
+                            const privateSongs = { count: 0, sizeKB: 0 };
                             if (isSongs && storageStats.organizationStats) {
                               storageStats.organizationStats.forEach((os: any) => {
                                 if (os.modules?.songs) {
@@ -2581,77 +2591,184 @@ const AdminDashboard = () => {
 
         {/* User Feedback Tab */}
         <TabsContent value="feedback">
-          <Card>
-            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5" />
-                  User Feedback
-                </CardTitle>
-                <CardDescription>Review questions, bugs, and ideas submitted by users</CardDescription>
-              </div>
-              <Button variant="outline" size="sm" onClick={fetchAdminData} disabled={loadingData}>Refresh</Button>
-            </CardHeader>
-            <CardContent>
-              {feedbacks.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-medium">No feedback yet</p>
+          <div className="space-y-4">
+            {/* Header Card */}
+            <div
+              className="relative rounded-2xl overflow-hidden p-5"
+              style={{
+                background: 'linear-gradient(135deg, rgba(18,18,24,0.95) 0%, rgba(24,24,32,0.95) 100%)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)',
+              }}
+            >
+
+              <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                    style={{
+                      background: 'rgba(255,255,255,0.1)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                    }}
+                  >
+                    <MessageSquare className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-white">User Feedback</h2>
+                    <p className="text-xs text-zinc-500">Questions, bugs, and ideas from users</p>
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {feedbacks.map((item) => (
-                    <div key={item.id} className="p-4 rounded-xl border border-white/5 bg-zinc-900/50 flex flex-col gap-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">{item.userName}</span>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase font-bold ${
-                              item.type === 'bug' ? 'bg-red-500/20 text-red-500' :
-                              item.type === 'idea' ? 'bg-green-500/20 text-green-500' :
-                              item.type === 'question' ? 'bg-blue-500/20 text-blue-500' :
-                              'bg-zinc-500/20 text-zinc-400'
-                            }`}>
-                              {item.type}
-                            </span>
+                <div className="flex items-center gap-3">
+                  {/* Stats pills */}
+                  {feedbacks.length > 0 && (
+                    <div className="hidden sm:flex items-center gap-2">
+                      {[
+                        { label: 'New', count: feedbacks.filter((f: any) => f.status === 'new').length, color: 'text-zinc-300', bg: 'bg-white/5 border-white/10' },
+                        { label: 'Open', count: feedbacks.filter((f: any) => f.status === 'in-progress').length, color: 'text-zinc-300', bg: 'bg-white/5 border-white/10' },
+                        { label: 'Done', count: feedbacks.filter((f: any) => f.status === 'resolved').length, color: 'text-zinc-300', bg: 'bg-white/5 border-white/10' },
+                      ].map(s => (
+                        <span key={s.label} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold ${s.bg} ${s.color}`}>
+                          <span className="font-bold">{s.count}</span>
+                          <span className="opacity-70">{s.label}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    onClick={fetchAdminData}
+                    disabled={loadingData}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white border border-white/[0.07] hover:border-white/15 hover:bg-white/[0.05] transition-all duration-200 disabled:opacity-40"
+                  >
+                    <svg className={`w-3.5 h-3.5 ${loadingData ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refresh
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Feedback list */}
+            {feedbacks.length === 0 ? (
+              <div
+                className="rounded-2xl p-16 flex flex-col items-center gap-4 text-center"
+                style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px dashed rgba(255,255,255,0.08)',
+                }}
+              >
+                <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+                  <MessageSquare className="w-7 h-7 text-zinc-600" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold">No feedback yet</p>
+                  <p className="text-zinc-500 text-sm mt-1">User submissions will appear here</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {feedbacks.map((item: any) => {
+                  const typeConfig = {
+                    bug:      { label: 'Bug',      icon: '🐛', color: 'text-red-300',     bg: 'bg-red-500/10',     border: 'border-red-500/20',     dot: 'bg-red-500'     },
+                    idea:     { label: 'Idea',     icon: '💡', color: 'text-emerald-300', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', dot: 'bg-emerald-500' },
+                    question: { label: 'Question', icon: '❓', color: 'text-blue-300',    bg: 'bg-blue-500/10',    border: 'border-blue-500/20',    dot: 'bg-blue-500'    },
+                    general:  { label: 'General',  icon: '💬', color: 'text-violet-300',  bg: 'bg-violet-500/10',  border: 'border-violet-500/20',  dot: 'bg-violet-500'  },
+                  }[item.type as string] || { label: item.type, icon: '💬', color: 'text-zinc-400', bg: 'bg-zinc-500/10', border: 'border-zinc-500/20', dot: 'bg-zinc-500' };
+
+                  const statusConfig = {
+                    'new':         { label: 'New',         color: 'text-violet-300', bg: 'bg-violet-500/10', border: 'border-violet-500/30' },
+                    'in-progress': { label: 'In Progress', color: 'text-amber-300',  bg: 'bg-amber-500/10',  border: 'border-amber-500/30'  },
+                    'resolved':    { label: 'Resolved',    color: 'text-emerald-300',bg: 'bg-emerald-500/10',border: 'border-emerald-500/30' },
+                  }[item.status as string] || { label: item.status, color: 'text-zinc-400', bg: 'bg-zinc-500/10', border: 'border-zinc-500/20' };
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="group relative rounded-2xl overflow-hidden transition-all duration-200 hover:translate-y-[-1px]"
+                      style={{
+                        background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid rgba(255,255,255,0.07)',
+                        boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+                      }}
+                    >
+                      {/* Colored left accent bar */}
+                      <div className={`absolute left-0 top-0 bottom-0 w-0.5 ${typeConfig.dot} opacity-60 rounded-full`} />
+
+                      <div className="p-4 pl-5">
+                        {/* Top row */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            {/* Avatar */}
+                            <div
+                              className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
+                              style={{
+                                background: 'rgba(255,255,255,0.07)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                color: 'rgba(255,255,255,0.7)',
+                              }}
+                            >
+                              {(item.userName || '?')[0].toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-semibold text-white truncate">{item.userName}</span>
+                                {/* Type badge */}
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase tracking-wide ${typeConfig.bg} ${typeConfig.border} ${typeConfig.color}`}>
+                                  <span>{typeConfig.icon}</span>
+                                  {typeConfig.label}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-zinc-600 mt-0.5">
+                                {new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(item.createdAt).toLocaleString()}
-                          </p>
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {/* Status select styled */}
+                            <div className="relative">
+                              <select
+                                value={item.status}
+                                onChange={(e) => handleUpdateFeedbackStatus(item.id, e.target.value)}
+                                className={`appearance-none pl-2.5 pr-6 py-1.5 rounded-lg border text-[11px] font-semibold focus:outline-none cursor-pointer transition-all ${statusConfig.bg} ${statusConfig.border} ${statusConfig.color}`}
+                                style={{ background: 'transparent' }}
+                              >
+                                <option value="new" className="bg-zinc-900 text-white">New</option>
+                                <option value="in-progress" className="bg-zinc-900 text-white">In Progress</option>
+                                <option value="resolved" className="bg-zinc-900 text-white">Resolved</option>
+                              </select>
+                              <svg className={`absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none ${statusConfig.color}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                            {/* Delete */}
+                            <button
+                              onClick={() => handleDeleteFeedback(item.id)}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 opacity-0 group-hover:opacity-100"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={item.status}
-                            onChange={(e) => handleUpdateFeedbackStatus(item.id, e.target.value)}
-                            className={`h-8 text-xs rounded-md border px-2 focus:outline-none ${
-                              item.status === 'new' ? 'bg-primary/20 border-primary text-primary' :
-                              item.status === 'in-progress' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-500' :
-                              'bg-green-500/20 border-green-500 text-green-500'
-                            }`}
-                          >
-                            <option value="new" className="bg-zinc-900 text-white">New</option>
-                            <option value="in-progress" className="bg-zinc-900 text-white">In Progress</option>
-                            <option value="resolved" className="bg-zinc-900 text-white">Resolved</option>
-                          </select>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-zinc-400 hover:text-red-500"
-                            onClick={() => handleDeleteFeedback(item.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+
+                        {/* Message */}
+                        <div
+                          className="mt-3 p-3 rounded-xl text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed"
+                          style={{
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                          }}
+                        >
+                          {item.message}
                         </div>
-                      </div>
-                      <div className="bg-black/20 p-3 rounded-lg border border-white/5 whitespace-pre-wrap text-sm text-zinc-300">
-                        {item.message}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
     {/* Admin Reset Password Modal */}

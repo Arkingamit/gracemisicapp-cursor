@@ -31,7 +31,7 @@ export async function PATCH(request: NextRequest) {
     const updates = await request.json();
     
     // Only allow specific fields to be updated
-    const allowedUpdates: Record<string, any> = {};
+    const allowedUpdates: Record<string, unknown> = {};
     const editableFields = ['displayName', 'photoURL', 'church', 'age', 'instrument'];
     
     editableFields.forEach(field => {

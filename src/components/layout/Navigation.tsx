@@ -76,7 +76,7 @@ const Navigation = () => {
                 href={link.path}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors text-sm font-medium ${
                   isActive(link.path)
-                    ? 'bg-primary/20 text-primary'
+                    ? 'bg-white/10 text-white'
                     : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-100'
                 }`}
               >
@@ -93,9 +93,9 @@ const Navigation = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-auto rounded-full flex items-center gap-2 pl-1 pr-3 md:pr-4 border border-transparent md:border-border/50 hover:bg-zinc-800/50 transition-all hover:border-zinc-700">
                   <div className="relative">
-                    <Avatar className="h-8 w-8 ring-1 ring-primary/30 shadow-sm transition-all group-hover:ring-primary/50">
+                    <Avatar className="h-8 w-8 ring-1 ring-white/20 shadow-sm transition-all group-hover:ring-white/40">
                       <AvatarImage src={currentUser.photoURL || ''} alt={currentUser.displayName || currentUser.name} />
-                      <AvatarFallback className="bg-gradient-to-br from-primary to-blue-500 text-white font-bold text-xs">
+                      <AvatarFallback className="bg-zinc-700 text-white font-bold text-xs">
                         {getInitials(currentUser.displayName || currentUser.name || 'User')}
                       </AvatarFallback>
                     </Avatar>
@@ -158,7 +158,7 @@ const Navigation = () => {
                 </Button>
                 <Button 
                   onClick={() => router.push('/login')}
-                  className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-full px-6 transition-all hover:scale-105 active:scale-95"
+                  className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full px-6 transition-all hover:scale-105 active:scale-95"
                 >
                   Sign In
                 </Button>

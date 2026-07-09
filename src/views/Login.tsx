@@ -37,10 +37,6 @@ const Login = () => {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-transparent">
-      {/* Premium background effects */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] animation-delay-2000" />
-      
       <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl mb-6 group transition-transform hover:scale-110">
@@ -61,8 +57,7 @@ const Login = () => {
               </div>
 
               <div className="flex justify-center flex-col items-center gap-6">
-                <div className="w-full relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-lg blur opacity-25 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                <div className="w-full relative">
                   <div className="relative">
                     {Capacitor.isNativePlatform() ? (
                       <button 

@@ -192,7 +192,7 @@ export default function SetupPage() {
     return (
       <div className="min-h-screen bg-transparent flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-4 border-zinc-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-zinc-400">Checking setup status...</p>
         </div>
       </div>
@@ -222,7 +222,7 @@ export default function SetupPage() {
   return (
     <div className="min-h-screen bg-transparent text-white">
       {/* Header */}
-      <div className="bg-gradient-to-r from-violet-900/40 to-indigo-900/40 border-b border-white/10 py-6 px-4">
+      <div className="bg-zinc-900/80 border-b border-white/10 py-6 px-4">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-2xl font-bold">🎵 Grace Music — Server Setup Wizard</h1>
           <p className="text-zinc-400 text-sm mt-1">Configure your self-hosted instance</p>
@@ -237,7 +237,7 @@ export default function SetupPage() {
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all cursor-pointer ${
                   i === step
-                    ? 'bg-violet-600 border-violet-400 scale-110'
+                    ? 'bg-zinc-600 border-zinc-400 scale-110'
                     : i < step
                     ? 'bg-green-600/30 border-green-500 text-green-400'
                     : 'bg-zinc-800 border-zinc-700 text-zinc-500'
@@ -303,7 +303,7 @@ export default function SetupPage() {
 
             <button
               onClick={() => { setMessage(''); setStep(1); }}
-              className="w-full py-3 bg-violet-600 hover:bg-violet-500 rounded-xl font-semibold transition-colors"
+              className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 rounded-xl font-semibold transition-colors"
             >
               Let's Get Started →
             </button>
@@ -330,7 +330,7 @@ export default function SetupPage() {
                   value={migration.sourceUri}
                   onChange={(e) => setMigration(m => ({ ...m, sourceUri: e.target.value }))}
                   placeholder="mongodb+srv://user:pass@cluster.mongodb.net/"
-                  className="w-full px-4 py-2.5 bg-zinc-800 border border-white/10 rounded-xl text-white placeholder-zinc-500 text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-4 py-2.5 bg-zinc-800 border border-white/10 rounded-xl text-white placeholder-zinc-500 text-sm focus:outline-none focus:border-white/30"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -372,7 +372,7 @@ export default function SetupPage() {
               </button>
               <button
                 onClick={() => { setMessage(''); setStep(2); }}
-                className="flex-1 py-2.5 bg-violet-600 hover:bg-violet-500 rounded-xl text-sm font-semibold transition-colors"
+                className="flex-1 py-2.5 bg-zinc-700 hover:bg-zinc-600 rounded-xl text-sm font-semibold transition-colors"
               >
                 Next: Configuration →
               </button>
@@ -395,7 +395,7 @@ export default function SetupPage() {
                   type="text"
                   value={config.MONGODB_URI}
                   onChange={(e) => setConfig(c => ({ ...c, MONGODB_URI: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-zinc-800 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-4 py-2.5 bg-zinc-800 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-white/30"
                 />
                 <p className="text-xs text-zinc-500 mt-1">Default: mongodb://localhost:27017</p>
               </div>
@@ -406,7 +406,7 @@ export default function SetupPage() {
                   type="text"
                   value={config.MONGODB_DB_NAME}
                   onChange={(e) => setConfig(c => ({ ...c, MONGODB_DB_NAME: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-zinc-800 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-4 py-2.5 bg-zinc-800 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-white/30"
                 />
               </div>
 
@@ -415,7 +415,7 @@ export default function SetupPage() {
                   JWT Secret
                   <button
                     onClick={generateJWTSecret}
-                    className="text-xs bg-violet-600/20 text-violet-400 px-2 py-0.5 rounded hover:bg-violet-600/30 transition-colors"
+                    className="text-xs bg-white/5 text-zinc-400 px-2 py-0.5 rounded hover:bg-white/10 transition-colors"
                   >
                     🔑 Generate Random
                   </button>
@@ -425,7 +425,7 @@ export default function SetupPage() {
                   value={config.JWT_SECRET}
                   onChange={(e) => setConfig(c => ({ ...c, JWT_SECRET: e.target.value }))}
                   placeholder="A strong random string..."
-                  className="w-full px-4 py-2.5 bg-zinc-800 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500 font-mono"
+                  className="w-full px-4 py-2.5 bg-zinc-800 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-white/30 font-mono"
                 />
               </div>
 
@@ -436,7 +436,7 @@ export default function SetupPage() {
                   value={config.NEXT_PUBLIC_GOOGLE_CLIENT_ID}
                   onChange={(e) => setConfig(c => ({ ...c, NEXT_PUBLIC_GOOGLE_CLIENT_ID: e.target.value }))}
                   placeholder="xxxxx.apps.googleusercontent.com"
-                  className="w-full px-4 py-2.5 bg-zinc-800 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-4 py-2.5 bg-zinc-800 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-white/30"
                 />
                 <p className="text-xs text-zinc-500 mt-1">
                   ⚠️ Remember to add <strong>{config.NEXT_PUBLIC_DOMAIN || 'your domain'}</strong> to Google Cloud Console authorized origins!
@@ -450,7 +450,7 @@ export default function SetupPage() {
                   value={config.GROQ_API_KEY}
                   onChange={(e) => setConfig(c => ({ ...c, GROQ_API_KEY: e.target.value }))}
                   placeholder="gsk_..."
-                  className="w-full px-4 py-2.5 bg-zinc-800 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-4 py-2.5 bg-zinc-800 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-white/30"
                 />
               </div>
 
@@ -461,7 +461,7 @@ export default function SetupPage() {
                   value={config.NEXT_PUBLIC_DOMAIN}
                   onChange={(e) => setConfig(c => ({ ...c, NEXT_PUBLIC_DOMAIN: e.target.value }))}
                   placeholder="graceahmedabad.org"
-                  className="w-full px-4 py-2.5 bg-zinc-800 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-4 py-2.5 bg-zinc-800 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-white/30"
                 />
               </div>
 
@@ -483,7 +483,7 @@ export default function SetupPage() {
               </button>
               <button
                 onClick={() => { setMessage(''); setStep(3); }}
-                className="flex-1 py-2.5 bg-violet-600 hover:bg-violet-500 rounded-xl text-sm font-semibold transition-colors"
+                className="flex-1 py-2.5 bg-zinc-700 hover:bg-zinc-600 rounded-xl text-sm font-semibold transition-colors"
               >
                 Next: Test & Complete →
               </button>
@@ -536,7 +536,7 @@ export default function SetupPage() {
             <button
               onClick={completeSetup}
               disabled={actionLoading}
-              className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:from-zinc-700 disabled:to-zinc-700 rounded-xl font-bold text-lg transition-all"
+              className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 disabled:from-zinc-700 disabled:to-zinc-700 rounded-xl font-bold text-lg transition-all"
             >
               {actionLoading ? 'Completing...' : '🎉 Complete Setup'}
             </button>
@@ -620,7 +620,7 @@ WantedBy=multi-user.target
 
             <a
               href="/"
-              className="inline-block w-full py-3 bg-violet-600 hover:bg-violet-500 rounded-xl font-semibold transition-colors text-center"
+              className="inline-block w-full py-3 bg-zinc-700 hover:bg-zinc-600 rounded-xl font-semibold transition-colors text-center"
             >
               Go to Grace Music →
             </a>

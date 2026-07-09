@@ -32,7 +32,7 @@ export default function ForceUpdateModal() {
         <div className="flex flex-col items-center justify-center px-8 text-center max-w-md mx-auto">
           {/* Animated icon */}
           <div className="relative mb-8">
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-purple-500/30 animate-pulse">
+            <div className="w-24 h-24 rounded-3xl bg-zinc-800 border border-white/10 flex items-center justify-center shadow-2xl animate-pulse">
               <ArrowUpCircle className="w-12 h-12 text-white" />
             </div>
             <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 border-2 border-black flex items-center justify-center">
@@ -47,9 +47,9 @@ export default function ForceUpdateModal() {
 
           {/* Version badge */}
           {latestVersion && (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 mb-5">
-              <Smartphone className="w-3.5 h-3.5 text-purple-400" />
-              <span className="text-xs font-medium text-purple-300">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-5">
+              <Smartphone className="w-3.5 h-3.5 text-zinc-400" />
+              <span className="text-xs font-medium text-zinc-300">
                 Version {latestVersion} available
               </span>
             </div>
@@ -64,7 +64,7 @@ export default function ForceUpdateModal() {
           <button
             onClick={handleUpdate}
             disabled={!updateUrl}
-            className="w-full max-w-xs flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold text-base shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full max-w-xs flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-white/10 border border-white/15 text-white font-semibold text-base shadow-xl hover:bg-white/15 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="w-5 h-5" />
             Update Now

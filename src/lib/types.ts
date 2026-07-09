@@ -18,6 +18,9 @@ export interface User {
   displayName: string; // Required in the interface
   photoURL: string; // Required in the interface
   aiChatLimitMB?: number;
+  church?: string;
+  age?: number;
+  instrument?: string;
 }
 
 export interface MongoUser {
@@ -31,6 +34,9 @@ export interface MongoUser {
   displayName?: string; // Making this optional for backward compatibility
   photoURL?: string; // Making this optional for backward compatibility
   aiChatLimitMB?: number;
+  church?: string;
+  age?: number;
+  instrument?: string;
 }
 
 // Add Genre interface
@@ -43,6 +49,26 @@ export interface Genre {
 export interface MongoGenre {
   _id: ObjectId;
   name: string;
+  createdAt: Date;
+}
+
+export interface Feedback {
+  id: string;
+  userId: string;
+  userName: string;
+  type: 'question' | 'bug' | 'general' | 'idea';
+  message: string;
+  status: 'new' | 'in-progress' | 'resolved';
+  createdAt: string;
+}
+
+export interface MongoFeedback {
+  _id: ObjectId;
+  userId: string;
+  userName: string;
+  type: 'question' | 'bug' | 'general' | 'idea';
+  message: string;
+  status: 'new' | 'in-progress' | 'resolved';
   createdAt: Date;
 }
 

@@ -1,6 +1,7 @@
 
 import SongForm from '@/components/songs/SongForm';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Lightbulb } from 'lucide-react';
 
 const SongAdd = () => {
@@ -14,14 +15,16 @@ const SongAdd = () => {
         </div>
         
         <div className="space-y-6 order-1 lg:order-2">
-          <Card className="bg-primary/5 border-primary/20 lg:sticky lg:top-24">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Lightbulb className="w-5 h-5 text-primary" />
-                Step-by-Step Guide
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6 text-sm">
+          <Card className="bg-primary/5 border-primary/20 lg:sticky lg:top-24 overflow-hidden">
+            <Accordion type="single" collapsible>
+              <AccordionItem value="guide" className="border-none">
+                <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-primary/10 transition-colors">
+                  <div className="flex items-center gap-2 text-xl font-semibold">
+                    <Lightbulb className="w-5 h-5 text-primary" />
+                    Step-by-Step Guide
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6 pt-2 space-y-6 text-sm">
               <div className="flex gap-3">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold shrink-0">1</div>
                 <div>
@@ -75,7 +78,9 @@ This is how we paste
                   <p className="text-muted-foreground leading-relaxed">If you're in an organization, you can choose to make this song private to your team or public for everyone.</p>
                 </div>
               </div>
-            </CardContent>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </Card>
         </div>
       </div>

@@ -21,7 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AddToGroupButton from '@/components/groups/AddToGroupButton';
 import LikeButton from '@/components/songs/LikeButton';
 import AddToPlaylistDialog from '@/components/playlists/AddToPlaylistDialog';
-import { Pencil, Trash2, Globe, Lock, X, ArrowLeft, Heart, ListMusic, Copy, ChevronLeft, Plus, Music, MoreVertical } from 'lucide-react';
+import { Pencil, Trash2, Globe, Lock, X, ArrowLeft, Heart, ListMusic, Copy, ChevronLeft, Plus, Music, MoreVertical, Settings } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { detectKey } from '@/lib/keyDetection';
 import { getKeyDisplayName } from '@/lib/chordUtils';
@@ -79,7 +79,6 @@ const SongList = () => {
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
-  const [isScrolledDown, setIsScrolledDown] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -114,11 +113,14 @@ const SongList = () => {
     router.push(`/songs/view?id=${songId}`);
   };
 
-  // Read genre or search from URL on mount / param change
-  useEffect(() => {
+  const [prevSearchParams, setPrevSearchParams] = useState(searchParams);
+
+  if (searchParams !== prevSearchParams) {
+    setPrevSearchParams(searchParams);
     const genre = searchParams.get('genre');
     const language = searchParams.get('language');
     const search = searchParams.get('search');
+    
     if (genre) {
       setGenreFilter(genre);
       setLanguageFilter(null);
@@ -132,7 +134,7 @@ const SongList = () => {
       setGenreFilter(null);
       setLanguageFilter(null);
     }
-  }, [searchParams]);
+  }
 
   const clearGenreFilter = () => {
     setGenreFilter(null);
@@ -150,26 +152,6 @@ const SongList = () => {
     }
   };
 
-  // Scroll detection for hiding/showing the filter bar
-  useEffect(() => {
-    let lastScrollY = window.scrollY;
-    
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      // Only hide if we've scrolled down far enough that the bar is sticky
-      if (currentScrollY > lastScrollY && currentScrollY > 250) {
-        setIsScrolledDown(true);
-      } else {
-        setIsScrolledDown(false);
-      }
-      
-      lastScrollY = currentScrollY;
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Pre-calculate keys to make searching fast and avoid re-calculating on every render
   const songKeys = useMemo(() => {
@@ -264,7 +246,7 @@ const SongList = () => {
   return (
     <div className="min-h-screen bg-transparent pb-20">
       {/* Header / Banner Area */}
-      <div className="bg-gradient-to-b from-primary/10 via-primary/5 to-zinc-950 pt-20 md:pt-28 pb-6">
+      <div className="pt-24 md:pt-32 pb-8">
         <div className="container mx-auto px-4">
           {(genreFilter || languageFilter) && (
             <Button 
@@ -280,10 +262,10 @@ const SongList = () => {
 
           <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="space-y-3 flex-1">
-              <Badge variant="outline" className="bg-primary/20 text-primary border-none uppercase tracking-widest text-[10px] font-black px-3 py-1 rounded-full w-fit">
+              <Badge variant="outline" className="border-zinc-800 text-zinc-400 uppercase tracking-widest text-[10px] font-semibold px-3 py-1 rounded-full w-fit">
                 LIBRARY
               </Badge>
-              <h1 className="text-4xl sm:text-5xl font-black tracking-tighter text-white drop-shadow-md">
+              <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-white">
                 {genreFilter ? genreFilter : languageFilter ? languageFilter : 'Songs'}
               </h1>
               <div className="flex items-center gap-3 text-sm text-zinc-400 font-medium">
@@ -297,13 +279,7 @@ const SongList = () => {
         </div>
       </div>
 
-      <div 
-        className={`sticky top-0 z-20 bg-zinc-950/90 backdrop-blur-md border-b border-white/5 py-4 transition-all duration-300 ease-in-out ${
-          isScrolledDown 
-            ? '-translate-y-full opacity-0 pointer-events-none' 
-            : 'translate-y-0 opacity-100 pointer-events-auto'
-        }`}
-      >
+      <div className="sticky top-0 z-20 bg-zinc-950/90 backdrop-blur-md border-b border-white/5 py-4 transition-all duration-300 ease-in-out">
         <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Filter Tabs */}
           <div className="flex p-0.5 border border-zinc-800 rounded-lg bg-zinc-900/60 w-full sm:w-auto">
@@ -389,13 +365,16 @@ const SongList = () => {
             <div className="overflow-x-auto border border-zinc-800/60 rounded-xl bg-zinc-950/30">
               <Table className="table-fixed w-full border-collapse">
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="bg-zinc-800 hover:bg-zinc-800 data-[state=selected]:bg-zinc-800 border-b border-zinc-800/80">
                     <TableHead className="w-[42%] px-2 sm:px-4 text-base">Title</TableHead>
                     <TableHead className="w-[28%] px-2 sm:px-4 text-base">Artist</TableHead>
                     <TableHead className="w-[15%] px-2 sm:px-4 text-base">Key</TableHead>
                     {hasActions && (
-                      <TableHead className="w-[15%] px-2 sm:px-4 text-right text-base">
-                        <span className="sr-only sm:not-sr-only">Actions</span>
+                      <TableHead className="w-[15%] px-2 sm:px-4 text-right">
+                        <div className="flex justify-center items-center h-8 w-8 ml-auto">
+                          <Settings className="w-4 h-4 text-zinc-500" />
+                          <span className="sr-only">Actions</span>
+                        </div>
                       </TableHead>
                     )}
                   </TableRow>

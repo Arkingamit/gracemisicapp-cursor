@@ -7,7 +7,6 @@ import bcrypt from 'bcryptjs';
 import { SYSTEM_ADMIN_EMAIL } from '@/lib/constants';
 
 export class UserModel {
-  // Convert MongoDB document to application User type
   static toUser(doc: MongoUser): User {
     return {
       id: doc._id.toString(),
@@ -18,7 +17,10 @@ export class UserModel {
       createdAt: doc.createdAt.toISOString(),
       displayName: doc.displayName || doc.name, // Fallback to name if displayName not set
       photoURL: doc.photoURL || '', // Fallback to empty string if photoURL not set
-      aiChatLimitMB: doc.aiChatLimitMB
+      aiChatLimitMB: doc.aiChatLimitMB,
+      church: doc.church,
+      age: doc.age,
+      instrument: doc.instrument
     };
   }
 

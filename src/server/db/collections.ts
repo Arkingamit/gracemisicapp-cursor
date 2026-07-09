@@ -11,5 +11,6 @@ export const COLLECTIONS = {
   FAVORITES: 'favorites',
   AUDIT_LOGS: 'auditLogs',
   CHAT_HISTORY: 'chatHistory',
-  JOIN_REQUESTS: 'joinRequests'
+  JOIN_REQUESTS: 'joinRequests',
+  FEEDBACK: 'feedback'
 } as const;

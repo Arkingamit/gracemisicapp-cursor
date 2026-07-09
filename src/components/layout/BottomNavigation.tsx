@@ -2,7 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Library, LayoutGrid, User, LogIn, Heart, ListMusic, Users, Building2 } from 'lucide-react';
+import { Music, Heart, Library, Users, Building } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const BottomNavigation = () => {
@@ -10,16 +10,11 @@ const BottomNavigation = () => {
   const { currentUser } = useAuth();
 
   const navItems = [
-    { name: 'Songs', path: '/songs', icon: Library },
+    { name: 'Songs', path: '/songs', icon: Music },
     { name: 'Like', path: '/favorites', icon: Heart },
-    { name: 'Classes', path: '/playlists', icon: ListMusic },
-    { name: 'Sets', path: '/groups', icon: Users },
-    { name: 'Org', path: '/organizations', icon: Building2 },
-    // {
-    //   name: currentUser ? 'Me' : 'Login',
-    //   path: currentUser ? '/profile' : '/login',
-    //   icon: currentUser ? User : LogIn,
-    // },
+    { name: 'Library', path: '/playlists', icon: Library },
+    { name: 'Sets', path: '/groups', icon: Building },
+    { name: 'Org', path: '/organizations', icon: Users },
   ];
 
   const isActive = (path: string) => {
@@ -28,7 +23,7 @@ const BottomNavigation = () => {
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-white/5 bg-transparent/80 backdrop-blur-2xl saturate-[1.8] pointer-events-auto bottom-nav-container shadow-[0_-4px_20px_rgba(0,0,0,0.6)]">
+    <nav className="md:hidden fixed -bottom-1 left-0 right-0 z-50 border-t border-white/5 bg-background pointer-events-auto pb-[calc(env(safe-area-inset-bottom)+4px)] shadow-[0_-4px_20px_rgba(0,0,0,0.6)]">
       <div className="grid grid-cols-5 h-16 w-full mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -42,7 +37,7 @@ const BottomNavigation = () => {
             >
               <div className={`p-1.5 rounded-full transition-all ${active ? 'bg-primary/10' : ''}`}>
                 <Icon
-                  className={`w-5 h-5 mb-0.5 group-active:scale-90 transition-transform ${active ? 'stroke-[2.5px]' : 'stroke-2'
+                  className={`w-6 h-6 mb-0.5 group-active:scale-90 transition-transform ${active ? 'stroke-[2px]' : 'stroke-[1.5px]'
                     }`}
                 />
               </div>

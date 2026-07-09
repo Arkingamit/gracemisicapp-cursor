@@ -7,6 +7,7 @@ import remarkGfm from "remark-gfm";
 import { getFullUrl } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import { motion, useAnimation } from "framer-motion";
 
 interface Message {
   id: string;
@@ -24,7 +25,21 @@ export default function AIChatBot() {
   const [error, setError] = useState<string | null>(null);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(true);
+  const [side, setSide] = useState<'left' | 'right'>('left');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const dragControls = useAnimation();
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (side === 'right') {
+        dragControls.set({ x: window.innerWidth - 60 });
+      } else {
+        dragControls.set({ x: 0 });
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [side, dragControls]);
 
   // Load settings
   useEffect(() => {
@@ -157,9 +172,10 @@ export default function AIChatBot() {
 
       // Auto-save to server after each exchange
       saveHistory(finalMessages);
-    } catch (err: any) {
+    } catch (err) {
       console.error("AI Chat error:", err);
-      setError(err.message || "Something went wrong. Please try again.");
+      const errorMessage = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -184,35 +200,60 @@ export default function AIChatBot() {
   return (
     <>
       {/* Floating Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={`fixed bottom-20 sm:bottom-6 right-6 p-4 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 hover:scale-105 hover:shadow-xl transition-all duration-300 z-50 flex items-center justify-center ${isOpen ? "scale-0 opacity-0" : "scale-100 opacity-100"}`}
-        aria-label="Open AI Assistant"
+      <motion.div
+        drag
+        dragMomentum={false}
+        animate={dragControls}
+        onDragEnd={(e, info) => {
+          if (typeof window !== 'undefined') {
+            if (info.point.x > window.innerWidth / 2) {
+              setSide('right');
+              dragControls.start({ x: window.innerWidth - 60, transition: { type: "spring", bounce: 0.2, duration: 0.5 } });
+            } else {
+              setSide('left');
+              dragControls.start({ x: 0, transition: { type: "spring", bounce: 0.2, duration: 0.5 } });
+            }
+          }
+        }}
+        whileDrag={{ scale: 1.05 }}
+        className={`fixed bottom-20 sm:bottom-6 left-0 z-50 ${isOpen ? (side === 'left' ? "-translate-x-full" : "translate-x-full") + " opacity-0 pointer-events-none" : "translate-x-0 opacity-100"}`}
+        style={{ touchAction: "none" }}
       >
-        <Sparkles className="w-6 h-6 animate-pulse" />
-      </button>
+        <button
+          onClick={() => setIsOpen(true)}
+          className={`py-3 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center border cursor-grab active:cursor-grabbing bg-zinc-900 border-zinc-800 text-blue-500 ${
+            side === 'left' 
+              ? 'pl-3 pr-4 rounded-r-2xl border-l-0 hover:pr-5' 
+              : 'pr-3 pl-4 rounded-l-2xl border-r-0 hover:pl-5'
+          }`}
+          aria-label="Open AI Assistant"
+        >
+          <Sparkles className="w-7 h-7 animate-flame pointer-events-none" />
+        </button>
+      </motion.div>
 
       {/* Chat Window */}
       <div
-        className={`fixed bottom-[72px] sm:bottom-6 right-0 sm:right-6 w-full sm:max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 transform origin-bottom-right z-50 ${isOpen ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none"}`}
+        className={`fixed bottom-[60px] sm:bottom-6 w-full sm:max-w-md bg-zinc-950 border border-zinc-800 sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 z-50 ${
+          side === 'left' ? 'left-0 sm:left-6 origin-bottom-left' : 'right-0 sm:right-6 origin-bottom-right'
+        } ${isOpen ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none"}`}
         style={{ height: "600px", maxHeight: "calc(100vh - 80px)" }}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white flex justify-between items-center shadow-md z-10">
+        <div className="bg-zinc-900 border-b border-zinc-800 p-4 text-zinc-100 flex justify-between items-center shadow-md z-10">
           <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-              <Bot className="w-5 h-5 text-white" />
+            <div className="bg-blue-500/20 p-2 rounded-lg text-blue-500">
+              <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-lg leading-tight">Grace Copilot</h3>
-              <p className="text-blue-100 text-xs">Worship Ministry Assistant</p>
+              <h3 className="font-bold text-lg leading-tight text-blue-500">Grace Copilot</h3>
+              <p className="text-zinc-400 text-xs">Worship Ministry Assistant</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
-
             <button
               onClick={() => setIsOpen(false)}
-              className="p-2 hover:bg-white/20 rounded-full transition-colors"
+              className="p-2 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 rounded-full transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -220,19 +261,19 @@ export default function AIChatBot() {
         </div>
 
         {loading ? (
-          <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400" />
+          <div className="flex-1 flex items-center justify-center bg-zinc-950">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
           </div>
         ) : !currentUser ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gray-50 dark:bg-gray-950 text-center space-y-6">
-            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 animate-pulse">
-              <Bot className="w-8 h-8 animate-bounce" />
+          <div className="flex-1 flex flex-col items-center justify-center p-6 bg-zinc-950 text-center space-y-6">
+            <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-500 animate-pulse">
+              <Sparkles className="w-8 h-8 animate-bounce" />
             </div>
             <div className="space-y-2 max-w-xs">
-              <h4 className="font-bold text-lg text-gray-800 dark:text-gray-200">
+              <h4 className="font-bold text-lg text-zinc-200">
                 Unlock Grace Copilot
               </h4>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-zinc-400">
                 Please sign in to start chatting with your AI worship ministry assistant.
               </p>
             </div>
@@ -241,7 +282,7 @@ export default function AIChatBot() {
                 setIsOpen(false);
                 router.push("/login");
               }}
-              className="w-full max-w-[240px] py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all text-sm animate-pulse"
+              className="w-full max-w-[240px] py-2.5 px-4 bg-red-700 hover:bg-red-600 text-white font-semibold rounded-xl shadow-lg active:scale-95 transition-all text-sm animate-pulse"
             >
               Sign In to Chat
             </button>
@@ -249,26 +290,26 @@ export default function AIChatBot() {
         ) : (
           <>
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-950 flex flex-col gap-4">
+            <div className="flex-1 overflow-y-auto p-4 bg-zinc-950 flex flex-col gap-4">
               {messages.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 px-4 space-y-4">
-                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400">
+                <div className="flex flex-col items-center justify-center h-full text-center text-zinc-500 px-4 space-y-4">
+                  <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-500">
                     <Sparkles className="w-8 h-8" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">I'm your worship assistant.</p>
+                    <p className="font-medium text-zinc-300">I'm your worship assistant.</p>
                     <p className="text-sm mt-1">Ask me to suggest setlists, check vocal ranges, or find songs in your library.</p>
                   </div>
                   <div className="grid gap-2 w-full mt-4">
                     <button
                       onClick={() => setQuickPrompt("Suggest an upbeat worship set for this Sunday")}
-                      className="text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded-lg text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="text-xs bg-zinc-900 border border-zinc-800 p-2 rounded-lg text-left hover:bg-zinc-800 transition-colors"
                     >
                       "Suggest an upbeat worship set for this Sunday"
                     </button>
                     <button
                       onClick={() => setQuickPrompt("What key is best for a female leading 'Way Maker'?")}
-                      className="text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded-lg text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="text-xs bg-zinc-900 border border-zinc-800 p-2 rounded-lg text-left hover:bg-zinc-800 transition-colors"
                     >
                       "What key is best for a female leading 'Way Maker'?"
                     </button>
@@ -282,31 +323,31 @@ export default function AIChatBot() {
                     {/* Avatar */}
                     <div
                       className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1 ${m.role === "user"
-                        ? "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                        : "bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400"
+                        ? "bg-zinc-800 text-zinc-300"
+                        : "bg-blue-500/20 text-blue-500"
                         }`}
                     >
-                      {m.role === "user" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                      {m.role === "user" ? <User className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
                     </div>
 
                     {/* Message Bubble */}
                     <div
                       className={`p-3 rounded-2xl ${m.role === "user"
-                        ? "bg-blue-600 text-white rounded-tr-sm"
-                        : "bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-tl-sm shadow-sm"
+                        ? "bg-red-700 text-white rounded-tr-sm"
+                        : "bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-tl-sm shadow-sm"
                         }`}
                     >
                       {m.role === "user" ? (
                         <p className="text-sm whitespace-pre-wrap">{m.content}</p>
                       ) : (
-                        <div className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:leading-snug prose-table:w-full prose-table:my-4 prose-th:text-left prose-th:text-gray-500 dark:prose-th:text-gray-400 prose-th:font-medium prose-th:pb-2 prose-th:border-b prose-th:border-gray-200 dark:prose-th:border-gray-700 prose-td:py-3 prose-td:border-b prose-td:border-gray-100 dark:prose-td:border-gray-800/50">
+                        <div className="text-sm prose prose-sm prose-invert max-w-none prose-p:leading-snug prose-table:w-full prose-table:my-4 prose-th:text-left prose-th:text-zinc-400 prose-th:font-medium prose-th:pb-2 prose-th:border-b prose-th:border-zinc-800 prose-td:py-3 prose-td:border-b prose-td:border-zinc-800/50">
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
                               a: ({ node, ...props }) => (
                                 <a
                                   {...props}
-                                  className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-3 py-2 rounded-lg font-semibold no-underline hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-all shadow-sm my-1 border border-blue-200 dark:border-blue-800 w-fit max-w-full"
+                                  className="inline-flex items-center gap-2 bg-blue-500/20 text-blue-500 px-3 py-2 rounded-lg font-semibold no-underline hover:bg-blue-500/30 transition-all shadow-sm my-1 border border-blue-500/30 w-fit max-w-full"
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >
@@ -317,7 +358,8 @@ export default function AIChatBot() {
                               ol: ({ node, ...props }) => (
                                 <ol className="flex flex-col gap-2 my-4 list-none p-0 w-full" style={{ counterReset: "options" }} {...props} />
                               ),
-                              li: ({ node, children, ...props }: any) => {
+                              li: ({ node, children, ...props }: { node?: any, children?: React.ReactNode, [key: string]: any }) => {
+                                // @ts-ignore - hast Element type is too complex to inline
                                 const isOrdered = node?.parent?.tagName === 'ol' || node?.parent?.type === 'element' && node?.parent?.tagName === 'ol';
 
                                 if (isOrdered) {
@@ -326,19 +368,22 @@ export default function AIChatBot() {
                                       <button
                                         onClick={() => {
                                           let text = "";
-                                          const extractText = (childArray: any) => {
+                                          const extractText = (childArray: React.ReactNode) => {
                                             React.Children.forEach(childArray, child => {
                                               if (typeof child === 'string') text += child;
-                                              else if (React.isValidElement(child)) extractText((child as any).props?.children);
+                                              else if (React.isValidElement(child)) {
+                                                const childProps = child.props as Record<string, unknown>;
+                                                extractText(childProps?.children as React.ReactNode);
+                                              }
                                             });
                                           };
                                           extractText(children);
                                           setQuickPrompt(text.trim());
                                         }}
-                                        className="w-full text-left bg-gray-100 dark:bg-gray-800/80 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 p-3 rounded-xl border border-gray-200 dark:border-gray-700 transition-colors flex items-center gap-3 text-sm group"
+                                        className="w-full text-left bg-zinc-800/50 hover:bg-zinc-800 text-zinc-200 p-3 rounded-xl border border-zinc-800 transition-colors flex items-center gap-3 text-sm group"
                                       >
                                         <span
-                                          className="flex-shrink-0 w-6 h-6 rounded bg-gray-200 dark:bg-gray-900 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-400 group-hover:bg-gray-300 dark:group-hover:bg-gray-800 transition-colors before:content-[counter(options)]"
+                                          className="flex-shrink-0 w-6 h-6 rounded bg-zinc-900 flex items-center justify-center text-xs font-medium text-zinc-400 group-hover:bg-zinc-800 transition-colors before:content-[counter(options)]"
                                           style={{ counterIncrement: "options" }}
                                         />
                                         <span className="flex-1">{children}</span>
@@ -361,13 +406,13 @@ export default function AIChatBot() {
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="flex max-w-[85%] gap-2 flex-row">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mt-1 text-blue-600 dark:text-blue-400">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mt-1 text-blue-500">
                       <Loader2 className="w-4 h-4 animate-spin" />
                     </div>
-                    <div className="p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-tl-sm shadow-sm flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></div>
+                    <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 rounded-tl-sm shadow-sm flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-blue-500/60 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                      <div className="w-1.5 h-1.5 bg-blue-500/60 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                      <div className="w-1.5 h-1.5 bg-blue-500/60 rounded-full animate-bounce"></div>
                     </div>
                   </div>
                 </div>
@@ -383,11 +428,11 @@ export default function AIChatBot() {
             )}
 
             {/* Input Area */}
-            <div className="p-3 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+            <div className="p-3 bg-zinc-950 border-t border-zinc-800">
               {aiEnabled ? (
                 <form onSubmit={handleSubmit} className="relative flex items-end gap-2">
                   <textarea
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 resize-none text-zinc-100 placeholder:text-zinc-500"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Ask Grace Copilot..."
@@ -406,18 +451,18 @@ export default function AIChatBot() {
                   <button
                     type="submit"
                     disabled={!input.trim() || isLoading}
-                    className="absolute right-2 bottom-2 p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
+                    className="absolute right-2 bottom-2 p-2 rounded-lg bg-red-700 text-white hover:bg-red-600 disabled:opacity-50 disabled:hover:bg-red-700 transition-colors"
                   >
                     <Send className="w-4 h-4" />
                   </button>
                 </form>
               ) : (
-                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-center text-sm text-gray-500 border border-gray-200 dark:border-gray-700">
+                <div className="p-4 bg-zinc-900 rounded-xl text-center text-sm text-zinc-500 border border-zinc-800">
                   <p>AI Assistant is currently disabled by the administrator.</p>
                 </div>
               )}
               <div className="text-center mt-2">
-                <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                <span className="text-[10px] text-zinc-500">
                   Grace AI can make mistakes. Verify keys and chords.
                 </span>
               </div>

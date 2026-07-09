@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { FeedbackModal } from '../common/FeedbackModal';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,32 +14,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, X, User, LogOut, Settings, Music, Users, Building2, Heart, ListMusic, Info, Plus } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, Music, Users, Building2, Heart, ListMusic, Info, Plus, MessageSquare } from 'lucide-react';
 const Navigation = () => {
   const { currentUser, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isScrolledDown, setIsScrolledDown] = useState(false);
-
-  useEffect(() => {
-    let lastScrollY = window.scrollY;
-    
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      if (currentScrollY > lastScrollY && currentScrollY > 80) {
-        setIsScrolledDown(true);
-      } else {
-        setIsScrolledDown(false);
-      }
-      
-      lastScrollY = currentScrollY;
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -67,27 +48,26 @@ const Navigation = () => {
     { name: 'Songs', path: '/songs', icon: <Music className="h-4 w-4" /> },
     { name: 'Favorites', path: '/favorites', icon: <Heart className="h-4 w-4" /> },
     { name: 'Collections', path: '/playlists', icon: <ListMusic className="h-4 w-4" /> },
-    { name: 'Sets', path: '/groups', icon: <Users className="h-4 w-4" /> },
-    { name: 'Orgs', path: '/organizations', icon: <Building2 className="h-4 w-4" /> },
+    { name: 'Sets', path: '/groups', icon: <Building2 className="h-4 w-4" /> },
+    { name: 'Orgs', path: '/organizations', icon: <Users className="h-4 w-4" /> },
   ];
   return (
-    <header 
-      className={`fixed top-0 left-0 right-0 z-50 w-full transition-[transform,opacity] duration-300 ease-in-out md:pt-4 md:px-4 pointer-events-none ${
-        isScrolledDown 
-          ? '-translate-y-24 opacity-0' 
-          : 'translate-y-0 opacity-100'
-      }`}
-    >
-      <div className="w-full md:max-w-5xl mx-auto bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/100 border-b md:border border-border/9 md:shadow-md md:rounded-full pointer-events-auto  ">
-        <div className="container mx-auto px-4 md:px-6 flex justify-between items-center h-16">
-          <div className="flex items-center md:flex-1">
-            <Link href="/" className="flex items-center gap-3 text-xl font-bold group">
-              <div className="h-10 w-10 flex items-center justify-center shrink-0">
-                <img src="/lovable-uploads/gracemain.png" alt="Grace Music Logo" className="max-h-full max-w-full object-contain" />
-              </div>
-              <span className="whitespace-nowrap text-zinc-100 group-hover:text-primary transition-colors duration-200">Grace Music</span>
-            </Link>
-          </div>
+    <>
+      <FeedbackModal 
+        isOpen={isFeedbackOpen} 
+        onClose={() => setIsFeedbackOpen(false)} 
+      />
+      <header className="absolute top-0 left-0 right-0 z-50 w-full md:pt-4 md:px-4 pointer-events-none">
+        <div className="w-full md:max-w-5xl mx-auto bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/100 border-b md:border border-border/9 md:shadow-md md:rounded-full pointer-events-auto  ">
+          <div className="container mx-auto px-4 md:px-6 flex justify-between items-center h-16">
+            <div className="flex items-center md:flex-1">
+              <Link href="/" className="flex items-center gap-3 text-xl font-bold group">
+                <div className="h-10 w-10 flex items-center justify-center shrink-0">
+                  <img src="/lovable-uploads/gracemain.png" alt="Grace Music Logo" className="max-h-full max-w-full object-contain" />
+                </div>
+                <span className="whitespace-nowrap text-zinc-100 group-hover:text-primary transition-colors duration-200">Grace Music</span>
+              </Link>
+            </div>
           
           <nav className="hidden md:flex items-center justify-center gap-6 md:flex-auto">
             {navLinks.map((link) => (
@@ -108,19 +88,20 @@ const Navigation = () => {
         
         <div className="flex items-center gap-2 md:flex-1 justify-end">
           
-
-
-   
-
           {currentUser ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-auto rounded-full flex items-center gap-2 pl-1 pr-3 md:pr-4 border border-transparent md:border-border/50 hover:bg-zinc-800/50 transition-colors">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={currentUser.photoURL || ''} alt={currentUser.displayName || currentUser.name} />
-                    <AvatarFallback>{getInitials(currentUser.displayName || currentUser.name || 'User')}</AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-medium hidden md:block">
+                <Button variant="ghost" className="relative h-10 w-auto rounded-full flex items-center gap-2 pl-1 pr-3 md:pr-4 border border-transparent md:border-border/50 hover:bg-zinc-800/50 transition-all hover:border-zinc-700">
+                  <div className="relative">
+                    <Avatar className="h-8 w-8 ring-1 ring-primary/30 shadow-sm transition-all group-hover:ring-primary/50">
+                      <AvatarImage src={currentUser.photoURL || ''} alt={currentUser.displayName || currentUser.name} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-blue-500 text-white font-bold text-xs">
+                        {getInitials(currentUser.displayName || currentUser.name || 'User')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-zinc-950 rounded-full" />
+                  </div>
+                  <span className="text-sm font-medium hidden md:block text-zinc-200">
                     {currentUser.displayName?.split(' ')[0] || currentUser.name?.split(' ')[0] || 'User'}
                   </span>
                 </Button>
@@ -140,6 +121,10 @@ const Navigation = () => {
                 <DropdownMenuItem onClick={() => router.push('/about')}>
                   <Info className="mr-2 h-4 w-4" />
                   <span>About & Contact</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsFeedbackOpen(true)}>
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  <span>Give Feedback</span>
                 </DropdownMenuItem>
                 {currentUser.role !== 'user' && (
                   <DropdownMenuItem onClick={() => router.push('/songs/new')}>
@@ -161,26 +146,52 @@ const Navigation = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="flex md:flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => router.push('/about')}
-                className="border-zinc-800 hover:border-zinc-700 bg-zinc-950/40 text-zinc-300 hover:text-white rounded-full px-6 transition-all hover:scale-105 active:scale-95"
-              >
-                About
-              </Button>
-              <Button 
-                onClick={() => router.push('/login')}
-                className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-full px-6 transition-all hover:scale-105 active:scale-95"
-              >
-                Sign In
-              </Button>
+            <div className="flex items-center gap-2">
+              {/* Desktop View */}
+              <div className="hidden md:flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => router.push('/about')}
+                  className="border-zinc-800 hover:border-zinc-700 bg-zinc-950/40 text-zinc-300 hover:text-white rounded-full px-6 transition-all hover:scale-105 active:scale-95"
+                >
+                  About
+                </Button>
+                <Button 
+                  onClick={() => router.push('/login')}
+                  className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-full px-6 transition-all hover:scale-105 active:scale-95"
+                >
+                  Sign In
+                </Button>
+              </div>
+
+              {/* Mobile View */}
+              <div className="flex md:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-auto rounded-full flex items-center gap-2 px-3 border border-border/50 hover:bg-zinc-800/50 transition-colors">
+                      <User className="h-4 w-4" />
+                      <span className="text-sm font-medium">Login</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-48" align="end" forceMount>
+                    <DropdownMenuItem onClick={() => router.push('/login')}>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Sign In</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/about')}>
+                      <Info className="mr-2 h-4 w-4" />
+                      <span>About</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           )}
         </div>
       </div>
       </div>
     </header>
+    </>
   );
 };
 

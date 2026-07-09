@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import ChordLyricLine from './ChordLyricLine';
 import EditableSection from './EditableSection';
-import { parseLineWithChords, transposeParsedLine, splitIntoSections, SongSection } from '@/lib/chordParser';
+import { parseLineWithChords, transposeParsedLine, splitIntoSections, SongSection, ParsedLine } from '@/lib/chordParser';
 import { convertToNumberSystem } from '@/lib/chordUtils';
 import { Music, Music4, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -67,7 +67,10 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
 
   // Initialize visibility state when sections change
   useEffect(() => {
-    setSectionVisibility(sections.map(() => true));
+    const timer = setTimeout(() => {
+      setSectionVisibility(sections.map(() => true));
+    }, 0);
+    return () => clearTimeout(timer);
   }, [sections]);
 
   const toggleSection = (index: number) => {
@@ -139,7 +142,7 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
     });
 
     return { ...section, origIdx, label, processedLines, showChords, isHiddenExport };
-  }).filter(Boolean) as (typeof sections[0] & { origIdx: number; label: string; processedLines: unknown[]; showChords: boolean; isHiddenExport: boolean })[];
+  }).filter(Boolean) as (typeof sections[0] & { origIdx: number; label: string; processedLines: ParsedLine[]; showChords: boolean; isHiddenExport: boolean })[];
 
   // ─── Drag and Drop Handlers ───
   const handleDragStart = (e: React.DragEvent, index: number) => {

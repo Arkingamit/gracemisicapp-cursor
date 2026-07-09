@@ -169,6 +169,7 @@ const AdminDashboard = () => {
   const [chatHistories, setChatHistories] = useState<any[]>([]);
   const [expandedChatUserId, setExpandedChatUserId] = useState<string | null>(null);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
 
   // Audit log filter state
   const [auditFilterUser, setAuditFilterUser] = useState('');
@@ -226,7 +227,7 @@ const AdminDashboard = () => {
     try {
       const { authFetch } = await import('@/contexts/AuthContext');
 
-      const [usersRes, orgsRes, groupsRes, settingsRes, auditRes, storageRes, genresRes, chatRes] = await Promise.all([
+      const [usersRes, orgsRes, groupsRes, settingsRes, auditRes, storageRes, genresRes, chatRes, feedbackRes] = await Promise.all([
         authFetch('/api/users'),
         authFetch('/api/organizations'),
         authFetch('/api/groups'),
@@ -234,7 +235,8 @@ const AdminDashboard = () => {
         authFetch('/api/admin/audit-logs'),
         authFetch('/api/admin/storage'),
         authFetch('/api/genres'),
-        authFetch('/api/admin/chat-histories')
+        authFetch('/api/admin/chat-histories'),
+        authFetch('/api/admin/feedback')
       ]);
 
       if (usersRes.ok && orgsRes.ok && groupsRes.ok && settingsRes.ok) {
@@ -260,6 +262,10 @@ const AdminDashboard = () => {
         if (chatRes.ok) {
           const data = await chatRes.json();
           setChatHistories(data.histories || []);
+        }
+        if (feedbackRes.ok) {
+          const data = await feedbackRes.json();
+          setFeedbacks(data.feedbacks || []);
         }
 
         setUsers(usersData.users);
@@ -541,6 +547,40 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleUpdateFeedbackStatus = async (id: string, status: string) => {
+    try {
+      const res = await authFetch(`/api/admin/feedback/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        setFeedbacks(prev => prev.map(f => f.id === id ? { ...f, status } : f));
+        toast({ title: "Success", description: "Feedback status updated" });
+      } else {
+        toast({ title: "Error", description: "Failed to update feedback status", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "An error occurred", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteFeedback = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this feedback?")) return;
+    try {
+      const res = await authFetch(`/api/admin/feedback/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setFeedbacks(prev => prev.filter(f => f.id !== id));
+        toast({ title: "Success", description: "Feedback deleted" });
+      } else {
+        toast({ title: "Error", description: "Failed to delete feedback", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "An error occurred", variant: "destructive" });
+    }
+  };
+
   const getUserOrganizations = (userId: string) => {
     return organizations
       .filter(org => org.members.includes(userId) || org.managerId === userId || org.createdBy === userId)
@@ -595,6 +635,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="storage">Storage</TabsTrigger>
             <TabsTrigger value="genres">Genres</TabsTrigger>
             <TabsTrigger value="ai-chats">AI Chats</TabsTrigger>
+            <TabsTrigger value="feedback">User Feedback</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
         </div>
@@ -1111,7 +1152,7 @@ const AdminDashboard = () => {
                       onChange={(e) => setGroupFilterExcludeOrg(e.target.value)}
                       onFocus={() => setIsExcludeOrgFocused(true)}
                       onBlur={() => setIsExcludeOrgFocused(false)}
-                      className="h-8 text-xs w-[160px] bg-transparent border-white/10 border-red-500/20 focus-visible:ring-red-500/30"
+                      className="h-8 text-xs w-[160px] bg-transparent border-red-500/20 focus-visible:ring-red-500/30"
                     />
                     {isExcludeOrgFocused && (
                       <div className="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-md border border-white/10 bg-transparent p-1 text-white shadow-md">
@@ -1312,7 +1353,7 @@ const AdminDashboard = () => {
                       onChange={(e) => setAuditFilterExcludeUser(e.target.value)}
                       onFocus={() => setIsExcludeUserFocused(true)}
                       onBlur={() => setIsExcludeUserFocused(false)}
-                      className="h-8 text-xs w-[140px] bg-transparent border-white/10 border-red-500/20 focus-visible:ring-red-500/30"
+                      className="h-8 text-xs w-[140px] bg-transparent border-red-500/20 focus-visible:ring-red-500/30"
                     />
                     {isExcludeUserFocused && (
                       <div className="absolute z-50 left-0 mt-1 max-h-60 overflow-y-auto rounded-md border border-white/10 bg-transparent p-1 text-white shadow-md w-[220px]">
@@ -2530,6 +2571,81 @@ const AdminDashboard = () => {
                           </div>
                         </div>
                       )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* User Feedback Tab */}
+        <TabsContent value="feedback">
+          <Card>
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  User Feedback
+                </CardTitle>
+                <CardDescription>Review questions, bugs, and ideas submitted by users</CardDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={fetchAdminData} disabled={loadingData}>Refresh</Button>
+            </CardHeader>
+            <CardContent>
+              {feedbacks.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p className="font-medium">No feedback yet</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {feedbacks.map((item) => (
+                    <div key={item.id} className="p-4 rounded-xl border border-white/5 bg-zinc-900/50 flex flex-col gap-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium">{item.userName}</span>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase font-bold ${
+                              item.type === 'bug' ? 'bg-red-500/20 text-red-500' :
+                              item.type === 'idea' ? 'bg-green-500/20 text-green-500' :
+                              item.type === 'question' ? 'bg-blue-500/20 text-blue-500' :
+                              'bg-zinc-500/20 text-zinc-400'
+                            }`}>
+                              {item.type}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(item.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={item.status}
+                            onChange={(e) => handleUpdateFeedbackStatus(item.id, e.target.value)}
+                            className={`h-8 text-xs rounded-md border px-2 focus:outline-none ${
+                              item.status === 'new' ? 'bg-primary/20 border-primary text-primary' :
+                              item.status === 'in-progress' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-500' :
+                              'bg-green-500/20 border-green-500 text-green-500'
+                            }`}
+                          >
+                            <option value="new" className="bg-zinc-900 text-white">New</option>
+                            <option value="in-progress" className="bg-zinc-900 text-white">In Progress</option>
+                            <option value="resolved" className="bg-zinc-900 text-white">Resolved</option>
+                          </select>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-zinc-400 hover:text-red-500"
+                            onClick={() => handleDeleteFeedback(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="bg-black/20 p-3 rounded-lg border border-white/5 whitespace-pre-wrap text-sm text-zinc-300">
+                        {item.message}
+                      </div>
                     </div>
                   ))}
                 </div>

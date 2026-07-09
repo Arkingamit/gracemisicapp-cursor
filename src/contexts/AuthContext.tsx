@@ -13,6 +13,7 @@ interface AuthContextType {
   logout: () => void;
   register: (email: string, password: string, username: string) => Promise<void>;
   loginWithGoogle: (credential: string) => Promise<void>;
+  updateProfile: (updates: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -190,6 +191,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateProfile = async (updates: Partial<User>) => {
+    try {
+      const res = await authFetch('/api/auth/me', {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update profile');
+      }
+
+      setCurrentUser(data.user);
+      
+      toast({
+        title: 'Profile updated',
+        description: 'Your profile information has been saved.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Update failed',
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
   const value = {
     currentUser,
     loading,
@@ -197,6 +227,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout,
     register,
     loginWithGoogle,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

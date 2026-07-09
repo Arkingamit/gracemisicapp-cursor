@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000",
     "build": "next build",
     "build:mobile": "node scripts/mobileify.mjs && cross-env MOBILE_BUILD=true NEXT_PUBLIC_BASE_URL=https://gracemusicapp.vercel.app next build && node scripts/unmobileify.mjs && npx cap sync",
     "start": "next start",

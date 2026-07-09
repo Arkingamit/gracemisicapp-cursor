@@ -81,11 +81,11 @@ const Navigation = () => {
       <div className="w-full md:max-w-5xl mx-auto bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/100 border-b md:border border-border/9 md:shadow-md md:rounded-full pointer-events-auto  ">
         <div className="container mx-auto px-4 md:px-6 flex justify-between items-center h-16">
           <div className="flex items-center md:flex-1">
-            <Link href="/" className="flex items-center gap-3 text-xl font-bold">
-              <div className="h-14 w-14 rounded-full overflow-hidden flex items-center justify-center shrink-0">
-                <img src="/lovable-uploads/dark.png" alt="Grace Music Logo" className="h-full w-full object-cover" />
+            <Link href="/" className="flex items-center gap-3 text-xl font-bold group">
+              <div className="h-10 w-10 flex items-center justify-center shrink-0">
+                <img src="/lovable-uploads/gracemain.png" alt="Grace Music Logo" className="max-h-full max-w-full object-contain" />
               </div>
-              <span className="whitespace-nowrap">Grace Music</span>
+              <span className="whitespace-nowrap text-zinc-100 group-hover:text-primary transition-colors duration-200">Grace Music</span>
             </Link>
           </div>
           
@@ -163,8 +163,9 @@ const Navigation = () => {
           ) : (
             <div className="flex md:flex items-center gap-2">
               <Button 
-                variant="ghost" 
+                variant="outline" 
                 onClick={() => router.push('/about')}
+                className="border-zinc-800 hover:border-zinc-700 bg-zinc-950/40 text-zinc-300 hover:text-white rounded-full px-6 transition-all hover:scale-105 active:scale-95"
               >
                 About
               </Button>

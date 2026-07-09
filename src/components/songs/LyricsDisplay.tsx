@@ -65,13 +65,10 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dropTargetIdx, setDropTargetIdx] = useState<number | null>(null);
 
-  const [prevSections, setPrevSections] = useState(sections);
-
-  // Initialize visibility state when sections change (derived state pattern)
-  if (prevSections !== sections) {
+  // Initialize visibility state when sections change
+  useEffect(() => {
     setSectionVisibility(sections.map(() => true));
-    setPrevSections(sections);
-  }
+  }, [sections]);
 
   const toggleSection = (index: number) => {
     setSectionVisibility(prev => {
@@ -142,8 +139,7 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
     });
 
     return { ...section, origIdx, label, processedLines, showChords, isHiddenExport };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  }).filter(Boolean) as (typeof sections[0] & { origIdx: number; label: string; processedLines: any[]; showChords: boolean; isHiddenExport: boolean })[];
+  }).filter(Boolean) as (typeof sections[0] & { origIdx: number; label: string; processedLines: unknown[]; showChords: boolean; isHiddenExport: boolean })[];
 
   // ─── Drag and Drop Handlers ───
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -197,8 +193,7 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
             perChordColors={
               line.chords.length > 0
                 ? Object.fromEntries(
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    line.chords.map((_: any, cIdx: number) => {
+                    line.chords.map((_: unknown, cIdx: number) => {
                       const color = currentEdit.chordColorOverrides?.[`${origIdx}-${lIdx}-${cIdx}`];
                       return color ? [cIdx, color] : null;
                     }).filter(Boolean) as [number, string][]

@@ -130,12 +130,12 @@ const GroupDetail = () => {
       <div className="bg-gradient-to-b from-primary/10 via-primary/5 to-zinc-950 pt-20 md:pt-28 pb-6">
         <div className="container mx-auto px-4">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="p-0 h-auto text-zinc-400 hover:text-white hover:bg-transparent flex items-center gap-1 text-sm font-medium mb-6"
+            className="border-zinc-800 hover:border-zinc-700 bg-zinc-950/40 text-zinc-300 hover:text-white flex items-center gap-1.5 text-xs font-semibold mb-6 px-3 py-1 rounded-full transition-all hover:scale-105"
             onClick={() => router.push('/groups')}
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-3.5 h-3.5" />
             Back
           </Button>
 

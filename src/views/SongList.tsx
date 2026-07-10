@@ -74,14 +74,14 @@ type FilterTab = 'all' | 'global' | 'org';
 const SongList = () => {
   const { songs, loading, deleteSong, makeSongGlobal, copySongToGlobal } = useSongs();
   const { currentUser } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [keyFilter, setKeyFilter] = useState('all');
-  const [genreFilter, setGenreFilter] = useState<string | null>(null);
-  const [languageFilter, setLanguageFilter] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
-
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [keyFilter, setKeyFilter] = useState('all');
+  const [genreFilter, setGenreFilter] = useState<string | null>(searchParams.get('genre'));
+  const [languageFilter, setLanguageFilter] = useState<string | null>(searchParams.get('language'));
+  const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
 
   // Long press state
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
@@ -113,10 +113,7 @@ const SongList = () => {
     router.push(`/songs/view?id=${songId}`);
   };
 
-  const [prevSearchParams, setPrevSearchParams] = useState(searchParams);
-
-  if (searchParams !== prevSearchParams) {
-    setPrevSearchParams(searchParams);
+  useEffect(() => {
     const genre = searchParams.get('genre');
     const language = searchParams.get('language');
     const search = searchParams.get('search');
@@ -134,7 +131,7 @@ const SongList = () => {
       setGenreFilter(null);
       setLanguageFilter(null);
     }
-  }
+  }, [searchParams]);
 
   const clearGenreFilter = () => {
     setGenreFilter(null);

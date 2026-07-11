@@ -2,13 +2,15 @@ import jwt from 'jsonwebtoken';
 import { NextRequest } from 'next/server';
 import { User } from '@/lib/types';
 
-// JWT_SECRET MUST be set in .env.local — no insecure fallback
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error(
-    'JWT_SECRET environment variable is not set. Add it to your .env.local file.'
-  );
-}
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error(
+      'JWT_SECRET environment variable is not set. Add it to your .env.local file.'
+    );
+  }
+  return secret;
+};
 
 export interface JWTPayload {
   userId: string;
@@ -26,7 +28,7 @@ export function createToken(user: User): string {
     email: user.email,
     role: user.role,
   };
-  return jwt.sign(payload, JWT_SECRET!, { expiresIn: '7d' });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: '7d' });
 }
 
 /**
@@ -35,7 +37,7 @@ export function createToken(user: User): string {
  */
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET!) as JWTPayload;
+    return jwt.verify(token, getJwtSecret()) as JWTPayload;
   } catch {
     return null;
   }

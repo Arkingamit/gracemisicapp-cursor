@@ -31,6 +31,9 @@ interface LyricsDisplayProps {
   onDeleteAnnotation?: (sIdx: number, annId: string) => void;
   onChordColorChange?: (sIdx: number, lIdx: number, cIdx: number, color: string) => void;
   onLyricColorChange?: (sIdx: number, lIdx: number, color: string) => void;
+  chordHighlight?: boolean;
+  hideAllChords?: boolean;
+  onHideAllChordsChange?: (hide: boolean) => void;
 }
 
 const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
@@ -55,6 +58,9 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
   onDeleteAnnotation,
   onChordColorChange,
   onLyricColorChange,
+  chordHighlight = false,
+  hideAllChords = false,
+  onHideAllChordsChange,
 }) => {
   const sections = useMemo(() => splitIntoSections(lyrics, format), [lyrics, format]);
 
@@ -105,7 +111,7 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
     const isHiddenExport = currentEdit.hiddenSections.includes(origIdx);
     if (!editable && isHiddenExport) return null;
 
-    const showChords = sectionVisibility[origIdx] ?? true;
+    const showChords = !hideAllChords && (sectionVisibility[origIdx] ?? true);
     const label = currentEdit.labelOverrides[origIdx] || section.label;
     
     const processedLines = section.lines.map((line, lIdx) => {
@@ -193,6 +199,7 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
             chordColor={currentEdit.styles.chordColor || undefined}
             lyricColor={currentEdit.styles.lyricColor || undefined}
             lineLyricColor={currentEdit.lyricColorOverrides?.[`${origIdx}-${lIdx}`] || undefined}
+            chordHighlight={chordHighlight}
             perChordColors={
               line.chords.length > 0
                 ? Object.fromEntries(
@@ -246,7 +253,7 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
       <div key={origIdx} className="relative group mb-6 break-inside-avoid">
         <div className="flex items-center gap-2 mb-2">
           <span 
-            className="font-bold text-foreground opacity-80 decoration-muted-foreground/30 flex items-center gap-2"
+            className="font-semibold font-heading opacity-80 decoration-muted-foreground/30 flex items-center gap-2"
             style={{ fontSize: `${fontSize}px` }}
           >
             {label}
@@ -289,16 +296,16 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Master Toggle (only show if there are chords to toggle) */}
-      {sections.some(s => s.hasChords) && (
+      {sections.some(s => s.hasChords) && onHideAllChordsChange && (
         <div className="flex justify-end mb-2">
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={toggleAll}
+            onClick={() => onHideAllChordsChange(!hideAllChords)}
             className="h-8 text-xs flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
-            {allOn ? <EyeOff className="h-3 w-3" /> : <Music4 className="h-3 w-3" />}
-            {allOn ? 'Hide All Chords' : 'Show All Chords'}
+            {!hideAllChords ? <EyeOff className="h-3 w-3" /> : <Music4 className="h-3 w-3" />}
+            {!hideAllChords ? 'Hide All Chords' : 'Show All Chords'}
           </Button>
         </div>
       )}

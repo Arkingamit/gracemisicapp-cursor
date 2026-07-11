@@ -21,6 +21,38 @@ export async function GET(request: NextRequest) {
     }
 
     const organizations = await OrganizationModel.list({ memberId }, page, limit);
+
+    // Get all unique member IDs across all organizations
+    const allMemberIds = new Set<string>();
+    organizations.forEach(org => org.members.forEach(id => allMemberIds.add(id)));
+
+    if (allMemberIds.size > 0) {
+      const { getCollection } = await import('@/server/db/connection');
+      const { ObjectId } = await import('mongodb');
+      const usersCol = await getCollection(COLLECTIONS.USERS);
+      
+      const validUsers = await usersCol.find({
+        _id: { 
+          $in: Array.from(allMemberIds)
+            .filter(id => {
+              try {
+                return ObjectId.isValid(id);
+              } catch (e) {
+                return false;
+              }
+            })
+            .map(id => new ObjectId(id)) 
+        },
+        role: { $ne: 'super_admin' }
+      }).project({ _id: 1 }).toArray();
+
+      const validUserIds = new Set(validUsers.map(u => u._id.toString()));
+
+      organizations.forEach(org => {
+        org.members = org.members.filter(id => validUserIds.has(id));
+      });
+    }
+
     return Response.json({ organizations });
   } catch (error) {
     console.error('List organizations error:', error);

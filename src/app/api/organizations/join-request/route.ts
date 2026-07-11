@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { OrganizationModel } from '@/server/models/organization';
 import { JoinRequestModel } from '@/server/models/joinRequest';
 import { getAuthUser, authError } from '@/lib/auth';
+import { sendNotificationToUser } from '@/server/utils/pushNotifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,6 +25,21 @@ export async function POST(request: NextRequest) {
 
     try {
       const joinRequest = await JoinRequestModel.create(org.id, auth.userId);
+      
+      // Notify managers about the new request
+      const managerIds = org.managerIds || [];
+      const userEmail = auth.email || 'A user';
+      for (const managerId of managerIds) {
+        if (managerId !== auth.userId) {
+          await sendNotificationToUser(
+            managerId,
+            'New Join Request',
+            `${userEmail} has requested to join "${org.name}".`,
+            `/organizations/view?id=${org.id}&tab=requests`
+          );
+        }
+      }
+
       return Response.json({ joinRequest }, { status: 201 });
     } catch (e: any) {
       return Response.json({ error: e.message || 'Failed to submit request' }, { status: 400 });

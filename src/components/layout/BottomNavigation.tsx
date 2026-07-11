@@ -35,9 +35,9 @@ const BottomNavigation = () => {
               className={`inline-flex flex-col items-center justify-center transition-all duration-300 group ${active ? 'text-primary' : 'text-zinc-500'
                 }`}
             >
-              <div className={`p-1.5 rounded-full transition-all ${active ? 'bg-primary/10' : ''}`}>
+              <div className={`flex items-center justify-center p-1.5 mb-0.5 rounded-full transition-all ${active ? 'bg-primary/10' : ''}`}>
                 <Icon
-                  className={`w-6 h-6 mb-0.5 group-active:scale-90 transition-transform ${active ? 'stroke-[2px]' : 'stroke-[1.5px]'
+                  className={`w-6 h-6 group-active:scale-90 transition-transform ${active ? 'stroke-[2px]' : 'stroke-[1.5px]'
                     }`}
                 />
               </div>

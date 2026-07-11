@@ -8,6 +8,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Song } from '@/lib/types';
 import { User, Mail, Shield, LogOut, Music, Plus, Eye, Edit } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserStatsCard } from '@/components/profile/UserStatsCard';
 
 const Profile = () => {
   const { currentUser, logout, updateProfile } = useAuth();
@@ -119,8 +120,9 @@ const Profile = () => {
                   Cancel
                 </Button>
                 <Button 
+                  variant="outline"
                   onClick={handleSave}
-                  className="rounded-xl bg-primary hover:bg-primary/90 text-white"
+                  className="rounded-xl border-zinc-700 hover:bg-zinc-800 text-zinc-300"
                   disabled={isSaving}
                 >
                   {isSaving ? 'Saving...' : 'Save Changes'}
@@ -248,6 +250,8 @@ const Profile = () => {
                 )}
               </div>
             </div>
+            {/* User Stats Card */}
+            <UserStatsCard />
           </div>
 
           {/* Songs Section */}
@@ -289,13 +293,13 @@ const Profile = () => {
                     {userSongs.map(song => (
                       <div 
                         key={song.id} 
-                        className="group flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-xl bg-zinc-950/50 border border-white/5 hover:bg-zinc-800/50 hover:border-white/10 transition-all gap-4"
+                        className="group flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-xl bg-zinc-950/50 border border-white/5 hover:bg-zinc-800/50 hover:border-white/10 transition-all gap-4 overflow-hidden w-full max-w-full"
                       >
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-zinc-100 truncate text-lg group-hover:text-blue-400 transition-colors">{song.title}</h3>
-                          <p className="text-sm text-zinc-400 truncate">{song.artist}</p>
+                        <div className="flex-1 min-w-0 w-full">
+                          <h3 className="font-semibold text-zinc-100 truncate text-lg group-hover:text-blue-400 transition-colors max-w-full">{song.title}</h3>
+                          <p className="text-sm text-zinc-400 truncate max-w-full">{song.artist}</p>
                         </div>
-                        <div className="flex space-x-2 w-full sm:w-auto justify-end">
+                        <div className="flex space-x-2 w-full sm:w-auto justify-end flex-shrink-0">
                           <Button 
                             variant="ghost" 
                             size="sm"

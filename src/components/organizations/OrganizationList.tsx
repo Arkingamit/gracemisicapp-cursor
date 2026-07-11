@@ -268,7 +268,7 @@ const OrganizationList = () => {
                         </div>
                       </TableCell>
                       <TableCell className="px-2 sm:px-4 text-base">{organization.members.length}</TableCell>
-                      <TableCell className="px-2 sm:px-4 text-base">{organization.groups.length}</TableCell>
+                      <TableCell className="px-2 sm:px-4 text-base">{organization.groups?.length || 0}</TableCell>
                       {hasAnyActions && (
                         <TableCell className="text-right px-2 sm:px-4">
                           <div

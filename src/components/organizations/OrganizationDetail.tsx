@@ -90,6 +90,7 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
+  const [groupSearchQuery, setGroupSearchQuery] = useState('');
 
   const [deleteOrgOpen, setDeleteOrgOpen] = useState(false);
   const [deleteOrgConfirmText, setDeleteOrgConfirmText] = useState('');
@@ -289,6 +290,15 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
   const visibleMembers = members.filter(m => m.role !== 'super_admin');
   const managers = visibleMembers.filter(m => m.isManager);
   const regularMembers = visibleMembers.filter(m => !m.isManager);
+
+  const filteredGroups = groups.filter(group => {
+    const q = groupSearchQuery.toLowerCase().trim();
+    if (!q) return true;
+    const searchTokens = q.split(/\s+/).filter(Boolean);
+    return searchTokens.every(token => 
+      group.name.toLowerCase().includes(token)
+    );
+  });
 
 
 
@@ -778,13 +788,21 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
             <Button variant="ghost" className="text-zinc-400 hover:text-white -ml-4 mb-1" onClick={() => setActiveTab('overview')}>
               <ArrowLeft className="w-4 h-4 mr-2" /> Back to Overview
             </Button>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <h2 className="text-lg font-semibold text-zinc-200">Song Sets</h2>
-              {canManage() && (
-                <Button onClick={() => setShowGroupForm(!showGroupForm)} className="gap-2 bg-white/10 hover:bg-white/15 border border-white/10 text-white">
-                  <Plus className="w-4 h-4" /> New Song Set
-                </Button>
-              )}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+                <Input
+                  placeholder="Search song sets..."
+                  value={groupSearchQuery}
+                  onChange={(e) => setGroupSearchQuery(e.target.value)}
+                  className="w-full sm:w-[250px] bg-zinc-900 border-zinc-800 text-zinc-100"
+                />
+                {canManage() && (
+                  <Button onClick={() => setShowGroupForm(!showGroupForm)} className="shrink-0 gap-2 bg-white/10 hover:bg-white/15 border border-white/10 text-white">
+                    <Plus className="w-4 h-4" /> New Song Set
+                  </Button>
+                )}
+              </div>
             </div>
 
             {showGroupForm && (
@@ -804,9 +822,15 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
                 <p className="text-zinc-400 font-medium">No song sets yet</p>
                 {canManage() && <p className="text-sm text-zinc-600 mt-1">Create a song set to get started</p>}
               </div>
+            ) : filteredGroups.length === 0 ? (
+              <div className="rounded-xl bg-zinc-900/30 border border-white/5 p-12 text-center">
+                <Music className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+                <p className="text-zinc-400 font-medium">No song sets found</p>
+                <p className="text-sm text-zinc-600 mt-1">Try a different search term</p>
+              </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {groups.map(group => (
+                {filteredGroups.map(group => (
                   <div
                     key={group.id}
                     className="group relative flex flex-col rounded-xl bg-zinc-900/50 border border-white/8 hover:border-white/15 overflow-hidden transition-all cursor-pointer"

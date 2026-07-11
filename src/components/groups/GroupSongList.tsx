@@ -172,7 +172,7 @@ const GroupSongList = ({ groupId, groupSongIds }: GroupSongListProps) => {
 
   const handleTranspose = (songId: string, semitones: number) => {
     const currentTranspose = transposeValues[songId] || 0;
-    const newTranspose = currentTranspose + semitones;
+    const newTranspose = (currentTranspose + semitones) % 12;
     const currentFlats = useFlatValues[songId] || false;
     
     // Instant client-side update

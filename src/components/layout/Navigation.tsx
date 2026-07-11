@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { NotificationBell } from './NotificationBell';
 import { FeedbackModal } from '../common/FeedbackModal';
 import {
   DropdownMenu,
@@ -89,7 +90,9 @@ const Navigation = () => {
         <div className="flex items-center gap-2 md:flex-1 justify-end">
           
           {currentUser ? (
-            <DropdownMenu>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+              <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-auto rounded-full flex items-center gap-2 pl-1 pr-3 md:pr-4 border border-transparent md:border-border/50 hover:bg-zinc-800/50 transition-all hover:border-zinc-700">
                   <div className="relative">
@@ -143,8 +146,9 @@ const Navigation = () => {
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           ) : (
             <div className="flex items-center gap-2">
               {/* Desktop View */}

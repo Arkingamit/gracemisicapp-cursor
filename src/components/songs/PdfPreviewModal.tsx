@@ -1353,19 +1353,19 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
                     <div className="lg:w-72 shrink-0 space-y-4 overflow-y-auto pr-2">
 
                         {/* Transpose */}
-                        <div className="space-y-2 p-3 rounded-lg bg-secondary/50">
-                            <Label className="text-sm font-semibold flex items-center gap-1">
-                                <Music className="h-4 w-4" /> Transpose ({currentSong.title})
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                            <Label className="text-sm font-semibold flex items-center gap-1 truncate mr-2">
+                                <Music className="h-4 w-4 shrink-0" /> <span className="truncate">Transpose ({currentSong.title})</span>
                             </Label>
-                            <div className="flex items-center gap-2">
-                                <Button size="sm" variant="outline" onClick={() => updateTransposition(t => t - 1)}>
+                            <div className="flex items-center gap-1 shrink-0">
+                                <Button size="sm" variant="outline" onClick={() => updateTransposition(t => t - 1)} className="h-7 w-7 p-0">
                                     <ChevronDown className="h-3 w-3" />
                                 </Button>
-                                <span className="text-sm font-mono w-8 text-center">{currentTransposition >= 0 ? '+' : ''}{currentTransposition}</span>
-                                <Button size="sm" variant="outline" onClick={() => updateTransposition(t => t + 1)}>
+                                <span className="text-sm font-mono w-6 text-center">{currentTransposition >= 0 ? '+' : ''}{currentTransposition}</span>
+                                <Button size="sm" variant="outline" onClick={() => updateTransposition(t => t + 1)} className="h-7 w-7 p-0">
                                     <ChevronUp className="h-3 w-3" />
                                 </Button>
-                                <Button size="sm" variant="ghost" onClick={() => updateTransposition(0)}>
+                                <Button size="sm" variant="ghost" onClick={() => updateTransposition(0)} className="h-7 w-7 p-0">
                                     <RotateCcw className="h-3 w-3" />
                                 </Button>
                             </div>
@@ -1384,7 +1384,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
                                     onClick={() => setFontSize(prev => Math.max(8, prev - 1))}
                                     disabled={fontSize <= 8}
                                 >
-                                    <span className="text-lg font-bold">−</span>
+                                    <span className="text-sm font-bold">A-</span>
                                 </Button>
                                 <div className="flex-1 text-center">
                                     <span className="text-2xl font-bold">{fontSize}</span>
@@ -1397,7 +1397,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
                                     onClick={() => setFontSize(prev => Math.min(24, prev + 1))}
                                     disabled={fontSize >= 24}
                                 >
-                                    <span className="text-lg font-bold">+</span>
+                                    <span className="text-sm font-bold">A+</span>
                                 </Button>
                             </div>
                             {/* Visual bar indicator */}
@@ -1407,7 +1407,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
                                     style={{ width: `${((fontSize - 8) / 16) * 100}%` }}
                                 />
                             </div>
-                            <div className="text-[10px] text-muted-foreground text-center">
+                            <div className="text-xs font-medium text-foreground/90 text-center mt-1">
                                 {orientation === 'portrait'
                                     ? (fontSize >= 14 ? '1 column' : fontSize >= 10 ? '2 columns' : '3 columns')
                                     : (fontSize <= 10 ? '4 columns' : fontSize <= 13 ? '3 columns' : '2 columns')}
@@ -1416,8 +1416,8 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
 
                         {/* Orientation Toggle */}
                         <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                            <Label className="text-sm font-semibold flex items-center gap-1">
-                                <MonitorSmartphone className="h-4 w-4" /> Orientation
+                            <Label className="text-sm font-semibold flex items-center gap-1 truncate mr-2">
+                                <MonitorSmartphone className="h-4 w-4 shrink-0" /> <span className="truncate">Orientation</span>
                             </Label>
                             <div className="flex gap-1 p-0.5 bg-secondary rounded-lg">
                                 <button
@@ -1443,8 +1443,8 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
 
                         {/* Number System Toggle (Desktop) */}
                         <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                            <Label htmlFor="desktop-number-system" className="text-sm font-semibold flex items-center gap-1">
-                                <Music className="h-4 w-4" /> Number System (Global)
+                            <Label htmlFor="desktop-number-system" className="text-sm font-semibold flex items-center gap-1 truncate mr-2">
+                                <Music className="h-4 w-4 shrink-0" /> <span className="truncate">Number System (Global)</span>
                             </Label>
                             <Switch id="desktop-number-system" checked={useNumberSystem} onCheckedChange={setUseNumberSystem} />
                         </div>
@@ -1452,10 +1452,10 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
                         {/* Per-song Font Size Override */}
                         <div className="space-y-2 p-3 rounded-lg bg-secondary/50">
                             <div className="flex items-center justify-between">
-                                <Label className="text-sm font-semibold flex items-center gap-1">
-                                    <Type className="h-4 w-4" /> Font: {currentSong.title}
+                                <Label className="text-sm font-semibold flex items-center gap-1 truncate mr-2">
+                                    <Type className="h-4 w-4 shrink-0" /> <span className="truncate">Font: {currentSong.title}</span>
                                 </Label>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 shrink-0">
                                     <span className="text-[10px] text-muted-foreground">
                                         {currentPerSongFs !== null ? `${currentPerSongFs}px` : 'Global'}
                                     </span>
@@ -1480,7 +1480,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
                                             onClick={() => setPerSongFontSize(prev => ({ ...prev, [currentSong.id]: Math.max(8, (currentPerSongFs ?? fontSize) - 1) }))}
                                             disabled={currentPerSongFs <= 8}
                                         >
-                                            <span className="text-lg font-bold">−</span>
+                                            <span className="text-sm font-bold">A-</span>
                                         </Button>
                                         <div className="flex-1 text-center">
                                             <span className="text-2xl font-bold">{currentPerSongFs}</span>
@@ -1493,7 +1493,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
                                             onClick={() => setPerSongFontSize(prev => ({ ...prev, [currentSong.id]: Math.min(24, (currentPerSongFs ?? fontSize) + 1) }))}
                                             disabled={currentPerSongFs >= 24}
                                         >
-                                            <span className="text-lg font-bold">+</span>
+                                            <span className="text-sm font-bold">A+</span>
                                         </Button>
                                     </div>
                                     <div className="w-full bg-secondary rounded-full h-1.5 mt-1">
@@ -1546,15 +1546,15 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
 
                         {/* Use Flats */}
                         <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                            <Label htmlFor="preview-flats" className="text-sm font-semibold">Use Flats ({currentSong.title})</Label>
-                            <Switch id="preview-flats" checked={currentUseFlats} onCheckedChange={updateUseFlats} />
+                            <Label htmlFor="preview-flats" className="text-sm font-semibold truncate mr-2">Use Flats ({currentSong.title})</Label>
+                            <Switch id="preview-flats" checked={currentUseFlats} onCheckedChange={updateUseFlats} className="shrink-0" />
                         </div>
 
                         {/* Section Chord Controls */}
                         <div className="space-y-2 p-3 rounded-lg border bg-card shadow-sm">
                             <div className="flex items-center justify-between">
-                                <Label className="text-sm font-semibold">Section Chords ({currentSong.title})</Label>
-                                <div className="flex gap-1">
+                                <Label className="text-sm font-semibold truncate mr-2 flex-1">Section Chords ({currentSong.title})</Label>
+                                <div className="flex gap-1 shrink-0">
                                     <Button
                                         size="sm"
                                         variant={allChordsOn ? 'default' : 'outline'}

@@ -12,6 +12,9 @@ const config: CapacitorConfig = {
       clientId: '373571167776-bhmjthm17gp5s6pfr0hbuhukjqoo7l6a.apps.googleusercontent.com',
       scopes: ['profile', 'email'],
     },
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
   },
 };
 

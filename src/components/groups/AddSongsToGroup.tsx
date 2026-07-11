@@ -97,10 +97,13 @@ const AddSongsToGroup = ({ groupId, existingSongIds, onCancel }: AddSongsToGroup
       return songKey.toLowerCase() === q.substring(4).trim();
     }
     
-    return songKey.toLowerCase() === q || // exact key match
-      song.title.toLowerCase().includes(q) ||
-      song.artist.toLowerCase().includes(q) ||
-      song.genre.some(g => g.toLowerCase().includes(q));
+    const searchTokens = q.split(/\s+/).filter(Boolean);
+    return searchTokens.every(token => 
+      songKey.toLowerCase() === token || // exact key match
+      song.title.toLowerCase().includes(token) ||
+      song.artist.toLowerCase().includes(token) ||
+      song.genre.some(g => g.toLowerCase().includes(token))
+    );
   });
   
   const handleToggleSelection = (songId: string) => {
@@ -192,30 +195,47 @@ const AddSongsToGroup = ({ groupId, existingSongIds, onCancel }: AddSongsToGroup
               : 'No songs match your search criteria'}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="overflow-x-auto border border-zinc-800/60 rounded-xl bg-zinc-950/30 mt-4">
+            <Table className="table-fixed w-full border-collapse">
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">Select</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Artist</TableHead>
-                  <TableHead>Key</TableHead>
-                  <TableHead>Genre</TableHead>
+                <TableRow className="bg-zinc-800 hover:bg-zinc-800 data-[state=selected]:bg-zinc-800 border-b border-zinc-800/80">
+                  <TableHead className="w-[50px] px-2 sm:px-4 text-center">
+                    <span className="sr-only">Select</span>
+                  </TableHead>
+                  <TableHead className="w-[42%] px-2 sm:px-4 text-base">Title</TableHead>
+                  <TableHead className="w-[28%] px-2 sm:px-4 text-base">Artist</TableHead>
+                  <TableHead className="w-[15%] px-2 sm:px-4 text-base">Key</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredSongs.map((song) => (
-                  <TableRow key={song.id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedSongs.has(song.id)}
-                        onCheckedChange={() => handleToggleSelection(song.id)}
-                      />
+                  <TableRow 
+                    key={song.id}
+                    className="cursor-pointer select-none transition-colors"
+                    onClick={() => handleToggleSelection(song.id)}
+                  >
+                    <TableCell className="px-2 sm:px-4">
+                      <div className="flex justify-center items-center" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedSongs.has(song.id)}
+                          onCheckedChange={() => handleToggleSelection(song.id)}
+                          className="h-5 w-5"
+                        />
+                      </div>
                     </TableCell>
-                    <TableCell className="font-medium">{song.title}</TableCell>
-                    <TableCell>{song.artist}</TableCell>
-                    <TableCell className="text-muted-foreground">{songKeys[song.id] || '-'}</TableCell>
-                    <TableCell>{song.genre.join(', ')}</TableCell>
+                    <TableCell className="font-medium px-2 sm:px-4 text-base">
+                      <div className="line-clamp-2" title={song.title}>
+                        {song.title}
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-2 sm:px-4 text-base">
+                      <div className="line-clamp-2" title={song.artist}>
+                        {song.artist}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground whitespace-nowrap px-2 sm:px-4 text-base">
+                      {songKeys[song.id] || '-'}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

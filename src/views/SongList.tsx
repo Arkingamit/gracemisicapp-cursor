@@ -198,12 +198,14 @@ const SongList = () => {
         const keyQuery = q.substring(4).trim();
         matchesSearch = songKey.toLowerCase() === keyQuery;
       } else {
-        // General search
-        matchesSearch =
-          songKey.toLowerCase() === q || // exact key match
-          song.title.toLowerCase().includes(q) ||
-          song.artist.toLowerCase().includes(q) ||
-          song.genre.some(g => g.toLowerCase().includes(q));
+        // Tokenized general search (google style)
+        const searchTokens = q.split(/\s+/).filter(Boolean);
+        matchesSearch = searchTokens.every(token => 
+          songKey.toLowerCase() === token || // exact key match
+          song.title.toLowerCase().includes(token) ||
+          song.artist.toLowerCase().includes(token) ||
+          song.genre.some(g => g.toLowerCase().includes(token))
+        );
       }
       if (!matchesSearch) return false;
     }

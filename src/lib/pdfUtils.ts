@@ -163,7 +163,7 @@ export const suggestFontSize = (
   return minFont;
 };
 
-const loadImageAsBase64 = (src: string): Promise<string> => {
+const loadImageAsBase64 = (src: string, opacity: number = 1): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'Anonymous';
@@ -177,10 +177,19 @@ const loadImageAsBase64 = (src: string): Promise<string> => {
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
+      if (ctx) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+        ctx.globalAlpha = opacity;
+        ctx.drawImage(img, 0, 0, width, height);
+      }
 
       const dataURL = canvas.toDataURL('image/jpeg');
       resolve(dataURL);
+    };
+    img.onerror = () => {
+      console.warn(`Failed to load image at ${src}`);
+      resolve('');
     };
     img.src = src;
   });
@@ -214,26 +223,31 @@ export const generateSongPdf = async (
 
   // Load and register Unicode fonts for Hindi/Devanagari support
   try {
-    const [notoSansBase64, notoDevanagariBase64] = await Promise.all([
+    const [notoSansBase64, notoDevanagariBase64, robotoMonoBase64] = await Promise.all([
       loadFontAsBase64('/fonts/NotoSans-Regular.ttf'),
       loadFontAsBase64('/fonts/NotoSansDevanagari-Regular.ttf'),
+      loadFontAsBase64('/fonts/RobotoMono-Regular.ttf'),
     ]);
 
     doc.addFileToVFS('NotoSans-Regular.ttf', notoSansBase64);
     doc.addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal');
+    doc.addFont('NotoSans-Regular.ttf', 'NotoSans', 'bold'); // Register regular as bold fallback
 
     doc.addFileToVFS('NotoSansDevanagari-Regular.ttf', notoDevanagariBase64);
     doc.addFont('NotoSansDevanagari-Regular.ttf', 'NotoSansDevanagari', 'normal');
+
+    doc.addFileToVFS('RobotoMono-Regular.ttf', robotoMonoBase64);
+    doc.addFont('RobotoMono-Regular.ttf', 'RobotoMono', 'normal');
   } catch (e) {
     console.warn('Could not load custom fonts, falling back to helvetica', e);
   }
 
   // Helper: set the right font based on whether text has Hindi characters
-  const setFontForText = (text: string, style: 'normal' | 'bold' | 'italic' = 'bold') => {
+  const setFontForText = (text: string, style: 'normal' | 'bold' | 'italic' = 'normal') => {
     if (containsDevanagari(text)) {
       doc.setFont('NotoSansDevanagari', 'normal');
     } else {
-      doc.setFont('helvetica', style);
+      doc.setFont('NotoSans', style);
     }
   };
 
@@ -242,24 +256,43 @@ export const generateSongPdf = async (
   const pageHeight = orientation === 'landscape' ? 210 : 297;
   const margin = 15;
 
-  const logoBase64 = await loadImageAsBase64('/lovable-uploads/grace-logo.jpg');
+  const logoBase64 = await loadImageAsBase64('/lovable-uploads/gracelogo.png', 0.6);
 
   const addWatermark = () => {
+    if (!logoBase64) return;
     const logoWidth = 60;
     const logoHeight = 40;
+    const logoX = pageWidth - logoWidth - 10;
+    const logoY = 10;
+    
+    // Format should be PNG since we are using a PNG file, but toDataURL returns image/jpeg from the canvas right now.
+    // However, jsPDF can usually handle it if we just pass 'JPEG' because of our canvas manipulation.
     doc.addImage(
       logoBase64,
       'JPEG',
-      pageWidth - logoWidth - 10,
-      10,
+      logoX,
+      logoY,
       logoWidth,
       logoHeight
     );
+
+    // Add the link at the bottom
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    const linkText = 'https://music.graceahmedabad.org/about';
+    // Using regular text, most PDF viewers auto-link URLs
+    doc.text(linkText, pageWidth / 2, pageHeight - 8, { align: 'center' });
+    
+    // Add clickable link over the logo
+    doc.link(logoX, logoY, logoWidth, logoHeight, { url: linkText });
+    
+    // Reset styling
+    doc.setTextColor(0, 0, 0);
   };
 
   const coverTitle = groupName ? `Songs from ${groupName}` : 'Song Collection';
   doc.setFontSize(32);
-  setFontForText(coverTitle);
+  setFontForText(coverTitle, 'bold');
   doc.text(coverTitle, pageWidth / 2, 60, { align: 'center' });
   doc.setFontSize(16);
   setFontForText('Generated');
@@ -269,7 +302,7 @@ export const generateSongPdf = async (
 
   doc.addPage();
   doc.setFontSize(24);
-  setFontForText('Table of Contents');
+  setFontForText('Table of Contents', 'bold');
   doc.text('Table of Contents', margin, 30);
   doc.setFontSize(14);
 
@@ -394,7 +427,7 @@ export const generateSongPdf = async (
     const titleMaxWidth = pageWidth - margin - logoReservedWidth;
 
     doc.setFontSize(20);
-    setFontForText(song.title);
+    setFontForText(song.title, 'bold');
     const wrappedTitle: string[] = doc.splitTextToSize(song.title, titleMaxWidth);
     let titleY = 25;
     wrappedTitle.forEach((tLine: string) => {
@@ -433,7 +466,7 @@ export const generateSongPdf = async (
       doc.addPage();
       addWatermark();
       doc.setFontSize(12);
-      setFontForText(`${song.title} (continued)`);
+      setFontForText(`${song.title} (continued)`, 'bold');
       doc.text(`${song.title} (continued)`, margin, 15);
       currentColumn = 0;
       yPosition = 25;
@@ -542,7 +575,7 @@ export const generateSongPdf = async (
               let chordX = sx + getSafeTextWidth(prefixText);
               
               doc.setFontSize(chordFontSize);
-              setFontForText(cleanedChord);
+              doc.setFont('RobotoMono', 'normal');
               
               const minGap = getSafeTextWidth('  ');
               if (chordX < lastChordEndX + minGap) {

@@ -68,6 +68,11 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				}
 			},
+			fontFamily: {
+				chord: ['"Roboto Mono"', 'monospace'],
+				lyric: ['"Inter"', '"Noto Sans"', 'sans-serif'],
+				heading: ['"Inter"', 'sans-serif'],
+			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',

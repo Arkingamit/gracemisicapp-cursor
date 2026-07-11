@@ -3,6 +3,7 @@ import { GroupModel } from '@/server/models/group';
 import { OrganizationModel } from '@/server/models/organization';
 import { getAuthUser, authError } from '@/lib/auth';
 import { AuditLogModel } from '@/server/models/auditLog';
+import { sendNotificationToUser } from '@/server/utils/pushNotifications';
 import { COLLECTIONS } from '@/server/db/collections';
 import { SettingsModel } from '@/server/models/settings';
 import { getCollection } from '@/server/db/connection';
@@ -96,6 +97,19 @@ export async function POST(request: NextRequest) {
       userId: auth.userId,
       itemName: `${group.name} (in ${org.name})`,
     });
+
+    // Notify organization members
+    const orgMembers = org.members || [];
+    for (const memberId of orgMembers) {
+      if (memberId !== auth.userId) { // don't notify the creator
+        await sendNotificationToUser(
+          memberId,
+          'New Song Set Created',
+          `A new song set "${group.name}" was created in "${org.name}".`,
+          `/organizations/view?id=${org.id}&tab=song-sets&groupId=${group.id}`
+        );
+      }
+    }
 
     return Response.json({ group }, { status: 201 });
   } catch (error) {

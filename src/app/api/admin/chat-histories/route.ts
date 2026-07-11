@@ -21,8 +21,9 @@ export async function GET(req: NextRequest) {
     // Enrich with user info
     const enriched = await Promise.all(
       histories.map(async (h: any) => {
+        const { ObjectId } = await import('mongodb');
         const user = await usersCollection.findOne(
-          { _id: h.userId.length === 24 ? new (await import('mongodb')).ObjectId(h.userId) : h.userId },
+          { _id: h.userId.length === 24 ? new ObjectId(h.userId) : h.userId },
         );
         // If user not found by ObjectId, try by string
         const userByString = user || await usersCollection.findOne({ _id: h.userId as any });

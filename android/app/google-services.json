@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "810353645969",
+    "project_id": "grace-music-464213",
+    "storage_bucket": "grace-music-464213.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:810353645969:android:1cb0f399bdc99e1e636230",
+        "android_client_info": {
+          "package_name": "com.grace.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "810353645969-dmsbou0itk6475tap5j8qq7ejvs68dm7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyADXMTzY_JDojn0HCS-jjc37M6feSQUt7w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "810353645969-dmsbou0itk6475tap5j8qq7ejvs68dm7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

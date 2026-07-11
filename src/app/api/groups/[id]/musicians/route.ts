@@ -2,8 +2,8 @@ import { NextRequest } from 'next/server';
 import { GroupModel } from '@/server/models/group';
 import { OrganizationModel } from '@/server/models/organization';
 import { getAuthUser } from '@/lib/auth';
-
 // GET /api/groups/[id]/musicians — Get musician assignments for a group
+import { sendNotificationToUser } from '@/server/utils/pushNotifications';
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -74,8 +74,27 @@ export async function PUT(
         return Response.json({ error: 'Each assignment must have an instrument' }, { status: 400 });
       }
     }
-
+    
+    // Compare old vs new assignments to notify newly assigned users
+    const oldAssignments = group.musicianAssignments || [];
+    const newAssignments = assignments;
+    
+    const oldUserIds = new Set(oldAssignments.map(a => a.userId));
+    
     const updatedGroup = await GroupModel.updateMusicianAssignments(id, assignments);
+
+    // Send notifications after successful update
+    for (const assignment of newAssignments) {
+      if (!oldUserIds.has(assignment.userId) && assignment.userId !== auth.userId) {
+        await sendNotificationToUser(
+          assignment.userId,
+          'New Song Set Assignment',
+          `You have been assigned to play ${assignment.instrument} in "${group.name}".`,
+          `/organizations/view?id=${group.organizationId}&tab=song-sets&groupId=${group.id}`
+        );
+      }
+    }
+
     return Response.json({ group: updatedGroup });
   } catch (error) {
     console.error('Update musician assignments error:', error);

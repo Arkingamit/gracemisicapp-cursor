@@ -90,7 +90,7 @@ const CollectionSongList = ({ songIds, collectionName, onRemoveSong }: Collectio
   const handleTranspose = (songId: string, semitones: number) => {
     setTransposeValues(prev => ({
       ...prev,
-      [songId]: (prev[songId] || 0) + semitones,
+      [songId]: ((prev[songId] || 0) + semitones) % 12,
     }));
   };
 

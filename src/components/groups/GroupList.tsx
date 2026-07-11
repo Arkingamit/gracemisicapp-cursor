@@ -47,10 +47,15 @@ const GroupList = () => {
       ))
     : [];
 
-  // Filter groups based on search query
-  const filteredGroups = availableGroups.filter(group =>
-    group.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter groups based on search query (tokenized)
+  const filteredGroups = availableGroups.filter(group => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    const searchTokens = q.split(/\s+/).filter(Boolean);
+    return searchTokens.every(token => 
+      group.name.toLowerCase().includes(token)
+    );
+  });
 
 
 

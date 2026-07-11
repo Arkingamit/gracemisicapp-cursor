@@ -81,6 +81,7 @@ interface ChordLyricLineProps {
   onChordColorChange?: (chordIndex: number, color: string) => void;
   onLyricColorChange?: (color: string) => void;
   perChordColors?: Record<number, string>;
+  chordHighlight?: boolean;
 }
 
 interface ColoredChar {
@@ -163,6 +164,7 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
   lineLyricColor,
   onChordColorChange,
   perChordColors = {},
+  chordHighlight = false,
 }) => {
   const { lyrics, chords } = parsedLine;
   const [editingChordIdx, setEditingChordIdx] = useState<number | null>(null);
@@ -430,10 +432,10 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
   // ─── Render chord tokens ───
   const renderChordPart = (chordPart: string, chordIndices: number[], segFontSize: number) => {
     const hasVisibleChord = chordPart.trim().length > 0;
-    if (!editable || chordIndices.length === 0) {
+    if ((!editable && !chordHighlight) || chordIndices.length === 0) {
       return (
         <span
-          className={`${editable ? 'editable-chord' : ''} text-blue-500 font-bold block${hasVisibleChord ? ' pr-3' : ''}`}
+          className={`${editable ? 'editable-chord' : ''} text-blue-500 font-bold font-chord block${hasVisibleChord ? ' pr-3' : ''}`}
           style={{
             fontSize: `${segFontSize * 0.85}px`,
             lineHeight: 1.2,
@@ -475,7 +477,7 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
           <input
             key={`edit-${chordIdx}`}
             ref={chordInputRef}
-            className="editing-chord font-bold text-center bg-transparent border-none p-0 m-0 leading-none min-w-[2ch]"
+            className="editing-chord font-bold font-chord text-center bg-transparent border-none p-0 m-0 leading-none min-w-[2ch]"
             style={{
               fontSize: `${segFontSize * 0.85}px`,
               width: `${Math.max(chordInputValue.length + 1, 3)}ch`,
@@ -494,10 +496,10 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
         tokens.push(
           <span
             key={`chord-${chordIdx}`}
-            className={`editable-chord inline-block ${showHintBorder ? 'hint-border' : ''}`}
+            className={`editable-chord inline-block font-chord ${showHintBorder ? 'hint-border' : ''} ${chordHighlight ? 'bg-black/10 dark:bg-white/10 px-1 rounded-md' : ''}`}
             style={{ color: thisChordColor }}
             onClick={(e) => handleChordClick(chordIdx, chord.chord, e)}
-            title="Click to edit chord"
+            title={editable ? "Click to edit chord" : undefined}
           >
             {chord.chord}
           </span>
@@ -517,7 +519,7 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
     const hasVisibleChordEditable = chordPart.trim().length > 0;
     return (
       <span
-        className={`text-blue-500 font-bold block${hasVisibleChordEditable ? ' pr-3' : ''}`}
+        className={`text-blue-500 font-bold font-chord block${hasVisibleChordEditable ? ' pr-3' : ''}`}
         style={{
           fontSize: `${segFontSize * 0.85}px`,
           lineHeight: 1.2,
@@ -537,7 +539,7 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
     chords.forEach((chordObj, i) => {
       if (chordObj.position > lastPos) {
         tokens.push(
-          <span key={`text-${i}`}>
+          <span key={`text-${i}`} className="font-lyric">
             {renderColoredChars(coloredChars.slice(lastPos, chordObj.position), effectiveLyricColor)}
           </span>
         );
@@ -546,7 +548,7 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
       tokens.push(
         <span
           key={`chord-${i}`}
-          className={`text-blue-500 font-bold pr-2 ${editable ? 'cursor-pointer hover:underline' : ''}`}
+          className={`text-blue-500 font-bold font-chord pr-2 ${editable ? 'cursor-pointer hover:underline' : ''}`}
           style={{ fontSize: `${fontSize * 0.85}px`, color: thisChordColor }}
           onClick={(e) => {
             if (editable) handleChordClick(i, chordObj.chord, e);
@@ -560,14 +562,14 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
 
     if (lastPos < coloredChars.length) {
       tokens.push(
-        <span key="text-end">
+        <span key="text-end" className="font-lyric">
           {renderColoredChars(coloredChars.slice(lastPos), effectiveLyricColor)}
         </span>
       );
     }
 
     return (
-      <div ref={containerRef} className={`font-mono whitespace-pre-wrap relative ${className}`} style={{ fontSize: `${fontSize}px`, lineHeight: 1.6 }}>
+      <div ref={containerRef} className={`whitespace-pre-wrap relative ${className}`} style={{ fontSize: `${fontSize}px`, lineHeight: 1.6 }}>
         {chordColorTarget && (
           <InlineColorPicker
             currentColor={perChordColors[chordColorTarget.chordIdx] || effectiveChordColor || ''}
@@ -587,7 +589,7 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
 
   // ─── Render Read-Only / Rich Text Edit Mode ───
   return (
-    <div ref={containerRef} className={`font-mono relative ${className}`} style={{ fontSize: `${fontSize}px`, lineHeight: 1.6 }}>
+    <div ref={containerRef} className={`relative ${className}`} style={{ fontSize: `${fontSize}px`, lineHeight: 1.6 }}>
       {chordColorTarget && (
         <InlineColorPicker
           currentColor={perChordColors[chordColorTarget.chordIdx] || effectiveChordColor || ''}
@@ -622,7 +624,7 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
             ref={lyricContentEditableRef}
             contentEditable
             suppressContentEditableWarning
-            className={`w-full font-mono block outline-none rounded px-1 py-0.5 text-foreground transition-all duration-150 ${
+            className={`w-full font-lyric block outline-none rounded px-1 py-0.5 text-foreground transition-all duration-150 ${
               isLyricFocused || showHintBorder 
                 ? 'editing-lyric border border-primary/50 bg-background' 
                 : 'hover:bg-primary/5 cursor-text border border-transparent'
@@ -657,7 +659,7 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
             <span key={i} className="inline-block whitespace-pre">
               {hasChords && renderChordPart(seg.chordPart, seg.chordIndices, fontSize)}
               <span
-                className="block"
+                className="block font-lyric"
                 style={{ color: effectiveLyricColor }}
               >
                 {renderColoredChars(seg.lyricPartChars, effectiveLyricColor) || (hasChords ? '' : '\u00A0')}

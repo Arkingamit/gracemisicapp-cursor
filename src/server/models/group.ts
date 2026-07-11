@@ -347,6 +347,64 @@ export class GroupModel {
     }
   }
 
+  // Aggregate personal stats for a user across all groups
+  static async getUserStats(userId: string): Promise<{
+    organizations: Array<{
+      organizationId: string;
+      totalSets: number;
+      instruments: Record<string, number>;
+      sets: Array<{ groupId: string; groupName: string; instrument: string; date: string }>;
+    }>;
+  }> {
+    try {
+      const collection = await getCollection(COLLECTIONS.GROUPS);
+
+      // Find all groups where this user has a musician assignment
+      const groups = await collection
+        .find({ "musicianAssignments.userId": userId })
+        .toArray();
+
+      const statsMap = new Map<string, {
+        totalSets: number;
+        instruments: Record<string, number>;
+        sets: Array<{ groupId: string; groupName: string; instrument: string; date: string }>;
+      }>();
+
+      for (const group of groups) {
+        const assignments: MusicianAssignment[] = (group as any).musicianAssignments || [];
+        const userAssignment = assignments.find(a => a.userId === userId);
+        
+        if (userAssignment) {
+          const orgId = group.organizationId;
+          
+          if (!statsMap.has(orgId)) {
+            statsMap.set(orgId, { totalSets: 0, instruments: {}, sets: [] });
+          }
+          
+          const entry = statsMap.get(orgId)!;
+          entry.totalSets += 1;
+          entry.instruments[userAssignment.instrument] = (entry.instruments[userAssignment.instrument] || 0) + 1;
+          entry.sets.push({
+            groupId: group._id.toString(),
+            groupName: group.name,
+            instrument: userAssignment.instrument,
+            date: group.createdAt.toISOString()
+          });
+        }
+      }
+
+      const organizations = Array.from(statsMap.entries()).map(([organizationId, data]) => ({
+        organizationId,
+        ...data
+      }));
+
+      return { organizations };
+    } catch (error) {
+      console.error("Error getting user stats:", error);
+      throw error;
+    }
+  }
+
   // Aggregate musician stats across all groups in an organization
   static async getMusicianStats(organizationId: string): Promise<{
     members: Array<{

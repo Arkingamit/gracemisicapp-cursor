@@ -5,13 +5,15 @@ import { getAuthUser, authError } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = getAuthUser(request);
     if (!auth) return authError('Not authenticated');
 
-    const org = await OrganizationModel.findById(params.id);
+    const { id } = await params;
+
+    const org = await OrganizationModel.findById(id);
     if (!org) return Response.json({ error: 'Organization not found' }, { status: 404 });
 
     // Only managers and super admins can view requests
@@ -19,7 +21,7 @@ export async function GET(
       return Response.json({ error: 'Not authorized to view requests for this organization' }, { status: 403 });
     }
 
-    const requests = await JoinRequestModel.getPendingByOrganization(params.id);
+    const requests = await JoinRequestModel.getPendingByOrganization(id);
     return Response.json({ requests });
   } catch (error) {
     console.error('Get join requests error:', error);

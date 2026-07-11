@@ -12,7 +12,8 @@ import { useSongs } from '@/contexts/SongContext';
 import { useRouter } from 'next/navigation';
 import LyricsDisplay from './LyricsDisplay';
 import TransposeControls from './TransposeControls';
-import { PlayCircle, Youtube, ListMusic } from 'lucide-react';
+import { PlayCircle, Youtube, ListMusic, Settings } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface SongDisplayProps {
   song: Song;
@@ -45,6 +46,9 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
 }) => {
   const [internalTransposition, setInternalTransposition] = useState(0);
   const [internalNumberSystem, setInternalNumberSystem] = useState(false);
+  const [lightTheme, setLightTheme] = useState(false);
+  const [chordHighlight, setChordHighlight] = useState(false);
+  const [hideAllChords, setHideAllChords] = useState(false);
   const { currentUser } = useAuth();
   const { deleteSong } = useSongs();
   const router = useRouter();
@@ -90,7 +94,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
   };
 
   return (
-    <Card className="rounded-lg sm:rounded-xl border-x sm:border-x transition-all duration-150 bg-zinc-900/40 border-zinc-800/50 w-full">
+    <Card className={`rounded-lg sm:rounded-xl border-x sm:border-x transition-all duration-150 w-full ${lightTheme ? 'bg-white text-zinc-900 border-zinc-200' : 'bg-zinc-900/40 border-zinc-800/50'}`}>
       <CardHeader className="p-3 sm:px-4 sm:py-3 select-none">
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
@@ -129,10 +133,11 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
                 onReset={handleReset}
                 useNumberSystem={currentNumberSystem}
                 onNumberSystemChange={onUseNumberSystemChange || setInternalNumberSystem}
+                lightTheme={lightTheme}
               />
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => onFontSizeChange && onFontSizeChange(2)}>A+</Button>
-                <Button variant="outline" size="sm" onClick={() => onFontSizeChange && onFontSizeChange(-2)}>A-</Button>
+                <Button variant="outline" size="sm" className={lightTheme ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-300 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100" : ""} onClick={() => onFontSizeChange && onFontSizeChange(2)}>A+</Button>
+                <Button variant="outline" size="sm" className={lightTheme ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-300 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100" : ""} onClick={() => onFontSizeChange && onFontSizeChange(-2)}>A-</Button>
               </div>
             </div>
 
@@ -142,9 +147,35 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
                   id={`flat-toggle`}
                   checked={useFlats}
                   onCheckedChange={(checked) => onUseFlatsChange && onUseFlatsChange(checked)}
+                  className={lightTheme ? "data-[state=unchecked]:bg-zinc-200 data-[state=checked]:bg-zinc-900 [&>span]:bg-white" : ""}
                 />
                 <Label htmlFor={`flat-toggle`}>Use flats</Label>
               </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className={`gap-2 ${lightTheme ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-300 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100" : ""}`}>
+                    <Settings className="w-4 h-4" />
+                    Settings
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-4" align="end">
+                  <div className="space-y-4">
+                    <h4 className="font-medium leading-none mb-3 text-sm">Display Settings</h4>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="theme-toggle" className="cursor-pointer">Light Theme</Label>
+                      <Switch id="theme-toggle" checked={lightTheme} onCheckedChange={setLightTheme} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="highlight-toggle" className="cursor-pointer">Highlight Chords</Label>
+                      <Switch id="highlight-toggle" checked={chordHighlight} onCheckedChange={setChordHighlight} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="hide-chords-toggle" className="cursor-pointer">Hide All Chords</Label>
+                      <Switch id="hide-chords-toggle" checked={hideAllChords} onCheckedChange={setHideAllChords} />
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
@@ -157,6 +188,9 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
               format={song.format}
               useNumberSystem={currentNumberSystem}
               currentKey={currentKey}
+              chordHighlight={chordHighlight}
+              hideAllChords={hideAllChords}
+              onHideAllChordsChange={setHideAllChords}
             />
           </div>
       </CardContent>

@@ -12,6 +12,7 @@ interface TransposeControlsProps {
   onReset: () => void;
   useNumberSystem?: boolean;
   onNumberSystemChange?: (value: boolean) => void;
+  lightTheme?: boolean;
 }
 
 const TransposeControls: React.FC<TransposeControlsProps> = ({
@@ -21,40 +22,56 @@ const TransposeControls: React.FC<TransposeControlsProps> = ({
   onTransposeDown,
   onReset,
   useNumberSystem = false,
-  onNumberSystemChange
+  onNumberSystemChange,
+  lightTheme = false,
 }) => {
+  const [showKey, setShowKey] = React.useState(false);
+  const isFirstRender = React.useRef(true);
+
+  React.useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    setShowKey(true);
+    const timer = setTimeout(() => setShowKey(false), 1500);
+    return () => clearTimeout(timer);
+  }, [transposition, currentKey]);
+
   const getTranspositionText = (value: number) => {
     if (value === 0) return 'Original';
     return value > 0 ? `+${value}` : `${value}`;
   };
+
+  const themeBtnClass = lightTheme 
+    ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-300 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100" 
+    : "";
 
   return (
     <div className="flex items-center gap-1 shrink-0">
       <Button
         variant="outline"
         size="icon"
-        className="h-8 w-8"
+        className={`h-8 w-8 shrink-0 ${themeBtnClass}`}
         onClick={onTransposeDown}
-        disabled={transposition <= -11}
       >
         <Minus className="h-4 w-4" />
       </Button>
 
       <Button
         variant="outline"
-        className="h-8 px-3 text-xs"
+        className={`h-8 min-w-[60px] px-3 text-xs font-semibold transition-all ${themeBtnClass}`}
         onClick={onReset}
         disabled={transposition === 0}
       >
-        Reset
+        {showKey ? currentKey : 'Reset'}
       </Button>
 
       <Button
         variant="outline"
         size="icon"
-        className="h-8 w-8"
+        className={`h-8 w-8 shrink-0 ${themeBtnClass}`}
         onClick={onTransposeUp}
-        disabled={transposition >= 11}
       >
         <Plus className="h-4 w-4" />
       </Button>
@@ -71,6 +88,7 @@ const TransposeControls: React.FC<TransposeControlsProps> = ({
             id="number-system-toggle" 
             checked={useNumberSystem}
             onCheckedChange={onNumberSystemChange}
+            className={lightTheme ? "data-[state=unchecked]:bg-zinc-200 data-[state=checked]:bg-zinc-900 [&>span]:bg-white" : ""}
           />
           <Label htmlFor="number-system-toggle" className="text-xs whitespace-nowrap cursor-pointer">
             Numbers

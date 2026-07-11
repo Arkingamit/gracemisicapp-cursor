@@ -1,0 +1,163 @@
+'use client';
+
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
+import { useAuth, authFetch } from './AuthContext';
+import { Capacitor } from '@capacitor/core';
+import { initNativePushNotifications, removeNativePushListeners } from '@/lib/nativePushNotifications';
+
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  link?: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+interface NotificationContextType {
+  notifications: Notification[];
+  unreadCount: number;
+  loading: boolean;
+  requestPushPermission: () => Promise<void>;
+  markAsRead: (notificationIds: string[]) => Promise<void>;
+  pushPermission: NotificationPermission;
+}
+
+const NotificationContext = createContext<NotificationContextType | null>(null);
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+export const NotificationProvider = ({ children }: { children: ReactNode }) => {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
+  const { currentUser } = useAuth();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setPushPermission(Notification.permission);
+    }
+  }, []);
+
+  const fetchNotifications = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const res = await authFetch('/api/notifications');
+      const data = await res.json();
+      if (res.ok) {
+        setNotifications(data.notifications || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchNotifications();
+      // Poll every 1 minute
+      const interval = setInterval(fetchNotifications, 60000);
+      return () => clearInterval(interval);
+    } else {
+      setNotifications([]);
+      setLoading(false);
+    }
+  }, [currentUser, fetchNotifications]);
+
+  // Initialize native push notifications on mobile when user is authenticated
+  const nativePushInitialized = useRef(false);
+  useEffect(() => {
+    if (currentUser && Capacitor.isNativePlatform() && !nativePushInitialized.current) {
+      nativePushInitialized.current = true;
+      initNativePushNotifications().catch(console.error);
+    }
+
+    // Cleanup listeners when user logs out
+    if (!currentUser && nativePushInitialized.current) {
+      nativePushInitialized.current = false;
+      removeNativePushListeners().catch(console.error);
+    }
+  }, [currentUser]);
+
+  const requestPushPermission = async () => {
+    if (!('Notification' in window)) return;
+    
+    const permission = await Notification.requestPermission();
+    setPushPermission(permission);
+
+    if (permission === 'granted') {
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+        if (!vapidPublicKey) return;
+
+        const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: convertedVapidKey
+        });
+
+        await authFetch('/api/notifications/subscribe', {
+          method: 'POST',
+          body: JSON.stringify({ subscription })
+        });
+      } catch (error) {
+        console.error('Error setting up push notifications:', error);
+      }
+    }
+  };
+
+  const markAsRead = async (notificationIds: string[]) => {
+    try {
+      setNotifications(prev => 
+        prev.map(n => notificationIds.includes(n.id) ? { ...n, isRead: true } : n)
+      );
+
+      await authFetch('/api/notifications/mark-read', {
+        method: 'POST',
+        body: JSON.stringify({ notificationIds })
+      });
+    } catch (error) {
+      console.error('Error marking notifications read:', error);
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  return (
+    <NotificationContext.Provider
+      value={{
+        notifications,
+        unreadCount,
+        loading,
+        requestPushPermission,
+        markAsRead,
+        pushPermission
+      }}
+    >
+      {children}
+    </NotificationContext.Provider>
+  );
+};
+
+export const useNotifications = () => {
+  const context = useContext(NotificationContext);
+  if (!context) throw new Error('useNotifications must be used within NotificationProvider');
+  return context;
+};

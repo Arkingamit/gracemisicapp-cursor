@@ -174,8 +174,8 @@ const SongDetail = () => {
           fontSize={fontSize}
           transposition={transposition}
           useFlats={useFlats}
-          onTransposeUp={() => setTransposition(Math.min(transposition + 1, 11))}
-          onTransposeDown={() => setTransposition(Math.max(transposition - 1, -11))}
+          onTransposeUp={() => setTransposition((transposition + 1) % 12)}
+          onTransposeDown={() => setTransposition((transposition - 1) % 12)}
           onResetTransposition={() => setTransposition(0)}
           onFontSizeChange={(delta) => setFontSize(f => Math.min(24, Math.max(12, f + delta)))}
           onUseFlatsChange={setUseFlats}

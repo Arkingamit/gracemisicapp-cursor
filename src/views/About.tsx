@@ -1,7 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Music, Heart, Users, ListMusic, Building2 } from 'lucide-react';
-import { VapourTextEffect } from '@/components/ui/vapour-text-effect';
 
 const About = () => {
   return (
@@ -15,7 +14,7 @@ const About = () => {
           </CardHeader>
           <CardContent>
             <p className="leading-relaxed">
-              Grace Music is a platform designed for musicians and songwriters to store, display, and transpose song lyrics with embedded chords. It uses the ChordPro format, where chords are placed in square brackets within the lyrics text.
+              Grace Music is a platform designed for musicians and songwriters to store, display, and manage song lyrics with embedded chords. Our system can automatically detect chords and lyrics—so you can simply copy and paste standard text, and the system will handle the rest!
             </p>
           </CardContent>
         </Card>
@@ -29,30 +28,30 @@ const About = () => {
               <div>
                 <h3 className="font-semibold text-lg flex items-center gap-2">
                   <Music className="w-5 h-5 text-primary" />
-                  Songs
+                  Songs & Customization
                 </h3>
                 <p className="text-muted-foreground mt-1">
-                  The heart of Grace Music. Songs are stored using the ChordPro format, allowing for dynamic transposition, number system display, and clean formatting. You can view, edit, and export songs to beautifully formatted PDFs.
+                  The heart of Grace Music. Easily import songs, change the colors of your chords and lyrics to fit your preference, and export beautifully formatted PDFs. You can even hide chords for specific sections or for the entire song when you just need the lyrics!
                 </p>
               </div>
 
               <div>
                 <h3 className="font-semibold text-lg flex items-center gap-2">
                   <Heart className="w-5 h-5 text-primary" />
-                  Favorites
+                  Favorites & Private Collections
                 </h3>
                 <p className="text-muted-foreground mt-1">
-                  Quickly access your most-used or loved songs by marking them as favorites. They will appear in your dedicated Favorites library for easy retrieval during practice or performance.
+                  Quickly access your most-used or loved songs by marking them as favorites. Create private collections and favorite lists for easy retrieval during practice or performance.
                 </p>
               </div>
 
               <div>
                 <h3 className="font-semibold text-lg flex items-center gap-2">
                   <Users className="w-5 h-5 text-primary" />
-                  Sets
+                  Sets & Annotations
                 </h3>
                 <p className="text-muted-foreground mt-1">
-                  Organize songs into groups for specific events or worship services. Sets allow you to arrange a custom order of songs, making it easy to flow smoothly from one song to the next during a live session.
+                  Organize songs into groups for specific events or worship services. Managers and editors can add personal annotations and instructions directly to the set (e.g., "Verse 2: Electric Guitar Solo" or "Verse 1: Piano Only") to ensure the whole band is perfectly synced.
                 </p>
               </div>
 
@@ -72,24 +71,9 @@ const About = () => {
                   Organizations
                 </h3>
                 <p className="text-muted-foreground mt-1">
-                  Collaborate with your church or band by creating or joining Organizations. Members within an Organization can share a unified database of songs, sets, and collections, ensuring everyone is on the same page with the correct versions, keys, and arrangements.
+                  Collaborate with your church or band by creating or joining Organizations. Access organization-specific song libraries and song sets, ensuring everyone is on the same page with the correct versions, keys, and arrangements.
                 </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>ChordPro Format</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="leading-relaxed mb-4">
-              The ChordPro format is a simple way to embed chords within lyrics. Put chords in square brackets right before the syllable they belong to:
-            </p>
-            <div className="bg-accent p-4 rounded-md font-mono">
-              <p>[C]Amazing [F]grace, how [C]sweet the [G]sound</p>
-              <p>[C]That [F]saved a wretch like [G]me</p>
             </div>
           </CardContent>
         </Card>
@@ -158,9 +142,6 @@ const About = () => {
           </CardContent>
         </Card>
 
-        <div className="pt-16 pb-8 flex flex-col items-center justify-center border-t border-white/5 mt-8">
-          <VapourTextEffect text="developer ARKIN & SHINE" textSize={40} className="text-zinc-400" />
-        </div>
       </div>
     </div>
   );

@@ -47,7 +47,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
   const [internalTransposition, setInternalTransposition] = useState(0);
   const [internalNumberSystem, setInternalNumberSystem] = useState(false);
   const [lightTheme, setLightTheme] = useState(false);
-  const [chordHighlight, setChordHighlight] = useState(false);
+  const [chordHighlight, setChordHighlight] = useState(true);
   const [hideAllChords, setHideAllChords] = useState(false);
   const { currentUser } = useAuth();
   const { deleteSong } = useSongs();
@@ -191,6 +191,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
               chordHighlight={chordHighlight}
               hideAllChords={hideAllChords}
               onHideAllChordsChange={setHideAllChords}
+              lightTheme={lightTheme}
             />
           </div>
       </CardContent>

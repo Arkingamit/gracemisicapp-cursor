@@ -82,6 +82,7 @@ interface ChordLyricLineProps {
   onLyricColorChange?: (color: string) => void;
   perChordColors?: Record<number, string>;
   chordHighlight?: boolean;
+  lightTheme?: boolean;
 }
 
 interface ColoredChar {
@@ -165,6 +166,7 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
   onChordColorChange,
   perChordColors = {},
   chordHighlight = false,
+  lightTheme = false,
 }) => {
   const { lyrics, chords } = parsedLine;
   const [editingChordIdx, setEditingChordIdx] = useState<number | null>(null);
@@ -496,7 +498,7 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
         tokens.push(
           <span
             key={`chord-${chordIdx}`}
-            className={`editable-chord inline-block font-chord ${showHintBorder ? 'hint-border' : ''} ${chordHighlight ? 'bg-black/10 dark:bg-white/10 px-1 rounded-md' : ''}`}
+            className={`editable-chord inline-block font-chord ${chordHighlight ? (lightTheme ? 'bg-black/10 px-1 rounded-md' : 'bg-white/10 px-1 rounded-md') : ''}`}
             style={{ color: thisChordColor }}
             onClick={(e) => handleChordClick(chordIdx, chord.chord, e)}
             title={editable ? "Click to edit chord" : undefined}

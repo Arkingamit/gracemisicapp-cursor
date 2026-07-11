@@ -34,6 +34,7 @@ interface LyricsDisplayProps {
   chordHighlight?: boolean;
   hideAllChords?: boolean;
   onHideAllChordsChange?: (hide: boolean) => void;
+  lightTheme?: boolean;
 }
 
 const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
@@ -61,6 +62,7 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
   chordHighlight = false,
   hideAllChords = false,
   onHideAllChordsChange,
+  lightTheme = false,
 }) => {
   const sections = useMemo(() => splitIntoSections(lyrics, format), [lyrics, format]);
 
@@ -195,11 +197,11 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
             parsedLine={line} 
             fontSize={fontSize}
             editable={editable}
-            showHintBorder={displayIdx === 0 && lIdx === 0}
             chordColor={currentEdit.styles.chordColor || undefined}
             lyricColor={currentEdit.styles.lyricColor || undefined}
             lineLyricColor={currentEdit.lyricColorOverrides?.[`${origIdx}-${lIdx}`] || undefined}
             chordHighlight={chordHighlight}
+            lightTheme={lightTheme}
             perChordColors={
               line.chords.length > 0
                 ? Object.fromEntries(

@@ -34,7 +34,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import TransposeControls from '@/components/songs/TransposeControls';
 import LyricsDisplay from '@/components/songs/LyricsDisplay';
-import { Palette, Undo2, Redo2, Edit2, PencilOff } from 'lucide-react';
+import { Palette, Undo2, Redo2, Edit2, PencilOff, Settings as SettingsIcon } from 'lucide-react';
 import { SongEditState, CHORD_COLOR_PRESETS, LYRIC_COLOR_PRESETS, nextAnnotationId, cloneEditStates, createEmptyEditState } from '@/lib/songEditTypes';
 import { splitIntoSections } from '@/lib/chordParser';
 
@@ -59,6 +59,11 @@ const GroupSongList = ({ groupId, groupSongIds }: GroupSongListProps) => {
   const [useFlatValues, setUseFlatValues] = useState<Record<string, boolean>>({});
   const [useNumberSystemValues, setUseNumberSystemValues] = useState<Record<string, boolean>>({});
   const [fontSizes, setFontSizes] = useState<Record<string, number>>({});
+  
+  // Display settings per song
+  const [lightThemes, setLightThemes] = useState<Record<string, boolean>>({});
+  const [chordHighlights, setChordHighlights] = useState<Record<string, boolean>>({});
+  const [hideAllChordsState, setHideAllChordsState] = useState<Record<string, boolean>>({});
 
   // ── Edit State & Undo/Redo ──
   const [editingLayoutFor, setEditingLayoutFor] = useState<Record<string, boolean>>({});
@@ -463,13 +468,18 @@ const GroupSongList = ({ groupId, groupSongIds }: GroupSongListProps) => {
                 const originalKey = songOriginalKeys[song.id];
                 const currentKey = originalKey ? getTransposedKeyName(originalKey, transposition) : 'Unknown';
                 const fontSize = fontSizes[song.id] || 16;
+                const lightTheme = lightThemes[song.id] ?? false;
+                const chordHighlight = chordHighlights[song.id] ?? true;
+                const hideAllChords = hideAllChordsState[song.id] ?? false;
 
                 return (
                   <Card
                     key={song.id}
                     className={`rounded-lg sm:rounded-xl border-x sm:border-x transition-all duration-150 ${
                       dragIndex === realIdx ? 'opacity-50 scale-[0.98]' : ''
-                    } ${dragOverIndex === realIdx && dragIndex !== realIdx ? 'border-t-2 border-primary' : ''}`}
+                    } ${dragOverIndex === realIdx && dragIndex !== realIdx ? 'border-t-2 border-primary' : ''} ${
+                      lightTheme ? 'bg-white text-zinc-900 border-zinc-200' : 'bg-zinc-900/40 border-zinc-800/50'
+                    }`}
                     draggable={canManage}
                     onDragStart={() => handleDragStart(realIdx)}
                     onDragOver={(e) => handleDragOver(e, realIdx)}
@@ -532,12 +542,13 @@ const GroupSongList = ({ groupId, groupSongIds }: GroupSongListProps) => {
                                 onReset={() => handleResetTranspose(song.id)}
                                 useNumberSystem={useNumberSystem}
                                 onNumberSystemChange={(val) => handleUseNumberSystemChange(song.id, val)}
+                                lightTheme={lightTheme}
                               />
                               <Button 
                                 variant={editingLayoutFor[song.id] ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => canManage && setEditingLayoutFor(prev => ({ ...prev, [song.id]: !prev[song.id] }))} 
-                                className="flex items-center gap-2"
+                                className={`flex items-center gap-2 ${lightTheme && !editingLayoutFor[song.id] ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-300 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100" : ""}`}
                                 title={!canManage ? 'You need editor access' : 'Edit Layout'}
                                 disabled={!canManage}
                               >
@@ -582,20 +593,48 @@ const GroupSongList = ({ groupId, groupSongIds }: GroupSongListProps) => {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleFontSizeChange(song.id, 2)}>A+</Button>
-                            <Button variant="outline" size="sm" onClick={() => handleFontSizeChange(song.id, -2)}>A-</Button>
+                            <Button variant="outline" size="sm" className={lightTheme ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-300 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100" : ""} onClick={() => handleFontSizeChange(song.id, 2)}>A+</Button>
+                            <Button variant="outline" size="sm" className={lightTheme ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-300 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100" : ""} onClick={() => handleFontSizeChange(song.id, -2)}>A-</Button>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-wrap items-center gap-4">
                           <div className="flex items-center gap-2">
                             <Switch
                               id={`flat-${song.id}`}
                               checked={useFlats}
                               onCheckedChange={(checked) => handleUseFlatChange(song.id, checked)}
+                              className={lightTheme ? "data-[state=unchecked]:bg-zinc-200 data-[state=checked]:bg-zinc-900 [&>span]:bg-white" : ""}
                             />
                             <Label htmlFor={`flat-${song.id}`}>Use flats</Label>
                           </div>
+                          
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className={`gap-2 ${lightTheme ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-300 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100" : ""}`}>
+                                <SettingsIcon className="w-4 h-4" />
+                                Settings
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-64 p-4" align="end">
+                              <div className="space-y-4">
+                                <h4 className="font-medium leading-none mb-3 text-sm">Display Settings</h4>
+                                <div className="flex items-center justify-between">
+                                  <Label htmlFor={`theme-${song.id}`} className="cursor-pointer">Light Theme</Label>
+                                  <Switch id={`theme-${song.id}`} checked={lightTheme} onCheckedChange={(c) => setLightThemes(prev => ({...prev, [song.id]: c}))} />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <Label htmlFor={`highlight-${song.id}`} className="cursor-pointer">Highlight Chords</Label>
+                                  <Switch id={`highlight-${song.id}`} checked={chordHighlight} onCheckedChange={(c) => setChordHighlights(prev => ({...prev, [song.id]: c}))} />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <Label htmlFor={`hide-chords-${song.id}`} className="cursor-pointer">Hide All Chords</Label>
+                                  <Switch id={`hide-chords-${song.id}`} checked={hideAllChords} onCheckedChange={(c) => setHideAllChordsState(prev => ({...prev, [song.id]: c}))} />
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+
                           <Button
                             variant="destructive"
                             size="sm"
@@ -661,6 +700,10 @@ const GroupSongList = ({ groupId, groupSongIds }: GroupSongListProps) => {
                           format={song.format}
                           useNumberSystem={useNumberSystem}
                           currentKey={currentKey}
+                          chordHighlight={chordHighlight}
+                          hideAllChords={hideAllChords}
+                          onHideAllChordsChange={(c) => setHideAllChordsState(prev => ({...prev, [song.id]: c}))}
+                          lightTheme={lightTheme}
                           editable={canManage && editingLayoutFor[song.id]}
                           editState={editStates[song.id]}
                           onChordEdit={(sIdx, lIdx, cIdx, newChord) => handleChordEdit(song, sIdx, lIdx, cIdx, newChord)}

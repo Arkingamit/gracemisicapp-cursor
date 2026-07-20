@@ -5,7 +5,7 @@ import { X, Sparkles, User, Loader2, Trash2, Plus, MessageSquare, ArrowUp, Squar
 import { getFullUrl } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
-import { motion, useAnimation, AnimatePresence, animate, useMotionValue } from "framer-motion";
+import { motion, useAnimation } from "framer-motion";
 import { Markdown } from "@/components/prompt-kit/markdown";
 import {
   PromptInput,
@@ -76,9 +76,6 @@ function normalizeAssistantContent(content: string): string {
   return text;
 }
 
-// Play the intro slide only once per page load
-let hasPlayedIntro = false;
-
 export default function AIChatBot() {
   const { currentUser, loading } = useAuth();
   const router = useRouter();
@@ -91,14 +88,8 @@ export default function AIChatBot() {
   const [error, setError] = useState<string | null>(null);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(true);
-  const [side, setSide] = useState<'left' | 'right'>('right');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dragControls = useAnimation();
-  const introPathProgress = useMotionValue(0);
-  const introPathOpacity = useMotionValue(1);
-  const [showGreeting, setShowGreeting] = useState(false);
-  const [introPathD, setIntroPathD] = useState<string | null>(null);
-  const [showIntroPath, setShowIntroPath] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [conversations, setConversations] = useState<
@@ -118,161 +109,12 @@ export default function AIChatBot() {
 
   useEffect(() => {
     const handleResize = () => {
-      if (side === 'right') {
-        dragControls.set({ x: window.innerWidth - 72, y: 0 });
-      } else {
-        dragControls.set({ x: 0, y: 0 });
-      }
+      dragControls.set({ x: window.innerWidth - 72, y: 0 });
     };
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [side, dragControls]);
-
-  // Intro: trace a capital "G" (path stops with the letter), then icon flies to FAB
-  useEffect(() => {
-    if (hasPlayedIntro || typeof window === 'undefined') return;
-    hasPlayedIntro = true;
-
-    const isMobile = window.innerWidth < 640;
-    const bottomPad = isMobile ? 80 : 24; // bottom-20 / sm:bottom-6
-    const fabSize = 56;
-    const btnCenterOffsetX = 8 + fabSize / 2; // ml-2 + half button
-    const endX = window.innerWidth - 72;
-    const endY = 0;
-
-    // Capital G in screen space — path ends when the letter is complete (no trail to FAB)
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const letterH = Math.min(vh * 0.52, vw * 0.62);
-    const letterW = letterH * 0.78;
-    const cx = vw / 2;
-    const cy = vh * 0.42;
-    const rx = letterW / 2;
-    const ry = letterH / 2;
-
-    const screenXY: { x: number; y: number }[] = [];
-    const push = (x: number, y: number) => {
-      const last = screenXY[screenXY.length - 1];
-      if (last && Math.hypot(last.x - x, last.y - y) < 0.5) return;
-      screenXY.push({ x, y });
-    };
-    const lerpPts = (a: { x: number; y: number }, b: { x: number; y: number }, n: number) => {
-      for (let i = 1; i <= n; i++) {
-        const t = i / n;
-        push(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
-      }
-    };
-
-    // Outer bowl of G: arc from upper-right opening, CCW around to lower-right
-    const arcStartDeg = 52;
-    const arcEndDeg = 328;
-    const arcSteps = 64;
-    for (let i = 0; i <= arcSteps; i++) {
-      const t = i / arcSteps;
-      const deg = arcStartDeg + t * (arcEndDeg - arcStartDeg);
-      const rad = (deg * Math.PI) / 180;
-      push(cx + rx * Math.cos(rad), cy - ry * Math.sin(rad));
-    }
-
-    // Rise along the right opening to the crossbar height
-    const rightRim = { x: cx + rx * 0.9, y: cy };
-    lerpPts(screenXY[screenXY.length - 1], rightRim, 10);
-
-    // Crossbar of G — inward toward the center
-    const spurInner = { x: cx - rx * 0.08, y: cy };
-    lerpPts(rightRim, spurInner, 14);
-
-    // Small vertical tick (helps the G read clearly)
-    const spurTick = { x: spurInner.x, y: cy + ry * 0.18 };
-    lerpPts(spurInner, spurTick, 6);
-
-    setIntroPathD(`M ${screenXY.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L ')}`);
-
-    // Arc-length table so icon sits exactly at the tip of the drawn path
-    const cumLen: number[] = [0];
-    for (let i = 1; i < screenXY.length; i++) {
-      const dx = screenXY[i].x - screenXY[i - 1].x;
-      const dy = screenXY[i].y - screenXY[i - 1].y;
-      cumLen.push(cumLen[i - 1] + Math.hypot(dx, dy));
-    }
-    const totalLen = cumLen[cumLen.length - 1] || 1;
-
-    setSide('right');
-    introPathProgress.set(0);
-    introPathOpacity.set(1);
-    const startPose = {
-      x: screenXY[0].x - btnCenterOffsetX,
-      y: screenXY[0].y - (window.innerHeight - bottomPad - fabSize / 2),
-      rotate: 0,
-    };
-    dragControls.set(startPose);
-
-    let greetTimer: ReturnType<typeof setTimeout> | undefined;
-    let clearPathTimer: ReturnType<typeof setTimeout> | undefined;
-    let gAnim: { stop: () => void } | undefined;
-    let fadeAnim: { stop: () => void } | undefined;
-
-    const poseAtProgress = (t: number) => {
-      const clamped = Math.max(0, Math.min(1, t));
-      const target = clamped * totalLen;
-      let i = 1;
-      while (i < cumLen.length && cumLen[i] < target) i++;
-      const i0 = Math.max(0, i - 1);
-      const i1 = Math.min(i, screenXY.length - 1);
-      const span = cumLen[i1] - cumLen[i0] || 1;
-      const f = (target - cumLen[i0]) / span;
-      const sx = screenXY[i0].x + (screenXY[i1].x - screenXY[i0].x) * f;
-      const sy = screenXY[i0].y + (screenXY[i1].y - screenXY[i0].y) * f;
-      return {
-        x: sx - btnCenterOffsetX,
-        y: sy - (window.innerHeight - bottomPad - fabSize / 2),
-        rotate: 0,
-      };
-    };
-
-    const slideTimer = setTimeout(() => {
-      setShowIntroPath(true);
-      gAnim = animate(introPathProgress, 1, {
-        duration: 3.0,
-        ease: 'easeInOut',
-        onUpdate: (t) => {
-          dragControls.set(poseAtProgress(t));
-          // Traced path fades away slowly as the icon moves
-          introPathOpacity.set(Math.max(0, 1 - t * 0.92));
-        },
-        onComplete: () => {
-          // Finish fading out any remaining trail, then icon moves to FAB (no new path)
-          fadeAnim = animate(introPathOpacity, 0, {
-            duration: 0.7,
-            ease: 'easeOut',
-            onComplete: () => {
-              setShowIntroPath(false);
-              clearPathTimer = setTimeout(() => setIntroPathD(null), 200);
-            },
-          });
-          dragControls
-            .start({
-              x: endX,
-              y: endY,
-              rotate: 0,
-              transition: { type: 'spring', bounce: 0.22, duration: 0.85 },
-            })
-            .then(() => {
-              setShowGreeting(true);
-              greetTimer = setTimeout(() => setShowGreeting(false), 6000);
-            });
-        },
-      });
-    }, 500);
-
-    return () => {
-      clearTimeout(slideTimer);
-      gAnim?.stop();
-      fadeAnim?.stop();
-      if (greetTimer) clearTimeout(greetTimer);
-      if (clearPathTimer) clearTimeout(clearPathTimer);
-    };
-  }, [dragControls, introPathProgress, introPathOpacity]);
+  }, [dragControls]);
 
   // Load settings
   useEffect(() => {
@@ -494,7 +336,6 @@ export default function AIChatBot() {
 
   const openChat = () => {
     startNewConversation();
-    setShowGreeting(false);
     setIsOpen(true);
     setError(null);
   };
@@ -638,96 +479,27 @@ export default function AIChatBot() {
 
   return (
     <>
-      {/* Capital G path — draws with the icon, then fades away (no glow) */}
-      <AnimatePresence>
-        {introPathD && showIntroPath && (
-          <motion.svg
-            key="ai-intro-path"
-            className="pointer-events-none fixed inset-0 z-[49] h-screen w-screen overflow-visible"
-            viewBox={`0 0 ${typeof window !== 'undefined' ? window.innerWidth : 390} ${typeof window !== 'undefined' ? window.innerHeight : 844}`}
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            aria-hidden
-          >
-            <defs>
-              <linearGradient id="ai-g-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#60a5fa" stopOpacity="1" />
-                <stop offset="50%" stopColor="#818cf8" stopOpacity="1" />
-                <stop offset="100%" stopColor="#a78bfa" stopOpacity="1" />
-              </linearGradient>
-            </defs>
-            <motion.path
-              d={introPathD}
-              fill="none"
-              stroke="rgba(99,102,241,0.3)"
-              strokeWidth={14}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ pathLength: introPathProgress, opacity: introPathOpacity }}
-            />
-            <motion.path
-              d={introPathD}
-              fill="none"
-              stroke="url(#ai-g-grad)"
-              strokeWidth={4}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ pathLength: introPathProgress, opacity: introPathOpacity }}
-            />
-          </motion.svg>
-        )}
-      </AnimatePresence>
-
       {/* Floating Button */}
       <motion.div
         drag
         dragMomentum={false}
         animate={dragControls}
-        onDragStart={() => setShowGreeting(false)}
         onDragEnd={(e, info) => {
           if (typeof window !== 'undefined') {
-            if (info.point.x > window.innerWidth / 2) {
-              setSide('right');
-              dragControls.start({ x: window.innerWidth - 72, y: 0, rotate: 0, transition: { type: "spring", bounce: 0.2, duration: 0.5 } });
-            } else {
-              setSide('left');
-              dragControls.start({ x: 0, y: 0, rotate: 0, transition: { type: "spring", bounce: 0.2, duration: 0.5 } });
-            }
+            dragControls.start({ x: window.innerWidth - 72, y: 0, rotate: 0, transition: { type: "spring", bounce: 0.2, duration: 0.5 } });
           }
         }}
         whileDrag={{ scale: 1.05 }}
         data-tour="ai-chatbot"
-        className={`fixed bottom-20 sm:bottom-6 left-0 z-50 ${isOpen ? (side === 'left' ? "-translate-x-full" : "translate-x-full") + " opacity-0 pointer-events-none" : "translate-x-0 opacity-100"}`}
+        className={`fixed bottom-20 sm:bottom-6 left-0 z-50 ${isOpen ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"}`}
         style={{ touchAction: "none" }}
       >
-        {/* Greeting bubble */}
-        <AnimatePresence>
-          {showGreeting && !isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.9 }}
-              transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
-              className={`absolute bottom-full mb-3 ${side === 'left' ? 'left-2' : 'right-2'} w-max`}
-            >
-              <button
-                onClick={openChat}
-                className="relative bg-zinc-900 border border-zinc-700/70 text-zinc-100 text-sm font-medium px-4 py-2.5 rounded-2xl shadow-xl cursor-pointer"
-              >
-                Hi!
-                <span className={`absolute -bottom-[7px] ${side === 'left' ? 'left-5' : 'right-5'} w-3 h-3 bg-zinc-900 border-b border-r border-zinc-700/70 rotate-45`} />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         <button
           onClick={openChat}
           className="ml-2 w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-violet-600 text-white border border-white/15 shadow-lg shadow-blue-600/40 hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300 flex items-center justify-center cursor-grab active:cursor-grabbing"
           aria-label="Open AI Assistant"
         >
-          <Sparkles className="w-7 h-7 animate-flame pointer-events-none" />
+          <Sparkles className="w-7 h-7 pointer-events-none" />
         </button>
       </motion.div>
 

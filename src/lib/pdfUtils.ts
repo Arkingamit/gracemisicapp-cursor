@@ -715,7 +715,7 @@ export const generateSongPdf = async (
       
       await Share.share({
         title: filename,
-        text: 'Shared Song Set from Grace App',
+        text: 'Shared Song Set from Grace Music',
         url: savedFile.uri,
         dialogTitle: 'Save or Share PDF'
       });

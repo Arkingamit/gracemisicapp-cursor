@@ -49,8 +49,4 @@ next-env.d.ts
 *.txt
 *.log
 /tmp/
-
-# setup wizard flag (must not be committed)
-setup_complete.flag
-
 atlas_backup_data/

@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Grace App</string>
-    <string name="title_activity_main">Grace App</string>
+    <string name="app_name">Grace Music</string>
+    <string name="title_activity_main">Grace Music</string>
     <string name="package_name">com.grace.app</string>
     <string name="custom_url_scheme">com.grace.app</string>
-    <string name="server_client_id">373571167776-bhmjthm17gp5s6pfr0hbuhukjqoo7l6a.apps.googleusercontent.com</string>
+    <string name="server_client_id">810353645969-dmsbou0itk6475tap5j8qq7ejvs68dm7.apps.googleusercontent.com</string>
 </resources>

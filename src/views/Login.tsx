@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { GoogleLogin } from '@react-oauth/google';
@@ -13,22 +15,45 @@ export interface LoginProps {
   redirectPath?: string;
 }
 
+/** Web OAuth client ID — must match Google Cloud / google-services.json */
+const GOOGLE_WEB_CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+  '810353645969-dmsbou0itk6475tap5j8qq7ejvs68dm7.apps.googleusercontent.com';
+
+function isSignInCanceled(error: unknown): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : JSON.stringify(error ?? '');
+  const code =
+    typeof error === 'object' && error !== null && 'code' in error
+      ? String((error as { code?: unknown }).code)
+      : '';
+  return (
+    code === 'SIGN_IN_CANCELED' ||
+    /cancel(ed|lation)?/i.test(message)
+  );
+}
+
 const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [nativeError, setNativeError] = useState<string | null>(null);
   const { loginWithGoogle, currentUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = redirectPath || searchParams.get('redirectTo') || '/';
 
-  // Redirect to target if already logged in
   useEffect(() => {
     if (currentUser) {
       router.replace(redirectTo);
     }
   }, [currentUser, router, redirectTo]);
 
-  const handleGoogleLogin = async (credentialResponse: any) => {
+  const handleGoogleLogin = async (credentialResponse: { credential?: string }) => {
     setIsSubmitting(true);
+    setNativeError(null);
     try {
       if (credentialResponse.credential) {
         await loginWithGoogle(credentialResponse.credential);
@@ -36,6 +61,41 @@ const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
       }
     } catch (error) {
       console.error('Google Login failed:', error);
+      setNativeError('Sign-in failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleNativeGoogleLogin = async () => {
+    setIsSubmitting(true);
+    setNativeError(null);
+    try {
+      // Do not request OAuth scopes here — we only need an ID token for our API.
+      // Requesting scopes triggers a second consent flow that often fails as "canceled".
+      await GoogleSignIn.initialize({
+        clientId: GOOGLE_WEB_CLIENT_ID,
+      });
+
+      const result = await GoogleSignIn.signIn();
+      if (!result.idToken) {
+        throw new Error('Google did not return an ID token.');
+      }
+
+      await loginWithGoogle(result.idToken);
+      router.push(redirectTo);
+    } catch (error: unknown) {
+      if (isSignInCanceled(error)) {
+        // User dismissed the account picker — not a hard failure
+        console.info('Google Sign-In canceled by user');
+        return;
+      }
+      console.error('Native Google Login failed:', error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Google Sign-In failed. Check that this app SHA-1 is registered in Google Cloud.';
+      setNativeError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -51,7 +111,6 @@ const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
           <h1 className="text-4xl font-black tracking-tight text-white mb-3">
             Grace <span className="text-primary">Music</span>
           </h1>
-
         </div>
 
         <Card className="border-white/5 bg-zinc-900/40 backdrop-blur-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] rounded-[2.5rem] overflow-hidden">
@@ -68,25 +127,13 @@ const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
                 <div className="w-full relative">
                   <div className="relative">
                     {Capacitor.isNativePlatform() ? (
-                      <button 
-                        onClick={async () => {
-                          setIsSubmitting(true);
-                          try {
-                            const result = await GoogleSignIn.signIn();
-                            if (result.idToken) {
-                              await loginWithGoogle(result.idToken);
-                              router.push(redirectTo);
-                            }
-                          } catch (error: any) {
-                            alert(`Google Login Error: ${error?.message || JSON.stringify(error)}`);
-                            console.error('Native Google Login failed:', error);
-                          } finally {
-                            setIsSubmitting(false);
-                          }
-                        }}
-                        className="w-full bg-zinc-900 text-white border border-zinc-700 hover:bg-zinc-800 rounded-full py-3 px-4 flex items-center justify-center gap-3 transition-colors text-[14px] font-medium"
+                      <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={() => void handleNativeGoogleLogin()}
+                        className="w-full bg-zinc-900 text-white border border-zinc-700 hover:bg-zinc-800 disabled:opacity-60 rounded-full py-3 px-4 flex items-center justify-center gap-3 transition-colors text-[14px] font-medium"
                       >
-                        <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                        <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg" aria-hidden>
                           <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
                             <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z"/>
                             <path fill="#34A853" d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.824 60.329 L -10.684 57.329 C -11.764 58.049 -13.134 58.489 -14.754 58.489 C -17.884 58.489 -20.534 56.379 -21.484 53.529 L -25.464 53.529 L -25.464 56.619 C -23.494 60.539 -19.444 63.239 -14.754 63.239 Z"/>
@@ -99,7 +146,10 @@ const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
                     ) : (
                       <GoogleLogin
                         onSuccess={handleGoogleLogin}
-                        onError={() => console.error('Google login error')}
+                        onError={() => {
+                          console.error('Google login error');
+                          setNativeError('Google Sign-In failed. Please try again.');
+                        }}
                         width="100%"
                         size="large"
                         text="continue_with"
@@ -109,7 +159,11 @@ const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
                     )}
                   </div>
                 </div>
-                
+
+                {nativeError && (
+                  <p className="text-center text-sm text-red-400 px-2">{nativeError}</p>
+                )}
+
                 {isSubmitting && (
                   <div className="flex items-center gap-2 text-zinc-500 text-xs animate-pulse">
                     <div className="w-1 h-1 bg-zinc-500 rounded-full animate-bounce" />
@@ -119,12 +173,10 @@ const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
                   </div>
                 )}
               </div>
-
-
             </div>
           </CardContent>
         </Card>
-        
+
         <p className="mt-8 text-center text-zinc-600 text-xs tracking-tight">
           By signing in, you agree to our <span className="text-zinc-500 hover:text-white cursor-pointer underline">Terms of Service</span>
         </p>
@@ -134,4 +186,3 @@ const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
 };
 
 export default Login;
-

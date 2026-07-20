@@ -5,7 +5,13 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
-    "build:mobile": "node scripts/mobileify.mjs && cross-env MOBILE_BUILD=true NEXT_PUBLIC_BASE_URL=https://gracemusicapp.vercel.app next build && node scripts/unmobileify.mjs && npx cap sync",
+    "build:mobile": "node scripts/build-mobile.mjs",
+    "android:sync": "npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:run": "npx cap run android",
+    "android:local": "cross-env CAP_SERVER_URL=http://192.168.2.190:3000 npx cap sync android",
+    "android:prod": "cross-env CAP_SERVER_URL=https://music.graceahmedabad.org npx cap sync android",
+    "android:dev": "cross-env CAP_SERVER_URL=http://10.0.2.2:3000 npx cap sync android && npx cap open android",
     "start": "next start",
     "lint": "next lint"
   },

@@ -41,14 +41,16 @@ const OnboardingTour = dynamic(
   { ssr: false }
 );
 
-const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "373571167776-bhmjthm17gp5s6pfr0hbuhukjqoo7l6a.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+  "810353645969-dmsbou0itk6475tap5j8qq7ejvs68dm7.apps.googleusercontent.com";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
+      // ID token only — do not pass OAuth scopes (avoids a second consent that often cancels)
       GoogleSignIn.initialize({
         clientId: GOOGLE_CLIENT_ID,
-        scopes: ['profile', 'email'],
       }).catch(console.error);
     }
   }, []);

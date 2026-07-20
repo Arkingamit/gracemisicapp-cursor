@@ -145,7 +145,7 @@ async function pushToUser(
                 priority: 'high',
                 notification: {
                   sound: 'default',
-                  clickAction: 'FCM_PLUGIN_ACTIVITY',
+                  channelId: 'default',
                 },
               },
               // APNs (iOS) specific config

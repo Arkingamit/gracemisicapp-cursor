@@ -27,10 +27,10 @@ const config: CapacitorConfig = {
       '192.168.*.*',
       '*.local',
     ],
-    cleartext: true,
+    cleartext: false,
   },
   android: {
-    allowMixedContent: true,
+    allowMixedContent: false,
   },
   ios: {
     contentInset: 'never',

@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "810353645969-2e3ktgulj3q8aa9hl6k793m7l2j7vek4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.grace.app",
+            "certificate_hash": "44888f50370e4e2c2166a0251c771045411f1e4a"
+          }
+        },
+        {
           "client_id": "810353645969-dmsbou0itk6475tap5j8qq7ejvs68dm7.apps.googleusercontent.com",
           "client_type": 3
         }

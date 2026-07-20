@@ -6,14 +6,28 @@ import { useSongs } from '@/contexts/SongContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { Song } from '@/lib/types';
-import { User, Mail, Shield, LogOut, Music, Plus, Eye, Edit } from 'lucide-react';
+import { User, Mail, Shield, LogOut, Music, Plus, Eye, Edit, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UserStatsCard } from '@/components/profile/UserStatsCard';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const Profile = () => {
-  const { currentUser, logout, updateProfile } = useAuth();
+  const { currentUser, logout, updateProfile, deleteAccount } = useAuth();
   const { songs } = useSongs();
   const router = useRouter();
+  const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const userSongs = useMemo(() => {
     if (!currentUser) return [];
@@ -30,6 +44,22 @@ const Profile = () => {
   const handleLogout = () => {
     logout();
     router.push('/');
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteAccount();
+      router.push('/login');
+    } catch (error) {
+      toast({
+        title: 'Could not delete account',
+        description: error instanceof Error ? error.message : 'Please try again or contact support.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -249,6 +279,53 @@ const Profile = () => {
                   </>
                 )}
               </div>
+            </div>
+            <div className="bg-zinc-900/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6 shadow-xl">
+              <h2 className="text-xl font-bold mb-2 flex items-center gap-2 text-zinc-100">
+                <Trash2 className="w-5 h-5 text-red-400" />
+                Delete account
+              </h2>
+              <p className="text-sm text-zinc-500 mb-4">
+                Permanently delete your Grace Music account and personal data. Songs you authored may remain in shared libraries without your profile attached to an active account. If you are the only manager of an organization, transfer management first.
+              </p>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    className="w-full rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20"
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {isDeleting ? 'Deleting…' : 'Delete my account'}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-zinc-950 border-white/10 text-white">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-zinc-400">
+                      This cannot be undone. Your profile, favorites, collections, notifications, and device tokens will be removed.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-900">
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteAccount}
+                      className="bg-red-600 text-white hover:bg-red-500"
+                    >
+                      Yes, delete forever
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <p className="mt-3 text-xs text-zinc-600">
+                See our{' '}
+                <a href="/privacy" className="text-sky-400 hover:underline">
+                  Privacy Policy
+                </a>{' '}
+                for details.
+              </p>
             </div>
           </div>
 

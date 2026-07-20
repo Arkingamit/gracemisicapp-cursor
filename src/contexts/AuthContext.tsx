@@ -13,6 +13,8 @@ interface AuthContextType {
   register: (email: string, password: string, username: string) => Promise<void>;
   loginWithGoogle: (credential: string) => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
+  /** Permanently delete the signed-in user's account and personal data. */
+  deleteAccount: () => Promise<void>;
   /** Re-fetch current user from the server (roles, moderation, session). */
   refreshUser: () => Promise<User | null>;
 }
@@ -106,6 +108,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     toast({
       title: 'Logged out',
       description: 'You have been successfully logged out',
+    });
+  };
+
+  const deleteAccount = async () => {
+    const res = await authFetch('/api/auth/delete-account', { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to delete account');
+    }
+    setCurrentUser(null);
+    toast({
+      title: 'Account deleted',
+      description: 'Your account and personal data have been permanently removed.',
     });
   };
 
@@ -231,6 +246,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     register,
     loginWithGoogle,
     updateProfile,
+    deleteAccount,
     refreshUser,
   };
 

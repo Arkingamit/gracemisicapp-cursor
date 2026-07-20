@@ -177,7 +177,14 @@ const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
         </Card>
 
         <p className="mt-8 text-center text-zinc-600 text-xs tracking-tight">
-          By signing in, you agree to our <span className="text-zinc-500 hover:text-white cursor-pointer underline">Terms of Service</span>
+          By signing in, you agree to our{" "}
+          <a href="/terms" className="text-zinc-500 hover:text-white underline">
+            Terms of Service
+          </a>{" "}
+          and{" "}
+          <a href="/privacy" className="text-zinc-500 hover:text-white underline">
+            Privacy Policy
+          </a>
         </p>
       </div>
     </div>

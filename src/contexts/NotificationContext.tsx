@@ -4,8 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { useAuth, authFetch } from './AuthContext';
 import { Capacitor } from '@capacitor/core';
 import { initNativePushNotifications, removeNativePushListeners } from '@/lib/nativePushNotifications';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Bell } from 'lucide-react';
+import NativePushPermissionPrompt from '@/components/common/NativePushPermissionPrompt';
 
 export interface Notification {
   id: string;
@@ -82,12 +81,14 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentUser, fetchNotifications]);
 
-  // Initialize native push notifications on mobile when user is authenticated
+  // On native, try silent register if already granted; otherwise the in-app
+  // prompt will ask the user and then show the Android system permission dialog.
   const nativePushInitialized = useRef(false);
   useEffect(() => {
     if (currentUser && Capacitor.isNativePlatform() && !nativePushInitialized.current) {
       nativePushInitialized.current = true;
-      initNativePushNotifications(true).catch(console.error);
+      // Do not force the system dialog here — NativePushPermissionPrompt handles UX.
+      initNativePushNotifications(false).catch(console.error);
     }
 
     // Cleanup listeners when user logs out
@@ -107,6 +108,12 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   }, [currentUser]);
 
   const requestPushPermission = async () => {
+    if (Capacitor.isNativePlatform()) {
+      const result = await initNativePushNotifications(true);
+      setPushPermission(result === 'granted' ? 'granted' : result === 'denied' ? 'denied' : 'default');
+      return;
+    }
+
     if (!('Notification' in window)) return;
     
     const permission = await Notification.requestPermission();
@@ -180,6 +187,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       }}
     >
       {children}
+      <NativePushPermissionPrompt enabled={!!currentUser} />
     </NotificationContext.Provider>
   );
 };

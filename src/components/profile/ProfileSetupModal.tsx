@@ -90,7 +90,11 @@ export default function ProfileSetupModal() {
   // The user MUST fill this out to use the app properly.
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-[425px] bg-zinc-950 border-white/10 text-white [&>button]:hidden" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+      <DialogContent
+        className="sm:max-w-[425px] max-h-[min(92dvh,92vh)] overflow-y-auto overscroll-contain bg-zinc-950 border-white/10 text-white top-[8%] translate-y-0 sm:top-[50%] sm:translate-y-[-50%] [&>button]:hidden"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl text-center">Complete Your Profile</DialogTitle>
           <DialogDescription className="text-center text-zinc-400">
@@ -105,6 +109,7 @@ export default function ProfileSetupModal() {
               placeholder="e.g. John Doe"
               value={formData.displayName}
               onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
+              onFocus={(e) => e.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" })}
               className="bg-zinc-900 border-white/10"
               required
             />
@@ -116,6 +121,7 @@ export default function ProfileSetupModal() {
               placeholder="e.g. Grace Church"
               value={formData.church}
               onChange={(e) => setFormData(prev => ({ ...prev, church: e.target.value }))}
+              onFocus={(e) => e.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" })}
               className="bg-zinc-900 border-white/10"
               required
             />
@@ -127,6 +133,7 @@ export default function ProfileSetupModal() {
               placeholder="e.g. Acoustic Guitar, Vocals, Keys"
               value={formData.instrument}
               onChange={(e) => setFormData(prev => ({ ...prev, instrument: e.target.value }))}
+              onFocus={(e) => e.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" })}
               className="bg-zinc-900 border-white/10"
               required
             />
@@ -136,9 +143,11 @@ export default function ProfileSetupModal() {
             <Input
               id="age"
               type="number"
+              inputMode="numeric"
               placeholder="e.g. 25"
               value={formData.age}
               onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value }))}
+              onFocus={(e) => e.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" })}
               className="bg-zinc-900 border-white/10"
               min="1"
               max="120"

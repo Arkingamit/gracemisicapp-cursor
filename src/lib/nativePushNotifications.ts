@@ -1,13 +1,49 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { authFetch } from '@/contexts/AuthContext';
 
+export type NativePushPermission = 'granted' | 'denied' | 'prompt' | 'unknown';
+
+interface GraceAppPlugin {
+  openNotificationSettings(): Promise<void>;
+  getAppInfo(): Promise<{ packageName: string; appName: string }>;
+}
+
+const GraceApp = registerPlugin<GraceAppPlugin>('GraceApp');
+
 let listenersAttached = false;
+
+export async function getNativePushPermission(): Promise<NativePushPermission> {
+  if (!Capacitor.isNativePlatform()) return 'unknown';
+  try {
+    const status = await PushNotifications.checkPermissions();
+    if (status.receive === 'granted') return 'granted';
+    if (status.receive === 'denied') return 'denied';
+    if (status.receive === 'prompt' || status.receive === 'prompt-with-rationale') {
+      return 'prompt';
+    }
+    return 'unknown';
+  } catch (error) {
+    console.error('Failed to check native push permission:', error);
+    return 'unknown';
+  }
+}
+
+export async function openNativeNotificationSettings(): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    await GraceApp.openNotificationSettings();
+  } catch (error) {
+    console.error('Failed to open notification settings:', error);
+  }
+}
 
 /**
  * Initialize native push notifications for Capacitor (Android/iOS).
  * Only call when the user is authenticated.
  * On web this is a no-op — web push uses Service Workers separately.
+ *
+ * Pass userInitiated=true to show the system permission dialog when needed.
  */
 export async function initNativePushNotifications(
   userInitiated = false
@@ -21,6 +57,7 @@ export async function initNativePushNotifications(
       if (!userInitiated) {
         return 'requires_prompt';
       }
+      // Shows the Android 13+ system dialog: "Allow Grace Music to send you notifications?"
       permStatus = await PushNotifications.requestPermissions();
     }
 

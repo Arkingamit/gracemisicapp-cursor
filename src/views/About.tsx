@@ -244,6 +244,22 @@ const About = () => {
 
         <Card>
           <CardHeader>
+            <CardTitle>Legal</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-4 text-sm">
+              <a href="/privacy" className="text-primary hover:underline">
+                Privacy Policy
+              </a>
+              <a href="/terms" className="text-primary hover:underline">
+                Terms of Service
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Contact</CardTitle>
           </CardHeader>
           <CardContent>

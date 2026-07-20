@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Allow HTTPS to the production site and cleartext for local LAN testing -->
-    <base-config cleartextTrafficPermitted="true">
+    <!-- Production: HTTPS only by default -->
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
+
+    <!-- Local development only (Android emulator / LAN) -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">music.graceahmedabad.org</domain>
         <domain includeSubdomains="true">graceahmedabad.org</domain>

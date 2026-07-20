@@ -71,30 +71,29 @@ const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
     setIsSubmitting(true);
     setNativeError(null);
     try {
-      // Do not request OAuth scopes here — we only need an ID token for our API.
-      // Requesting scopes triggers a second consent flow that often fails as "canceled".
+      // Always re-init without scopes. A previous init with scopes causes a
+      // second Google consent after account pick that often hangs / cancels.
       await GoogleSignIn.initialize({
         clientId: GOOGLE_WEB_CLIENT_ID,
       });
 
       const result = await GoogleSignIn.signIn();
-      if (!result.idToken) {
-        throw new Error('Google did not return an ID token.');
+      if (!result?.idToken) {
+        throw new Error('Google did not return an ID token. Try again.');
       }
 
       await loginWithGoogle(result.idToken);
-      router.push(redirectTo);
+      router.replace(redirectTo);
     } catch (error: unknown) {
       if (isSignInCanceled(error)) {
-        // User dismissed the account picker — not a hard failure
-        console.info('Google Sign-In canceled by user');
+        setNativeError('Sign-in was interrupted. Please tap Continue with Google again.');
         return;
       }
       console.error('Native Google Login failed:', error);
       const message =
         error instanceof Error
           ? error.message
-          : 'Google Sign-In failed. Check that this app SHA-1 is registered in Google Cloud.';
+          : 'Google Sign-In failed. Please try again.';
       setNativeError(message);
     } finally {
       setIsSubmitting(false);

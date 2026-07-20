@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { jwtDecode } from 'jwt-decode';
 import { User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { getFullUrl } from '@/lib/api';
@@ -28,7 +27,11 @@ export const authFetch = async (url: string, options: RequestInit = {}) => {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string> || {}),
   };
-  return fetch(getFullUrl(url), { ...options, headers });
+  return fetch(getFullUrl(url), {
+    ...options,
+    headers,
+    credentials: 'include',
+  });
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -142,34 +145,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginWithGoogle = async (credential: string) => {
     setLoading(true);
     try {
-      // Decode Google JWT to extract user info
-      const decoded = jwtDecode<{ email: string, sub: string, name: string }>(credential);
-
-      // Register or login the Google user via our API
-      // First try to login, if that fails, register
-      let res = await fetch(getFullUrl('/api/auth/login'), {
+      const res = await fetch(getFullUrl('/api/auth/google'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: decoded.email, 
-          password: `google_${decoded.sub}` // Google users use sub as password
-        }),
+        credentials: 'include',
+        body: JSON.stringify({ idToken: credential }),
       });
 
-      if (!res.ok) {
-        // User doesn't exist, register them
-        res = await fetch(getFullUrl('/api/auth/register'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: decoded.name,
-            email: decoded.email,
-            password: `google_${decoded.sub}`,
-          }),
-        });
-      }
-
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         throw new Error(data.error || 'Google sign-in failed');
@@ -184,7 +167,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       toast({
         title: 'Google Sign-in failed',
-        description: 'Could not process Google login token.',
+        description:
+          error instanceof Error ? error.message : 'Could not process Google login token.',
         variant: 'destructive',
       });
       throw error;

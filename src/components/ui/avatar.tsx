@@ -10,7 +10,7 @@ const Avatar = React.forwardRef<
   <AvatarPrimitive.Root
     ref={ref}
     className={cn(
-      "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full",
+      "relative flex h-10 w-10 shrink-0 rounded-full",
       className
     )}
     {...props}
@@ -24,7 +24,7 @@ const AvatarImage = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AvatarPrimitive.Image
     ref={ref}
-    className={cn("aspect-square h-full w-full", className)}
+    className={cn("aspect-square h-full w-full rounded-full object-cover", className)}
     {...props}
   />
 ))
@@ -45,4 +45,56 @@ const AvatarFallback = React.forwardRef<
 ))
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName
 
-export { Avatar, AvatarImage, AvatarFallback }
+const AvatarBadge = React.forwardRef<
+  HTMLSpanElement,
+  React.HTMLAttributes<HTMLSpanElement>
+>(({ className, ...props }, ref) => (
+  <span
+    ref={ref}
+    className={cn(
+      "absolute bottom-0 right-0 z-10 flex h-[35%] w-[35%] min-h-2 min-w-2 items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-background [&>svg]:h-[70%] [&>svg]:w-[70%]",
+      className
+    )}
+    {...props}
+  />
+))
+AvatarBadge.displayName = "AvatarBadge"
+
+const AvatarGroup = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "flex items-center -space-x-2 [&>*]:ring-2 [&>*]:ring-background",
+      className
+    )}
+    {...props}
+  />
+))
+AvatarGroup.displayName = "AvatarGroup"
+
+const AvatarGroupCount = React.forwardRef<
+  HTMLSpanElement,
+  React.HTMLAttributes<HTMLSpanElement>
+>(({ className, ...props }, ref) => (
+  <span
+    ref={ref}
+    className={cn(
+      "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground",
+      className
+    )}
+    {...props}
+  />
+))
+AvatarGroupCount.displayName = "AvatarGroupCount"
+
+export {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+  AvatarBadge,
+  AvatarGroup,
+  AvatarGroupCount,
+}

@@ -1,10 +1,19 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { GenreModel } from '@/server/models/genre';
 import { UserModel } from '@/server/models/user';
 import { verifyToken } from '@/lib/auth';
+import { enforceRateLimit } from '@/server/rateLimit';
+import { validateBody } from '@/server/validation/http';
+import { boundedString } from '@/server/validation/schemas';
 
-export async function GET() {
+const genreCreateSchema = z.object({ name: boundedString(60) }).strict();
+
+export async function GET(request: NextRequest) {
   try {
+    const limited = await enforceRateLimit(request, { policy: 'public', bucket: 'genres' });
+    if (limited) return limited;
+
     // Seed default genres if the collection is empty
     await GenreModel.seedDefaults();
     
@@ -36,12 +45,9 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { name } = body;
-    
-    if (!name || typeof name !== 'string' || name.trim() === '') {
-      return Response.json({ error: 'Genre name is required' }, { status: 400 });
-    }
+    const parsed = await validateBody(request, genreCreateSchema);
+    if (!parsed.ok) return parsed.response;
+    const { name } = parsed.data;
 
     const newGenre = await GenreModel.create(name.trim());
     return Response.json(newGenre, { status: 201 });

@@ -76,26 +76,32 @@ export const createGroupActions = (
   };
 
   const deleteGroup = async (id: string) => {
-    setLoading(true);
+    if (!currentUser) throw new Error('You must be logged in to delete a group');
+
+    const previous = groups;
+    const group = groups.find((g) => g.id === id);
+    if (!group) throw new Error('Group not found');
+
+    // Optimistic remove from the list
+    setGroups((prev) => prev.filter((g) => g.id !== id));
+
     try {
-      if (!currentUser) throw new Error('You must be logged in to delete a group');
-
-      const group = groups.find(g => g.id === id);
-      if (!group) throw new Error('Group not found');
-
       const res = await authFetch(`/api/groups/${id}`, { method: 'DELETE' });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'Failed to delete group');
       }
-
-      setGroups(prev => prev.filter(g => g.id !== id));
       toast({ title: "Group deleted", description: `${group.name} has been deleted successfully` });
     } catch (error) {
-      toast({ title: "Failed to delete group", description: error instanceof Error ? error.message : "An unknown error occurred", variant: "destructive" });
+      setGroups(previous);
+      toast({
+        title: "Couldn't delete song set",
+        description:
+          (error instanceof Error ? error.message : "An unknown error occurred") +
+          ` — "${group.name}" has been restored.`,
+        variant: "destructive",
+      });
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -110,48 +116,96 @@ export const createSongActions = (
   setLoading: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
   const addSongToGroup = async (groupId: string, songId: string) => {
-    setLoading(true);
-    try {
-      if (!currentUser) throw new Error('You must be logged in');
+    if (!currentUser) throw new Error('You must be logged in');
 
+    const previous = groups.find((g) => g.id === groupId);
+    if (!previous) throw new Error('Group not found');
+    if (previous.songs.includes(songId)) {
+      toast({ title: "Already added", description: "That song is already in this song set." });
+      return;
+    }
+
+    // Optimistic add — list updates immediately
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId
+          ? { ...g, songs: [...g.songs, songId], updatedAt: new Date().toISOString() }
+          : g
+      )
+    );
+
+    try {
       const res = await authFetch(`/api/groups/${groupId}/songs`, {
         method: 'POST',
         body: JSON.stringify({ songId }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Failed to add song');
 
-      setGroups(prev => prev.map(g => g.id === groupId ? data.group : g));
-      toast({ title: "Song added to group", description: `Song has been added successfully` });
+      // Reconcile with server truth when available
+      if (data.group) {
+        setGroups((prev) => prev.map((g) => (g.id === groupId ? data.group : g)));
+      }
+      // Success feedback is left to the caller (avoids N toasts when adding many songs)
     } catch (error) {
-      toast({ title: "Failed to add song to group", description: error instanceof Error ? error.message : "An unknown error occurred", variant: "destructive" });
+      setGroups((prev) => prev.map((g) => (g.id === groupId ? previous : g)));
+      toast({
+        title: "Couldn't add song",
+        description:
+          (error instanceof Error ? error.message : "An unknown error occurred") +
+          " — the song set has been restored.",
+        variant: "destructive",
+      });
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
   const removeSongFromGroup = async (groupId: string, songId: string) => {
-    setLoading(true);
-    try {
-      if (!currentUser) throw new Error('You must be logged in');
+    if (!currentUser) throw new Error('You must be logged in');
 
+    const previous = groups.find((g) => g.id === groupId);
+    if (!previous) throw new Error('Group not found');
+
+    // Optimistic remove — song disappears from the list immediately
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId
+          ? {
+              ...g,
+              songs: g.songs.filter((id) => id !== songId),
+              songTranspositions: (g.songTranspositions || []).filter(
+                (t) => t.songId !== songId
+              ),
+              updatedAt: new Date().toISOString(),
+            }
+          : g
+      )
+    );
+
+    try {
       const res = await authFetch(`/api/groups/${groupId}/songs`, {
         method: 'DELETE',
         body: JSON.stringify({ songId }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Failed to remove song');
 
-      setGroups(prev => prev.map(g => g.id === groupId ? data.group : g));
+      if (data.group) {
+        setGroups((prev) => prev.map((g) => (g.id === groupId ? data.group : g)));
+      }
       toast({ title: "Song removed from group", description: `Song has been removed successfully` });
     } catch (error) {
-      toast({ title: "Failed to remove song from group", description: error instanceof Error ? error.message : "An unknown error occurred", variant: "destructive" });
+      setGroups((prev) => prev.map((g) => (g.id === groupId ? previous : g)));
+      toast({
+        title: "Couldn't remove song",
+        description:
+          (error instanceof Error ? error.message : "An unknown error occurred") +
+          " — the song has been put back.",
+        variant: "destructive",
+      });
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 

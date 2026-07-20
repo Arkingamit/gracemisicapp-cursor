@@ -1,7 +1,13 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { FeedbackModel } from '@/server/models/feedback';
 import { UserModel } from '@/server/models/user';
 import { getAuthUser } from '@/lib/auth';
+import { validateBody, validateParams } from '@/server/validation/http';
+import { objectId, feedbackStatusEnum } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
+const feedbackStatusSchema = z.object({ status: feedbackStatusEnum }).strict();
 
 export async function PATCH(
   request: NextRequest,
@@ -18,12 +24,13 @@ export async function PATCH(
       return Response.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
-    const { id } = await params;
-    const { status } = await request.json();
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
 
-    if (!['new', 'in-progress', 'resolved'].includes(status)) {
-      return Response.json({ error: 'Invalid status' }, { status: 400 });
-    }
+    const parsed = await validateBody(request, feedbackStatusSchema);
+    if (!parsed.ok) return parsed.response;
+    const { status } = parsed.data;
 
     const success = await FeedbackModel.updateStatus(id, status);
     if (success) {
@@ -52,7 +59,9 @@ export async function DELETE(
       return Response.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
     const success = await FeedbackModel.delete(id);
     
     if (success) {

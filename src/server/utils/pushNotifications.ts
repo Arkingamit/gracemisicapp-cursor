@@ -3,6 +3,41 @@ import { PushSubscriptionModel } from '../models/pushSubscription';
 import { NotificationModel } from '../models/notification';
 import { DeviceTokenModel } from '../models/deviceToken';
 import { getApps, getMessaging } from './firebaseAdmin';
+import { getBreaker, isBreakerError } from '@/server/circuitBreaker';
+
+// Push delivery is best-effort: the in-app notification is already stored in
+// the DB, so when a push provider degrades we fast-fail deliveries (fallback:
+// user sees the notification in-app) rather than letting every request that
+// triggers a notification hang on a sick provider.
+const webPushBreaker = () =>
+  getBreaker('web-push', {
+    timeoutMs: 10_000,
+    maxConcurrent: 25,
+    failureThreshold: 8,
+    openMs: 60_000,
+    // 404/410 mean the individual subscription is gone (client-side issue),
+    // not that the push service is unhealthy.
+    countsAsFailure: (error: unknown) => {
+      const status = (error as { statusCode?: number })?.statusCode;
+      return status !== 404 && status !== 410;
+    },
+  });
+
+const fcmBreaker = () =>
+  getBreaker('fcm', {
+    timeoutMs: 10_000,
+    maxConcurrent: 25,
+    failureThreshold: 8,
+    openMs: 60_000,
+    // Invalid/unregistered tokens are per-device cleanup, not an FCM outage.
+    countsAsFailure: (error: unknown) => {
+      const code = (error as { code?: string })?.code || '';
+      return (
+        code !== 'messaging/registration-token-not-registered' &&
+        code !== 'messaging/invalid-registration-token'
+      );
+    },
+  });
 
 // Configure web-push with VAPID keys
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
@@ -22,7 +57,36 @@ export async function sendNotificationToUser(
   // 1. Create in-app notification record
   await NotificationModel.create(userId, title, message, link);
 
-  // 2. Send Web Push to all active subscriptions
+  // 2 & 3. Web push + FCM
+  await pushToUser(userId, title, message, link);
+}
+
+/**
+ * Notify many users with the same message. The in-app notification records
+ * are written with a single insertMany (one round trip instead of one per
+ * user); the external push deliveries then run concurrently.
+ */
+export async function sendNotificationToUsers(
+  userIds: string[],
+  title: string,
+  message: string,
+  link: string = '/'
+) {
+  const unique = [...new Set(userIds)];
+  if (unique.length === 0) return;
+
+  await NotificationModel.createMany(unique, title, message, link);
+  await Promise.all(unique.map((userId) => pushToUser(userId, title, message, link)));
+}
+
+/** Delivers web push + FCM to one user (no DB notification write). */
+async function pushToUser(
+  userId: string,
+  title: string,
+  message: string,
+  link: string = '/'
+) {
+  // Send Web Push to all active subscriptions
   try {
     const subscriptions = await PushSubscriptionModel.findByUserId(userId);
     
@@ -37,11 +101,13 @@ export async function sendNotificationToUser(
       // Send to all endpoints, if any fail with 410 (Gone), we remove them
       const sendPromises = subscriptions.map(async (sub) => {
         try {
-          await webpush.sendNotification(sub, payload);
+          await webPushBreaker().exec(() => webpush.sendNotification(sub, payload));
         } catch (error: any) {
           if (error.statusCode === 410 || error.statusCode === 404) {
             // Subscription is no longer valid, remove it
             await PushSubscriptionModel.removeByEndpoint(sub.endpoint);
+          } else if (isBreakerError(error)) {
+            // Provider degraded — skip delivery; in-app notification suffices.
           } else {
             console.error('Error sending push notification to endpoint:', sub.endpoint, error);
           }
@@ -63,7 +129,7 @@ export async function sendNotificationToUser(
       if (deviceTokens.length > 0) {
         const sendPromises = deviceTokens.map(async (dt) => {
           try {
-            await getMessaging().send({
+            await fcmBreaker().exec(() => getMessaging().send({
               token: dt.token,
               notification: {
                 title,
@@ -91,7 +157,7 @@ export async function sendNotificationToUser(
                   },
                 },
               },
-            });
+            }));
           } catch (error: any) {
             // Token is no longer valid — remove it
             if (
@@ -100,6 +166,8 @@ export async function sendNotificationToUser(
             ) {
               await DeviceTokenModel.removeByToken(dt.token);
               console.log(`Removed invalid FCM token for user ${userId}`);
+            } else if (isBreakerError(error)) {
+              // FCM degraded — skip delivery; in-app notification suffices.
             } else {
               console.error('Error sending FCM notification:', error);
             }

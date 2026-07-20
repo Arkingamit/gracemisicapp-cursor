@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ import ManageInstrumentsPanel from '@/components/groups/ManageInstrumentsPanel';
 
 import {
   Crown, UserPlus, Users, Shield, Trash2, Pencil, AlertTriangle,
-  BarChart3, Settings, User, Mail, MoreVertical, Music, Plus, Check, X,
+  BarChart3, Settings, User, Mail, MoreVertical, Files, Plus, Check, X,
   LogIn, LogOut, Copy, ChevronDown, ChevronUp, Hash, UsersRound,
   BookOpen, TrendingUp, Layers, ArrowLeft,
 } from 'lucide-react';
@@ -25,6 +25,7 @@ import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogHeader,
+  AlertDialogMedia,
   AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -45,6 +46,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarBadge,
+  AvatarGroup,
+  AvatarGroupCount,
+} from '@/components/ui/avatar';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface OrgMember {
   id: string;
@@ -91,11 +108,14 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
   const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
   const [groupSearchQuery, setGroupSearchQuery] = useState('');
+  const getJoinRequestsRef = useRef(getJoinRequests);
+  getJoinRequestsRef.current = getJoinRequests;
 
   const [deleteOrgOpen, setDeleteOrgOpen] = useState(false);
   const [deleteOrgConfirmText, setDeleteOrgConfirmText] = useState('');
   const [deleteGroupTarget, setDeleteGroupTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleteGroupConfirmText, setDeleteGroupConfirmText] = useState('');
+  const [memberToRemove, setMemberToRemove] = useState<OrgMember | null>(null);
 
   const isMember = React.useMemo(() => {
     if (!organization || !currentUser) return false;
@@ -146,23 +166,69 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, organization, currentUser]);
 
+  const canManageRequests = !!(currentUser && organization && (currentUser.role === 'super_admin' || organization.managerIds.includes(currentUser.id)));
+
+  const refreshJoinRequests = useCallback(async (showLoading = false) => {
+    if (!id || !canManageRequests) return;
+    if (showLoading) setLoadingRequests(true);
+    try {
+      const reqs = await getJoinRequestsRef.current(id);
+      setJoinRequests(reqs);
+    } catch (error) {
+      console.error('Failed to load join requests:', error);
+    } finally {
+      if (showLoading) setLoadingRequests(false);
+    }
+  }, [id, canManageRequests]);
+
+  // Initial load
   useEffect(() => {
-    const loadRequests = async () => {
-      if (id && canManage()) {
-        setLoadingRequests(true);
-        try {
-          const reqs = await getJoinRequests(id);
-          setJoinRequests(reqs);
-        } catch (error) {
-          console.error('Failed to load join requests:', error);
-        } finally {
-          setLoadingRequests(false);
+    refreshJoinRequests(true);
+  }, [refreshJoinRequests]);
+
+  // Live updates while manager keeps this org page open (SSE — no polling)
+  useEffect(() => {
+    if (!id || !canManageRequests || typeof window === 'undefined') return;
+
+    const es = new EventSource(`/api/organizations/${id}/requests/stream`);
+
+    es.onmessage = (message) => {
+      try {
+        const data = JSON.parse(message.data) as
+          | { type: 'connected' }
+          | { type: 'join_request'; request: JoinRequest }
+          | { type: 'join_request_removed'; requestId: string }
+          | { type: 'refresh' };
+
+        if (data.type === 'join_request') {
+          setJoinRequests((prev) => {
+            if (prev.some((r) => r.id === data.request.id)) return prev;
+            return [data.request, ...prev];
+          });
+          return;
         }
+
+        if (data.type === 'join_request_removed') {
+          setJoinRequests((prev) => prev.filter((r) => r.id !== data.requestId));
+          return;
+        }
+
+        if (data.type === 'refresh') {
+          void refreshJoinRequests(false);
+        }
+      } catch (error) {
+        console.error('Failed to parse join-request stream event:', error);
       }
     };
-    loadRequests();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, currentUser, organization]);
+
+    es.onerror = () => {
+      // Browser auto-reconnects EventSource; optional one-shot refresh if stream drops
+    };
+
+    return () => {
+      es.close();
+    };
+  }, [id, canManageRequests, refreshJoinRequests]);
 
   const handleDeleteOrganization = async () => {
     try {
@@ -224,15 +290,20 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
     }
   };
 
-  const handleRemoveMember = async (userId: string) => {
-    if (!id) return;
-    if (window.confirm('Are you sure you want to remove this member?')) {
-      try {
-        await removeMemberFromOrganization(id, userId);
-        setMembers(prev => prev.filter(m => m.id !== userId));
-      } catch (error) {
-        console.error('Failed to remove member:', error);
-      }
+  const handleRemoveMember = (userId: string) => {
+    const member = members.find(m => m.id === userId);
+    setMemberToRemove(member || { id: userId } as OrgMember);
+  };
+
+  const handleConfirmRemoveMember = async () => {
+    if (!id || !memberToRemove) return;
+    const userId = memberToRemove.id;
+    setMemberToRemove(null);
+    try {
+      await removeMemberFromOrganization(id, userId);
+      setMembers(prev => prev.filter(m => m.id !== userId));
+    } catch (error) {
+      console.error('Failed to remove member:', error);
     }
   };
 
@@ -270,7 +341,8 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
 
   const copyJoinCode = () => {
     if (organization?.joinCode) {
-      navigator.clipboard.writeText(organization.joinCode);
+      const inviteUrl = `${window.location.origin}/invite/${organization.joinCode}`;
+      navigator.clipboard.writeText(inviteUrl);
       setCodeCopied(true);
       setTimeout(() => setCodeCopied(false), 2000);
     }
@@ -360,7 +432,7 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
                     ? <Check className="w-3.5 h-3.5 text-green-400 shrink-0" />
                     : <Copy className="w-3.5 h-3.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                   }
-                  <span className="text-xs text-zinc-500">{codeCopied ? 'Copied!' : 'Join Code'}</span>
+                  <span className="text-xs text-zinc-500">{codeCopied ? 'Copied Link!' : 'Copy Invite Link'}</span>
                 </button>
               )}
             </div>
@@ -452,8 +524,11 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
                             <AlertDialogTrigger asChild>
                               <Button variant="destructive" className="w-full">Delete Organization</Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100">
+                            <AlertDialogContent size="sm" className="bg-zinc-950 border-zinc-800 text-zinc-100">
                               <AlertDialogHeader>
+                                <AlertDialogMedia className="bg-red-950/60 text-red-400">
+                                  <AlertTriangle />
+                                </AlertDialogMedia>
                                 <AlertDialogTitle>Delete Organization</AlertDialogTitle>
                                 <AlertDialogDescription className="text-zinc-400">
                                   Are you sure you want to delete {organization.name}? This action cannot be undone and will remove all members and song sets.
@@ -482,22 +557,46 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
               <span className="text-zinc-500">members</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/8 text-sm">
-              <Music className="w-4 h-4 text-zinc-400" />
+              <Files className="w-4 h-4 text-zinc-400" />
               <span className="text-zinc-300 font-medium">{groups.length}</span>
               <span className="text-zinc-500">song sets</span>
             </div>
             {managers.length > 0 && (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/8 text-sm">
-                <Shield className="w-4 h-4 text-zinc-400" />
-                <span className="text-zinc-500">{managers.map(m => m.name || m.username).join(', ')}</span>
+                <Shield className="w-4 h-4 text-zinc-400 shrink-0" />
+                <AvatarGroup className="[&>*]:ring-zinc-900">
+                  {managers.slice(0, 5).map(manager => (
+                    <Avatar key={manager.id} className="h-6 w-6" title={manager.name || manager.username}>
+                      <AvatarFallback className="bg-zinc-700 text-[10px] font-bold text-zinc-300">
+                        {(manager.name || manager.username || '?').charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {managers.length > 5 && (
+                    <AvatarGroupCount className="h-6 w-6 bg-zinc-800 text-[10px] text-zinc-400">
+                      +{managers.length - 5}
+                    </AvatarGroupCount>
+                  )}
+                </AvatarGroup>
+                <span className="text-zinc-500 truncate max-w-[220px]">
+                  {managers.map(m => m.name || m.username).join(', ')}
+                </span>
               </div>
             )}
             {joinRequests.length > 0 && canManage() && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
+              <button 
+                onClick={() => {
+                  setActiveTab('overview');
+                  setTimeout(() => {
+                    document.getElementById('pending-requests')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 100);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm hover:bg-amber-500/20 transition-colors cursor-pointer"
+              >
                 <UserPlus className="w-4 h-4 text-amber-400" />
                 <span className="text-amber-300 font-medium">{joinRequests.length}</span>
                 <span className="text-amber-500/80">pending</span>
-              </div>
+              </button>
             )}
           </div>
         </div>
@@ -531,7 +630,7 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
                 className="group flex items-start gap-4 p-5 rounded-xl bg-zinc-900/50 border border-white/8 hover:border-white/15 hover:bg-zinc-900/80 transition-all text-left"
               >
                 <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors shrink-0">
-                  <Music className="w-5 h-5 text-zinc-300" />
+                  <Files className="w-5 h-5 text-zinc-300" />
                 </div>
                 <div>
                   <p className="font-semibold text-white">{groups.length} Song Sets</p>
@@ -557,13 +656,13 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
 
             {/* Pending join requests */}
             {canManage() && joinRequests.length > 0 && (
-              <div className="rounded-xl bg-amber-950/20 border border-amber-500/20 overflow-hidden">
+              <div id="pending-requests" className="rounded-xl bg-amber-950/20 border border-amber-500/20 overflow-hidden scroll-mt-24">
                 <div className="flex items-center gap-3 px-5 py-4 border-b border-amber-500/10">
                   <UserPlus className="w-5 h-5 text-amber-400" />
                   <h3 className="font-semibold text-amber-300">Pending Join Requests ({joinRequests.length})</h3>
                 </div>
                 <div className="divide-y divide-white/5">
-                  {joinRequests.map(request => (
+                  {joinRequests.slice(0, 4).map(request => (
                     <div key={request.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-5 py-4 gap-4">
                       <div>
                         <p className="font-medium text-zinc-200">{request.userName}</p>
@@ -580,6 +679,19 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
                     </div>
                   ))}
                 </div>
+                {joinRequests.length > 4 && (
+                  <button 
+                    onClick={() => {
+                      setActiveTab('members');
+                      setTimeout(() => {
+                        document.getElementById('pending-requests-full')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }, 100);
+                    }}
+                    className="w-full py-3 text-center text-sm font-medium text-amber-400 hover:text-amber-300 hover:bg-amber-950/40 transition-colors border-t border-amber-500/10 cursor-pointer"
+                  >
+                    View all {joinRequests.length} requests
+                  </button>
+                )}
               </div>
             )}
 
@@ -588,7 +700,7 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
               <div className="rounded-xl bg-zinc-900/40 border border-white/8 overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
                   <div className="flex items-center gap-2">
-                    <Music className="w-4 h-4 text-zinc-400" />
+                    <Files className="w-4 h-4 text-zinc-400" />
                     <h3 className="font-semibold text-zinc-200">Recent Song Sets</h3>
                   </div>
                   <button onClick={() => setActiveTab('song-sets')} className="text-sm text-zinc-500 hover:text-white transition-colors">View all →</button>
@@ -602,7 +714,7 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
-                          <Music className="w-4 h-4 text-zinc-500" />
+                          <Files className="w-4 h-4 text-zinc-500" />
                         </div>
                         <span className="font-medium text-zinc-200">{group.name}</span>
                       </div>
@@ -626,15 +738,22 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
                 <div className="px-5 py-4 flex flex-wrap gap-2">
                   {visibleMembers.slice(0, 8).map(member => (
                     <div key={member.id} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-800/70 border border-white/6 text-sm">
-                      <div className="w-5 h-5 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] font-bold text-zinc-300">
-                        {(member.name || member.username || '?').charAt(0).toUpperCase()}
-                      </div>
+                      <Avatar className="h-5 w-5">
+                        <AvatarFallback className="bg-zinc-700 text-[10px] font-bold text-zinc-300">
+                          {(member.name || member.username || '?').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                        {member.isManager && (
+                          <AvatarBadge className="h-2 w-2 bg-emerald-500 ring-zinc-800" />
+                        )}
+                      </Avatar>
                       <span className="text-zinc-300 truncate max-w-[100px]">{member.name || member.username}</span>
                       {member.isManager && <Shield className="w-3 h-3 text-zinc-400 shrink-0" />}
                     </div>
                   ))}
                   {visibleMembers.length > 8 && (
-                    <span className="flex items-center px-3 py-1.5 text-sm text-zinc-500">+{visibleMembers.length - 8} more</span>
+                    <AvatarGroupCount className="h-8 w-auto px-3 bg-zinc-800/70 border border-white/6 text-sm text-zinc-500">
+                      +{visibleMembers.length - 8} more
+                    </AvatarGroupCount>
                   )}
                 </div>
               </div>
@@ -650,7 +769,7 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
             </Button>
             {/* Add members (manager only) */}
             {canManage() && (
-              <div className="rounded-xl bg-zinc-900/40 border border-white/8 overflow-hidden">
+              <div id="add-members-card" className="rounded-xl bg-zinc-900/40 border border-white/8 overflow-hidden scroll-mt-24">
                 <div className="flex items-center gap-3 px-5 py-4 border-b border-white/5">
                   <UserPlus className="w-4 h-4 text-zinc-400" />
                   <h3 className="font-semibold text-zinc-200">Add Members</h3>
@@ -663,7 +782,7 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
 
             {/* Pending requests */}
             {canManage() && joinRequests.length > 0 && (
-              <div className="rounded-xl bg-amber-950/20 border border-amber-500/20 overflow-hidden">
+              <div id="pending-requests-full" className="rounded-xl bg-amber-950/20 border border-amber-500/20 overflow-hidden scroll-mt-24">
                 <div className="flex items-center gap-3 px-5 py-4 border-b border-amber-500/10">
                   <UserPlus className="w-5 h-5 text-amber-400" />
                   <h3 className="font-semibold text-amber-300">Pending Requests ({joinRequests.length})</h3>
@@ -701,10 +820,46 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
               {loadingMembers ? (
                 <div className="px-5 py-8 text-center text-zinc-500 text-sm">Loading members...</div>
               ) : visibleMembers.length === 0 ? (
-                <div className="px-5 py-10 text-center">
-                  <Users className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-                  <p className="text-zinc-500">No members yet</p>
-                </div>
+                <Empty className="py-10">
+                  <EmptyHeader>
+                    <EmptyMedia>
+                      <AvatarGroup className="[&>*]:ring-zinc-900">
+                        <Avatar className="h-12 w-12 grayscale">
+                          <AvatarFallback className="bg-zinc-800 text-zinc-500">
+                            <User className="h-5 w-5" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <Avatar className="h-12 w-12 grayscale">
+                          <AvatarFallback className="bg-zinc-800 text-zinc-500">
+                            <User className="h-5 w-5" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <Avatar className="h-12 w-12 grayscale">
+                          <AvatarFallback className="bg-zinc-800 text-zinc-500">
+                            <User className="h-5 w-5" />
+                          </AvatarFallback>
+                        </Avatar>
+                      </AvatarGroup>
+                    </EmptyMedia>
+                    <EmptyTitle className="text-zinc-200">No Team Members</EmptyTitle>
+                    <EmptyDescription className="text-zinc-500">
+                      Invite your team to collaborate in this organization.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  {canManage() && (
+                    <EmptyContent>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          document.getElementById('add-members-card')?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Invite Members
+                      </Button>
+                    </EmptyContent>
+                  )}
+                </Empty>
               ) : (
                 <div className="divide-y divide-white/5">
                   {visibleMembers.map(member => (
@@ -714,9 +869,21 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
                         onClick={() => setExpandedMemberId(expandedMemberId === member.id ? null : member.id)}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-9 h-9 rounded-full bg-zinc-800 border border-white/8 flex items-center justify-center text-sm font-bold text-zinc-300 shrink-0">
-                            {(member.name || member.username || '?').charAt(0).toUpperCase()}
-                          </div>
+                          <Avatar className="h-9 w-9 border border-white/8">
+                            <AvatarFallback className="bg-zinc-800 text-sm font-bold text-zinc-300">
+                              {(member.name || member.username || '?').charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                            {member.isManager && (
+                              <AvatarBadge className="bg-emerald-500 ring-zinc-950">
+                                <Shield className="text-white" />
+                              </AvatarBadge>
+                            )}
+                            {member.isEditor && !member.isManager && (
+                              <AvatarBadge className="bg-zinc-600 ring-zinc-950">
+                                <Pencil className="text-white" />
+                              </AvatarBadge>
+                            )}
+                          </Avatar>
                           <div className="min-w-0">
                             <p className="font-medium text-zinc-200 truncate">{member.name || member.username}</p>
                             <p className="text-xs text-zinc-500 truncate">{member.email}</p>
@@ -818,13 +985,13 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
 
             {groups.length === 0 ? (
               <div className="rounded-xl bg-zinc-900/30 border border-white/5 p-12 text-center">
-                <Music className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+                <Files className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
                 <p className="text-zinc-400 font-medium">No song sets yet</p>
                 {canManage() && <p className="text-sm text-zinc-600 mt-1">Create a song set to get started</p>}
               </div>
             ) : filteredGroups.length === 0 ? (
               <div className="rounded-xl bg-zinc-900/30 border border-white/5 p-12 text-center">
-                <Music className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+                <Files className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
                 <p className="text-zinc-400 font-medium">No song sets found</p>
                 <p className="text-sm text-zinc-600 mt-1">Try a different search term</p>
               </div>
@@ -839,7 +1006,7 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
                     <div className="p-5 flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center mb-3 shrink-0">
-                          <Music className="w-5 h-5 text-zinc-400" />
+                          <Files className="w-5 h-5 text-zinc-400" />
                         </div>
                         {canManage() && (
                           <button
@@ -886,8 +1053,11 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
       <AlertDialog open={deleteOrgOpen} onOpenChange={setDeleteOrgOpen}>
         <AlertDialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-red-400">
-              <AlertTriangle className="w-5 h-5" /> Delete Organization
+            <AlertDialogMedia className="bg-red-950/60 text-red-400">
+              <AlertTriangle />
+            </AlertDialogMedia>
+            <AlertDialogTitle className="text-red-400">
+              Delete Organization
             </AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400 space-y-3">
               <p>This will permanently delete <span className="font-bold text-white">"{organization.name}"</span> and all its data. This action cannot be undone.</p>
@@ -917,8 +1087,11 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
       <AlertDialog open={!!deleteGroupTarget} onOpenChange={(open) => { if (!open) { setDeleteGroupTarget(null); setDeleteGroupConfirmText(''); } }}>
         <AlertDialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-red-400">
-              <AlertTriangle className="w-5 h-5" /> Delete Song Set
+            <AlertDialogMedia className="bg-red-950/60 text-red-400">
+              <AlertTriangle />
+            </AlertDialogMedia>
+            <AlertDialogTitle className="text-red-400">
+              Delete Song Set
             </AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400 space-y-3">
               <p>This will permanently delete the song set <span className="font-bold text-white">"{deleteGroupTarget?.name}"</span>. This action cannot be undone.</p>
@@ -951,6 +1124,15 @@ const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ id: propId }) =
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ConfirmDialog
+        open={!!memberToRemove}
+        onOpenChange={(open) => { if (!open) setMemberToRemove(null); }}
+        title="Remove Member"
+        description={<>Are you sure you want to remove <span className="font-bold text-white">{memberToRemove?.name || memberToRemove?.username || 'this member'}</span> from the organization?</>}
+        confirmLabel="Remove"
+        onConfirm={handleConfirmRemoveMember}
+      />
     </div>
   );
 };

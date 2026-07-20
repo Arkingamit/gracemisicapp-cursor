@@ -1,8 +1,14 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { OrganizationModel } from '@/server/models/organization';
 import { UserModel } from '@/server/models/user';
 import { SettingsModel } from '@/server/models/settings';
 import { getAuthUser, authError } from '@/lib/auth';
+import { validateBody, validateParams } from '@/server/validation/http';
+import { objectId, email as emailSchema } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
+const emailBodySchema = z.object({ email: emailSchema }).strict();
 
 // POST /api/organizations/[id]/invite — Add a member by email
 export async function POST(
@@ -15,13 +21,13 @@ export async function POST(
       return authError('Not authenticated');
     }
 
-    const { id: orgId } = await params;
-    const body = await request.json();
-    const { email } = body;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id: orgId } = parsedParams.data;
 
-    if (!email || typeof email !== 'string') {
-      return Response.json({ error: 'Email is required' }, { status: 400 });
-    }
+    const parsed = await validateBody(request, emailBodySchema);
+    if (!parsed.ok) return parsed.response;
+    const { email } = parsed.data;
 
     // Verify the organization exists
     const organization = await OrganizationModel.findById(orgId);

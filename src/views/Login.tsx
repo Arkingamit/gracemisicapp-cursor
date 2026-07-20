@@ -7,12 +7,18 @@ import { Music } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
 
-const Login = () => {
+export interface LoginProps {
+  title?: React.ReactNode;
+  subtitle?: React.ReactNode;
+  redirectPath?: string;
+}
+
+const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { loginWithGoogle, currentUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirectTo') || '/';
+  const redirectTo = redirectPath || searchParams.get('redirectTo') || '/';
 
   // Redirect to target if already logged in
   useEffect(() => {
@@ -52,8 +58,10 @@ const Login = () => {
           <CardContent className="p-8 md:p-12">
             <div className="space-y-8">
               <div className="text-center space-y-2">
-                <h2 className="text-xl font-bold text-white">Welcome</h2>
-                <p className="text-sm text-zinc-500">Please sign in to access your library and sets.</p>
+                <h2 className="text-xl font-bold text-white">{title || 'Welcome'}</h2>
+                <div className="text-sm text-zinc-500">
+                  {subtitle || 'Please sign in to access your library and sets.'}
+                </div>
               </div>
 
               <div className="flex justify-center flex-col items-center gap-6">

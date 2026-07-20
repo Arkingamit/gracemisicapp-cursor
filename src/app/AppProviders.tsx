@@ -31,6 +31,16 @@ const ForceUpdateModal = dynamic(
   { ssr: false }
 );
 
+const ProfileSetupModal = dynamic(
+  () => import("@/components/profile/ProfileSetupModal"),
+  { ssr: false }
+);
+
+const OnboardingTour = dynamic(
+  () => import("@/components/common/OnboardingTour"),
+  { ssr: false }
+);
+
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "373571167776-bhmjthm17gp5s6pfr0hbuhukjqoo7l6a.apps.googleusercontent.com";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
@@ -63,6 +73,8 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
                         <BottomNavigation />
                       </Suspense>
                       <ForceUpdateModal />
+                      <ProfileSetupModal />
+                      <OnboardingTour />
                       <Toaster />
                     </div>
                   </NotificationProvider>

@@ -12,8 +12,10 @@ import { useSongs } from '@/contexts/SongContext';
 import { useRouter } from 'next/navigation';
 import LyricsDisplay from './LyricsDisplay';
 import TransposeControls from './TransposeControls';
-import { PlayCircle, Youtube, ListMusic, Settings } from 'lucide-react';
+import { PlayCircle, Youtube, ListMusic, Settings, Flag } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import ReportSongModal from './ReportSongModal';
+import { hasAnyRole } from '@/lib/roles';
 
 interface SongDisplayProps {
   song: Song;
@@ -49,9 +51,18 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
   const [lightTheme, setLightTheme] = useState(false);
   const [chordHighlight, setChordHighlight] = useState(true);
   const [hideAllChords, setHideAllChords] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const { currentUser } = useAuth();
   const { deleteSong } = useSongs();
   const router = useRouter();
+
+  const canReport =
+    !!currentUser &&
+    !!song.createdBy &&
+    song.createdBy !== currentUser.id &&
+    song.status !== 'pending';
+
+  const canFlagSpammer = hasAnyRole(currentUser, 'editor', 'verifier');
 
   // Use external transposition if provided, otherwise use internal state
   const currentTransposition = transposition !== undefined ? transposition : internalTransposition;
@@ -176,6 +187,17 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
                   </div>
                 </PopoverContent>
               </Popover>
+              {canReport && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`gap-1.5 ${lightTheme ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100" : "text-orange-400 border-orange-500/20 hover:bg-orange-500/10"}`}
+                  onClick={() => setReportOpen(true)}
+                >
+                  <Flag className="w-3.5 h-3.5" />
+                  Report
+                </Button>
+              )}
             </div>
           </div>
 
@@ -195,6 +217,16 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
             />
           </div>
       </CardContent>
+
+      {canReport && (
+        <ReportSongModal
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          songId={song.id}
+          songTitle={song.title}
+          allowSpammerFlag={canFlagSpammer}
+        />
+      )}
     </Card>
   );
 };

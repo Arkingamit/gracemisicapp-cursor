@@ -1,6 +1,13 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { DeviceTokenModel } from '@/server/models/deviceToken';
 import { getAuthUser, authError } from '@/lib/auth';
+import { validateBody } from '@/server/validation/http';
+import { devicePlatformEnum } from '@/server/validation/schemas';
+
+const registerDeviceSchema = z
+  .object({ token: z.string().min(1).max(500), platform: devicePlatformEnum })
+  .strict();
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,19 +16,9 @@ export async function POST(request: NextRequest) {
       return authError('Not authenticated');
     }
 
-    const body = await request.json();
-    const { token, platform } = body;
-
-    if (!token || typeof token !== 'string') {
-      return Response.json({ error: 'Invalid device token' }, { status: 400 });
-    }
-
-    if (!platform || !['android', 'ios'].includes(platform)) {
-      return Response.json(
-        { error: 'Invalid platform. Must be "android" or "ios".' },
-        { status: 400 }
-      );
-    }
+    const parsed = await validateBody(request, registerDeviceSchema);
+    if (!parsed.ok) return parsed.response;
+    const { token, platform } = parsed.data;
 
     await DeviceTokenModel.upsert(auth.userId, token, platform);
 

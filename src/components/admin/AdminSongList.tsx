@@ -10,14 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription, 
-  DialogFooter 
-} from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Song } from '@/lib/types';
 import { useSongs } from '@/contexts/SongContext';
@@ -50,6 +43,9 @@ const AdminSongList = ({ songs, organizations = [] }: AdminSongListProps) => {
   const shiftKeyRef = useRef<boolean>(false);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [activeOrgFilter, setActiveOrgFilter] = useState<string | null>(null);
+  const [pendingGlobalAction, setPendingGlobalAction] = useState<
+    { kind: 'move' | 'copy'; song: Song } | null
+  >(null);
 
   // Build a map of orgId -> orgName
   const orgNameMap = useMemo(() => {
@@ -282,11 +278,7 @@ const AdminSongList = ({ songs, organizations = [] }: AdminSongListProps) => {
                           size="icon"
                           className="h-8 w-8 shrink-0 bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-950 dark:hover:bg-blue-900 dark:text-blue-400 dark:border-blue-800"
                           title="Transfer to Global (Moves the song)"
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to MOVE "${song.title}" to the global library? It will no longer belong to this organization.`)) {
-                              makeSongGlobal(song.id);
-                            }
-                          }}
+                          onClick={() => setPendingGlobalAction({ kind: 'move', song })}
                         >
                           <Globe className="h-4 w-4" />
                         </Button>
@@ -295,11 +287,7 @@ const AdminSongList = ({ songs, organizations = [] }: AdminSongListProps) => {
                           size="icon"
                           className="h-8 w-8 shrink-0 bg-green-50 hover:bg-green-100 text-green-600 border-green-200 dark:bg-green-950 dark:hover:bg-green-900 dark:text-green-400 dark:border-green-800"
                           title="Copy to Global (Duplicates the song)"
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to COPY "${song.title}" to the global library? A duplicate will be created in the public library.`)) {
-                              copySongToGlobal(song.id);
-                            }
-                          }}
+                          onClick={() => setPendingGlobalAction({ kind: 'copy', song })}
                         >
                           <Copy className="h-4 w-4" />
                         </Button>
@@ -423,43 +411,46 @@ const AdminSongList = ({ songs, organizations = [] }: AdminSongListProps) => {
         ))}
       </div>
       
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete "{songToDelete?.title}"? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        icon={<Trash2 />}
+        title="Delete Song"
+        description={<>This will permanently delete <span className="font-bold text-white">"{songToDelete?.title}"</span>. This action cannot be undone.</>}
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+      />
 
-      <Dialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Bulk Deletion</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {selectedSongIds.size} selected songs? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setBulkDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={confirmBulkDelete}>
-              Delete All
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={setBulkDeleteDialogOpen}
+        icon={<Trash2 />}
+        title="Delete Selected Songs"
+        description={<>This will permanently delete {selectedSongIds.size} selected songs. This action cannot be undone.</>}
+        confirmLabel="Delete All"
+        onConfirm={confirmBulkDelete}
+      />
+
+      <ConfirmDialog
+        open={!!pendingGlobalAction}
+        onOpenChange={(open) => { if (!open) setPendingGlobalAction(null); }}
+        destructive={false}
+        icon={pendingGlobalAction?.kind === 'move' ? <Globe /> : <Copy />}
+        title={pendingGlobalAction?.kind === 'move' ? 'Move to Global Library' : 'Copy to Global Library'}
+        description={
+          pendingGlobalAction?.kind === 'move'
+            ? <>"{pendingGlobalAction?.song.title}" will be moved to the global library and will no longer belong to this organization.</>
+            : <>A duplicate of "{pendingGlobalAction?.song.title}" will be created in the public library.</>
+        }
+        confirmLabel={pendingGlobalAction?.kind === 'move' ? 'Move' : 'Copy'}
+        onConfirm={() => {
+          if (!pendingGlobalAction) return;
+          const { kind, song } = pendingGlobalAction;
+          setPendingGlobalAction(null);
+          if (kind === 'move') makeSongGlobal(song.id);
+          else copySongToGlobal(song.id);
+        }}
+      />
     </>
   );
 };

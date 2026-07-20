@@ -5,6 +5,7 @@ import { useGroups } from '@/contexts/groups';
 import { useOrganizations } from '@/contexts/OrganizationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { GROUP_TOUR_START_KEY } from '@/lib/tourSteps';
 import { Group, Organization } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,6 +85,10 @@ const GroupForm = ({ group, onSuccess, onClose, organizationId: initialOrgId, me
           organizationId,
           members
         });
+        
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(GROUP_TOUR_START_KEY, 'true');
+        }
         
         if (onSuccess) {
           onSuccess(groupId);

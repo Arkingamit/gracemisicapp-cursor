@@ -35,6 +35,8 @@ interface LyricsDisplayProps {
   hideAllChords?: boolean;
   onHideAllChordsChange?: (hide: boolean) => void;
   lightTheme?: boolean;
+  columns?: number;
+  noWrap?: boolean;
 }
 
 const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
@@ -63,6 +65,8 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
   hideAllChords = false,
   onHideAllChordsChange,
   lightTheme = false,
+  columns = 3,
+  noWrap = false,
 }) => {
   const sections = useMemo(() => splitIntoSections(lyrics, format), [lyrics, format]);
 
@@ -80,6 +84,29 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
     }, 0);
     return () => clearTimeout(timer);
   }, [sections]);
+
+  // Auto-focus the first lyric line when entering edit mode
+  useEffect(() => {
+    if (editable) {
+      const timer = setTimeout(() => {
+        const firstEditableLyric = document.querySelector('.editable-lyric-line') as HTMLElement;
+        if (firstEditableLyric) {
+          firstEditableLyric.focus();
+          
+          // Move cursor to the end of the line
+          const range = document.createRange();
+          range.selectNodeContents(firstEditableLyric);
+          range.collapse(false);
+          const sel = window.getSelection();
+          if (sel) {
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [editable]);
 
   const toggleSection = (index: number) => {
     setSectionVisibility(prev => {
@@ -202,6 +229,7 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
             lineLyricColor={currentEdit.lyricColorOverrides?.[`${origIdx}-${lIdx}`] || undefined}
             chordHighlight={chordHighlight}
             lightTheme={lightTheme}
+            noWrap={noWrap}
             perChordColors={
               line.chords.length > 0
                 ? Object.fromEntries(
@@ -317,8 +345,8 @@ const LyricsDisplay: React.FC<LyricsDisplayProps> = ({
         {processedSections.map((section, idx) => renderSection(section, idx))}
       </div>
 
-      {/* Desktop: CSS columns — force 3 columns */}
-      <div className="hidden md:block" style={{ columns: 3, columnGap: '3rem' }}>
+      {/* Desktop: CSS columns */}
+      <div className="hidden md:block" style={{ columns: columns, columnGap: '3rem' }}>
         {processedSections.map((section, idx) => renderSection(section, idx))}
       </div>
     </div>

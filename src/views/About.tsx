@@ -1,13 +1,100 @@
+"use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Music, Heart, Users, ListMusic, Building2 } from 'lucide-react';
+import { Music, Heart, Users, ListMusic, Building2, Sparkles, PlayCircle, MessageSquare } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import {
+  TOUR_START_KEY,
+  TOUR_STORAGE_KEY,
+  TOUR_START_FROM_SELECTOR_KEY,
+  ADD_SONG_TOUR_START_KEY,
+  ADD_SONG_TOUR_STORAGE_KEY,
+} from '@/lib/tourSteps';
+import { useState } from 'react';
+import { FeedbackModal } from '@/components/common/FeedbackModal';
+
+type FeatureTour = {
+  path: string;
+  /** Global tour step selector, or use addSongTour for song creation */
+  selector?: string;
+  addSongTour?: boolean;
+};
+
+const FEATURE_TOURS: Record<string, FeatureTour> = {
+  songs: { path: '/songs/new', addSongTour: true },
+  favorites: { path: '/favorites', selector: '[data-tour="nav-favorites"]' },
+  sets: { path: '/groups', selector: '[data-tour="create-set"]' },
+  collections: { path: '/playlists', selector: '[data-tour="nav-library"]' },
+  organizations: { path: '/organizations', selector: '[data-tour="org-actions"]' },
+};
 
 const About = () => {
+  const router = useRouter();
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+
+  const handleStartTour = () => {
+    localStorage.removeItem(TOUR_STORAGE_KEY);
+    localStorage.removeItem(TOUR_START_FROM_SELECTOR_KEY);
+    localStorage.setItem(TOUR_START_KEY, 'true');
+    router.push('/');
+  };
+
+  const handleFeatureTour = (key: keyof typeof FEATURE_TOURS) => {
+    const tour = FEATURE_TOURS[key];
+    if (tour.addSongTour) {
+      localStorage.removeItem(ADD_SONG_TOUR_STORAGE_KEY);
+      localStorage.setItem(ADD_SONG_TOUR_START_KEY, 'true');
+      router.push(tour.path);
+      return;
+    }
+    localStorage.removeItem(TOUR_STORAGE_KEY);
+    localStorage.setItem(TOUR_START_KEY, 'true');
+    if (tour.selector) {
+      localStorage.setItem(TOUR_START_FROM_SELECTOR_KEY, tour.selector);
+    } else {
+      localStorage.removeItem(TOUR_START_FROM_SELECTOR_KEY);
+    }
+    router.push(tour.path);
+  };
+
+  const TourLink = ({ feature }: { feature: keyof typeof FEATURE_TOURS }) => (
+    <button
+      type="button"
+      onClick={() => handleFeatureTour(feature)}
+      className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+    >
+      <PlayCircle className="w-4 h-4" />
+      Take a tour
+    </button>
+  );
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <h1 className="text-4xl font-bold mb-6 text-center">About Grace Music</h1>
 
       <div className="space-y-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PlayCircle className="w-5 h-5 text-primary" />
+              Interactive Onboarding Tour
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <p className="text-muted-foreground leading-relaxed">
+              New here? Or just want a refresher on how to use Grace Music? 
+              Take our interactive guided tour to explore all the features.
+            </p>
+            <Button 
+              onClick={handleStartTour}
+              className="w-full sm:w-auto whitespace-nowrap"
+            >
+              Start Tour
+            </Button>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>What is Grace Music?</CardTitle>
@@ -33,6 +120,7 @@ const About = () => {
                 <p className="text-muted-foreground mt-1">
                   The heart of Grace Music. Easily import songs, change the colors of your chords and lyrics to fit your preference, and export beautifully formatted PDFs. You can even hide chords for specific sections or for the entire song when you just need the lyrics!
                 </p>
+                <TourLink feature="songs" />
               </div>
 
               <div>
@@ -43,6 +131,7 @@ const About = () => {
                 <p className="text-muted-foreground mt-1">
                   Quickly access your most-used or loved songs by marking them as favorites. Create private collections and favorite lists for easy retrieval during practice or performance.
                 </p>
+                <TourLink feature="favorites" />
               </div>
 
               <div>
@@ -51,8 +140,9 @@ const About = () => {
                   Sets & Annotations
                 </h3>
                 <p className="text-muted-foreground mt-1">
-                  Organize songs into groups for specific events or worship services. Managers and editors can add personal annotations and instructions directly to the set (e.g., "Verse 2: Electric Guitar Solo" or "Verse 1: Piano Only") to ensure the whole band is perfectly synced.
+                  Organize songs into groups for specific events or worship services. Managers and editors can add personal annotations and instructions directly to the set (e.g., &quot;Verse 2: Electric Guitar Solo&quot; or &quot;Verse 1: Piano Only&quot;) to ensure the whole band is perfectly synced.
                 </p>
+                <TourLink feature="sets" />
               </div>
 
               <div>
@@ -61,8 +151,9 @@ const About = () => {
                   Collections
                 </h3>
                 <p className="text-muted-foreground mt-1">
-                  Group related sets or songs into thematic Collections (like "Christmas", "Youth Camp", or "Sunday Services"). This helps in managing large repertoires and keeping your library meticulously organized.
+                  Group related sets or songs into thematic Collections (like &quot;Christmas&quot;, &quot;Youth Camp&quot;, or &quot;Sunday Services&quot;). This helps in managing large repertoires and keeping your library meticulously organized.
                 </p>
+                <TourLink feature="collections" />
               </div>
 
               <div>
@@ -73,6 +164,7 @@ const About = () => {
                 <p className="text-muted-foreground mt-1">
                   Collaborate with your church or band by creating or joining Organizations. Access organization-specific song libraries and song sets, ensuring everyone is on the same page with the correct versions, keys, and arrangements.
                 </p>
+                <TourLink feature="organizations" />
               </div>
             </div>
           </CardContent>
@@ -86,6 +178,41 @@ const About = () => {
             <p className="leading-relaxed">
               The transposition feature allows you to change the key of a song without rewriting all the chords. Select a number of half-steps (semitones) to shift by, and all chords will be automatically adjusted. You can also switch between sharp (#) and flat (b) notation.
             </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-400" />
+              Grace Copilot (AI Assistant)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4 text-muted-foreground">
+              <p className="leading-relaxed">
+                Grace Copilot is your personal worship ministry AI assistant, designed to help you plan services and find songs quickly.
+              </p>
+              <ul className="list-disc list-inside space-y-2">
+                <li><strong className="text-foreground">Building Setlists:</strong> Ask Grace to &quot;build a 4-song worship setlist about surrender&quot; or &quot;suggest fast praise songs in the key of G&quot;.</li>
+                <li><strong className="text-foreground">Song Recommendations:</strong> Grace searches your catalog (both global and your organization&apos;s songs) to provide relevant suggestions with clickable links.</li>
+                <li><strong className="text-foreground">Key Compatibility:</strong> Ask for advice on transitioning between songs or checking if two songs flow well together.</li>
+                <li><strong className="text-foreground">Music Focus:</strong> Grace is strictly trained for music and worship ministry assistance, ensuring it stays on-topic and helpful for your team.</li>
+              </ul>
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.removeItem(TOUR_STORAGE_KEY);
+                  localStorage.setItem(TOUR_START_KEY, 'true');
+                  localStorage.setItem(TOUR_START_FROM_SELECTOR_KEY, '[data-tour="ai-chatbot"]');
+                  router.push('/');
+                }}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+              >
+                <PlayCircle className="w-4 h-4" />
+                Take a tour
+              </button>
+            </div>
           </CardContent>
         </Card>
 
@@ -136,6 +263,14 @@ const About = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></svg>
                     GitHub Profile
                   </a>
+                  <Button 
+                    variant="outline" 
+                    className="w-full sm:w-auto mt-2 flex items-center gap-2"
+                    onClick={() => setIsFeedbackOpen(true)}
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    Submit App Feedback
+                  </Button>
                 </div>
               </div>
             </div>
@@ -143,6 +278,11 @@ const About = () => {
         </Card>
 
       </div>
+      
+      <FeedbackModal 
+        isOpen={isFeedbackOpen} 
+        onClose={() => setIsFeedbackOpen(false)} 
+      />
     </div>
   );
 };

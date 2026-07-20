@@ -37,6 +37,9 @@
     --chord-foreground: 0 0% 10%;
 
     --radius: 0.5rem;
+
+    /* AI surfaces: Söhne brand font with system fallbacks */
+    --font-ai: "Söhne", "Sohne", Inter, Helvetica, Arial, sans-serif;
     
     --safe-area-inset-top: env(safe-area-inset-top, 0px);
     --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
@@ -254,21 +257,33 @@
   }
 
   .home-genre-label {
-    @apply relative z-10 text-lg md:text-xl font-extrabold tracking-tight leading-tight max-w-[70%];
+    @apply relative z-10 block text-lg md:text-xl font-extrabold tracking-tight leading-tight max-w-[62%] line-clamp-2;
   }
 
   .home-genre-count {
-    @apply relative z-10 block text-xs font-medium text-white/60 mt-1;
+    @apply relative z-10 block text-xs font-medium text-white/60 mt-1 max-w-[62%];
   }
 
   .home-genre-img-wrapper {
-    @apply absolute -right-4 -bottom-2 w-24 h-24 md:w-32 md:h-32 rotate-[25deg];
+    @apply absolute aspect-square rotate-[25deg];
+    right: -10%;
+    bottom: -8%;
+    width: 48%;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .home-genre-card:hover .home-genre-img-wrapper {
-    padding-right: var(--safe-area-inset-right);
+    transform: rotate(25deg) scale(1.2);
+  }
+
+  .home-genre-card:active .home-genre-img-wrapper {
+    transform: rotate(25deg) scale(0.95);
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .home-genre-img {
+    @apply w-full h-full object-cover rounded-md;
   }
 
   header {
@@ -449,15 +464,18 @@
   }
 
   .home-genre-label {
-    @apply relative z-10 text-lg md:text-xl font-extrabold tracking-tight leading-tight max-w-[70%];
+    @apply relative z-10 block text-lg md:text-xl font-extrabold tracking-tight leading-tight max-w-[62%] line-clamp-2;
   }
 
   .home-genre-count {
-    @apply relative z-10 block text-xs font-medium text-white/60 mt-1;
+    @apply relative z-10 block text-xs font-medium text-white/60 mt-1 max-w-[62%];
   }
 
   .home-genre-img-wrapper {
-    @apply absolute -right-4 -bottom-2 w-24 h-24 md:w-32 md:h-32 rotate-[25deg];
+    @apply absolute aspect-square rotate-[25deg];
+    right: -10%;
+    bottom: -8%;
+    width: 48%;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
@@ -517,3 +535,4 @@
     display: none; /* Chrome, Safari and Opera */
   }
 }
+

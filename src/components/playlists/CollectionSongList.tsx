@@ -370,7 +370,7 @@ const CollectionSongList = ({ songIds, collectionName, onRemoveSong }: Collectio
                             title="Edit Layout"
                           >
                             {editingLayoutFor[song.id] ? <PencilOff className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
-                            <span className="hidden sm:inline">{editingLayoutFor[song.id] ? 'Done' : 'Edit Layout'}</span>
+                            <span className="inline">{editingLayoutFor[song.id] ? 'Done' : 'Edit Layout'}</span>
                           </Button>
                           {editingLayoutFor[song.id] && (
                             <div className="flex items-center gap-1 bg-secondary rounded-md p-1">

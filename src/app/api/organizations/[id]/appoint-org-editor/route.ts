@@ -1,6 +1,18 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { OrganizationModel } from '@/server/models/organization';
 import { getAuthUser, authError } from '@/lib/auth';
+import { validateBody, validateParams } from '@/server/validation/http';
+import { objectId } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
+const appointOrgEditorSchema = z
+  .object({
+    userId: objectId,
+    role: z.enum(['user', 'editor', 'manager']).optional(),
+    action: z.enum(['promote', 'demote']).optional(),
+  })
+  .strict();
 
 // POST /api/organizations/[id]/appoint-org-editor — Manager sets a member's org role
 // Accepts: { userId, role: 'user' | 'editor' | 'manager' }
@@ -15,13 +27,13 @@ export async function POST(
       return authError('Not authenticated');
     }
 
-    const { id: orgId } = await params;
-    const body = await request.json();
-    const { userId, role, action } = body;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id: orgId } = parsedParams.data;
 
-    if (!userId || typeof userId !== 'string') {
-      return Response.json({ error: 'User ID is required' }, { status: 400 });
-    }
+    const parsed = await validateBody(request, appointOrgEditorSchema);
+    if (!parsed.ok) return parsed.response;
+    const { userId, role, action } = parsed.data;
 
     // Support both new `role` param and legacy `action` param
     let targetRole: string;

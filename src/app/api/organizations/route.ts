@@ -1,13 +1,37 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { OrganizationModel } from '@/server/models/organization';
 import { SettingsModel } from '@/server/models/settings';
 import { getAuthUser, authError } from '@/lib/auth';
 import { AuditLogModel } from '@/server/models/auditLog';
 import { COLLECTIONS } from '@/server/db/collections';
+import { validateBody, validateQuery } from '@/server/validation/http';
+import { boundedString, objectId, objectIdArray, NAME_MAX } from '@/server/validation/schemas';
+
+const orgsQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).max(1_000_000).optional(),
+    limit: z.coerce.number().int().min(1).max(5000).optional(),
+    memberId: objectId.optional(),
+  })
+  .strict();
+
+const orgCreateSchema = z
+  .object({
+    name: boundedString(NAME_MAX),
+    members: objectIdArray.max(5000).optional(),
+    managerIds: objectIdArray.max(1000).optional(),
+    editorIds: objectIdArray.max(1000).optional(),
+    joinCode: z.string().trim().max(20).optional(),
+  })
+  .strict();
 
 // GET /api/organizations - List all organizations
 export async function GET(request: NextRequest) {
   try {
+    const queryCheck = validateQuery(request, orgsQuerySchema);
+    if (!queryCheck.ok) return queryCheck.response;
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '100');
@@ -88,11 +112,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    
-    if (!body.name || body.name.trim() === '') {
-      return Response.json({ error: 'Organization name is required' }, { status: 400 });
-    }
+    const parsed = await validateBody(request, orgCreateSchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     // Enforce creator as manager and initial member
     const orgData = {
@@ -101,7 +123,10 @@ export async function POST(request: NextRequest) {
       members: Array.isArray(body.members) ? [...new Set([...body.members, auth.userId])] : [auth.userId],
     };
 
-    const organization = await OrganizationModel.create(orgData, auth.userId);
+    const organization = await OrganizationModel.create(
+      orgData as Parameters<typeof OrganizationModel.create>[0],
+      auth.userId
+    );
 
     // Audit log: Organization created
     await AuditLogModel.log({

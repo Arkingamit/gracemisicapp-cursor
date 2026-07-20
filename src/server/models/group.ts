@@ -147,6 +147,27 @@ export class GroupModel {
     }
   }
 
+  // Add many songs to a group in a single write (one round trip via $each)
+  static async addSongs(groupId: string, songIds: string[]): Promise<Group | null> {
+    try {
+      if (songIds.length === 0) return await this.findById(groupId);
+      const collection = await getCollection(COLLECTIONS.GROUPS);
+
+      await collection.updateOne(
+        { _id: new ObjectId(groupId) },
+        {
+          $addToSet: { songs: { $each: songIds } },
+          $set: { updatedAt: new Date() }
+        }
+      );
+
+      return await this.findById(groupId);
+    } catch (error) {
+      console.error("Error adding songs to group:", error);
+      throw error;
+    }
+  }
+
   // Remove a song from a group
   static async removeSong(groupId: string, songId: string): Promise<Group | null> {
     try {

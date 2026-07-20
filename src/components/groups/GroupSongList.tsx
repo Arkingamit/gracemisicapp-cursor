@@ -37,6 +37,7 @@ import LyricsDisplay from '@/components/songs/LyricsDisplay';
 import { Palette, Undo2, Redo2, Edit2, PencilOff, Settings as SettingsIcon } from 'lucide-react';
 import { SongEditState, CHORD_COLOR_PRESETS, LYRIC_COLOR_PRESETS, nextAnnotationId, cloneEditStates, createEmptyEditState } from '@/lib/songEditTypes';
 import { splitIntoSections } from '@/lib/chordParser';
+import { GROUP_TOUR_EXPAND_EVENT } from '@/lib/tourSteps';
 
 // Debounce helper for transpose sync
 const TRANSPOSE_SYNC_DELAY = 1500; // ms
@@ -95,6 +96,16 @@ const GroupSongList = ({ groupId, groupSongIds }: GroupSongListProps) => {
     .map(id => songs.find(song => song.id === id))
     .filter((song): song is Song => !!song);
   const group = getGroup(groupId);
+
+  // Expand first song when group onboarding tour needs transpose/layout targets
+  useEffect(() => {
+    const expandForTour = () => {
+      if (groupSongIds.length === 0) return;
+      setExpandedSongs((prev) => ({ ...prev, [groupSongIds[0]]: true }));
+    };
+    window.addEventListener(GROUP_TOUR_EXPAND_EVENT, expandForTour);
+    return () => window.removeEventListener(GROUP_TOUR_EXPAND_EVENT, expandForTour);
+  }, [groupSongIds]);
 
   const canManage = useMemo(() => {
     if (!currentUser || !group) return false;
@@ -534,16 +545,18 @@ const GroupSongList = ({ groupId, groupSongIds }: GroupSongListProps) => {
                         <div className="flex flex-wrap items-center gap-4">
                           <div>
                             <div className="flex flex-wrap items-center gap-4">
-                              <TransposeControls
-                                transposition={transposition}
-                                currentKey={currentKey}
-                                onTransposeUp={() => handleTranspose(song.id, 1)}
-                                onTransposeDown={() => handleTranspose(song.id, -1)}
-                                onReset={() => handleResetTranspose(song.id)}
-                                useNumberSystem={useNumberSystem}
-                                onNumberSystemChange={(val) => handleUseNumberSystemChange(song.id, val)}
-                                lightTheme={lightTheme}
-                              />
+                              <div data-tour="set-transpose">
+                                <TransposeControls
+                                  transposition={transposition}
+                                  currentKey={currentKey}
+                                  onTransposeUp={() => handleTranspose(song.id, 1)}
+                                  onTransposeDown={() => handleTranspose(song.id, -1)}
+                                  onReset={() => handleResetTranspose(song.id)}
+                                  useNumberSystem={useNumberSystem}
+                                  onNumberSystemChange={(val) => handleUseNumberSystemChange(song.id, val)}
+                                  lightTheme={lightTheme}
+                                />
+                              </div>
                               <Button 
                                 variant={editingLayoutFor[song.id] ? "default" : "outline"}
                                 size="sm"
@@ -551,9 +564,10 @@ const GroupSongList = ({ groupId, groupSongIds }: GroupSongListProps) => {
                                 className={`flex items-center gap-2 ${lightTheme && !editingLayoutFor[song.id] ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-300 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100" : ""}`}
                                 title={!canManage ? 'You need editor access' : 'Edit Layout'}
                                 disabled={!canManage}
+                                data-tour="set-edit-layout"
                               >
                                 {editingLayoutFor[song.id] ? <PencilOff className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
-                                <span className="hidden sm:inline">{editingLayoutFor[song.id] ? 'Done' : 'Edit Layout'}</span>
+                                <span className="inline">{editingLayoutFor[song.id] ? 'Done' : 'Edit Layout'}</span>
                               </Button>
                               {editingLayoutFor[song.id] && canManage && (
                                 <div className="flex items-center gap-1 bg-secondary rounded-md p-1">
@@ -599,7 +613,7 @@ const GroupSongList = ({ groupId, groupSongIds }: GroupSongListProps) => {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-4">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2" data-tour="set-use-flats">
                             <Switch
                               id={`flat-${song.id}`}
                               checked={useFlats}
@@ -611,7 +625,7 @@ const GroupSongList = ({ groupId, groupSongIds }: GroupSongListProps) => {
                           
                           <Popover>
                             <PopoverTrigger asChild>
-                              <Button variant="outline" size="sm" className={`gap-2 ${lightTheme ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-300 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100" : ""}`}>
+                              <Button variant="outline" size="sm" className={`gap-2 ${lightTheme ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-300 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100" : ""}`} data-tour="set-settings">
                                 <SettingsIcon className="w-4 h-4" />
                                 Settings
                               </Button>

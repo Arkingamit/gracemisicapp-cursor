@@ -49,7 +49,8 @@ export function AdminResetPasswordModal({
         <DialogHeader>
           <DialogTitle>Confirm Password Reset</DialogTitle>
           <DialogDescription>
-            You are resetting the password for <strong>{targetUserName}</strong> to <code>password123</code>.
+            You are resetting the password for <strong>{targetUserName}</strong> to a temporary password.
+            The new password will be shown to you after you confirm.
             Please enter <strong>your administrator password</strong> to authorize this action.
           </DialogDescription>
         </DialogHeader>

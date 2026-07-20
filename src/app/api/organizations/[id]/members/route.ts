@@ -1,7 +1,12 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { OrganizationModel } from '@/server/models/organization';
 import { UserModel } from '@/server/models/user';
 import { getAuthUser, authError } from '@/lib/auth';
+import { validateParams } from '@/server/validation/http';
+import { objectId } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
 
 // GET /api/organizations/[id]/members — Get member details for an organization
 export async function GET(
@@ -14,7 +19,9 @@ export async function GET(
       return authError('Not authenticated');
     }
 
-    const { id: orgId } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id: orgId } = parsedParams.data;
 
     // Verify organization exists
     const organization = await OrganizationModel.findById(orgId);
@@ -22,12 +29,13 @@ export async function GET(
       return Response.json({ error: 'Organization not found' }, { status: 404 });
     }
 
-    // Only super_admin, the org manager, or org members can view the member list
+    // Only super_admin, the org manager, org editors, or org members can view the member list
     const isSuperAdmin = auth.role === 'super_admin';
     const isManager = organization.managerIds.includes(auth.userId);
+    const isEditor = (organization.editorIds || []).includes(auth.userId);
     const isMember = organization.members.includes(auth.userId);
 
-    if (!isSuperAdmin && !isManager && !isMember) {
+    if (!isSuperAdmin && !isManager && !isEditor && !isMember) {
       return Response.json(
         { error: 'You do not have access to view this organization\'s members' },
         { status: 403 }

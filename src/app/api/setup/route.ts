@@ -1,7 +1,50 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { isSetupComplete, markSetupComplete } from '@/lib/setup-flag';
 import fs from 'fs';
 import path from 'path';
+import { validateBody } from '@/server/validation/http';
+
+const setupSchema = z
+  .object({
+    action: z.enum(['save-env', 'test-mongo', 'migrate-db', 'complete']),
+    config: z
+      .object({
+        MONGODB_URI: z.string().max(2000).optional(),
+        MONGODB_DB_NAME: z.string().max(200).optional(),
+        JWT_SECRET: z.string().max(500).optional(),
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: z.string().max(500).optional(),
+        GROQ_API_KEY: z.string().max(500).optional(),
+        GEMINI_API_KEY: z.string().max(500).optional(),
+        GOOGLE_GENERATIVE_AI_API_KEY: z.string().max(500).optional(),
+        NEXT_PUBLIC_DOMAIN: z.string().max(500).optional(),
+      })
+      .strict()
+      .optional(),
+    uri: z.string().max(2000).optional(),
+    dbName: z.string().max(200).optional(),
+    sourceUri: z.string().max(2000).optional(),
+    sourceDbName: z.string().max(200).optional(),
+    targetUri: z.string().max(2000).optional(),
+    targetDbName: z.string().max(200).optional(),
+  })
+  .strict();
+
+/**
+ * Maps a raw MongoDB driver error to a user-safe description. Raw messages can
+ * contain hostnames/topology details, so we only surface a category hint and
+ * log the full error server-side.
+ */
+function describeMongoError(e: unknown): string {
+  const msg = e instanceof Error ? e.message : '';
+  if (/auth/i.test(msg)) {
+    return 'Authentication failed. Check the username and password in your connection string.';
+  }
+  if (/timed?\s?out|ETIMEDOUT|ENOTFOUND|ECONNREFUSED|server selection/i.test(msg)) {
+    return 'Could not reach the MongoDB server. Check the host/port and that the server is running.';
+  }
+  return 'Connection failed. Check the connection string; full details are in the server logs.';
+}
 
 // GET /api/setup — Check setup status and environment
 export async function GET() {
@@ -42,8 +85,9 @@ export async function GET() {
       await client.db('admin').command({ ping: 1 });
       await client.close();
       mongoStatus = 'connected';
-    } catch (e: any) {
-      mongoStatus = `error: ${e.message}`;
+    } catch (e) {
+      console.error('Setup: MongoDB status check failed:', e);
+      mongoStatus = `error: ${describeMongoError(e)}`;
     }
 
     // Check Node.js version
@@ -75,7 +119,9 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Setup already completed. Delete setup_complete.flag to re-run.' }, { status: 403 });
     }
 
-    const body = await request.json();
+    const parsed = await validateBody(request, setupSchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
     const { action } = body;
 
     // Action: save-env — Write .env.local file
@@ -143,8 +189,12 @@ export async function POST(request: NextRequest) {
           documentCounts: stats,
           message: `Connected! Found ${collectionNames.length} collections.` 
         });
-      } catch (e: any) {
-        return Response.json({ success: false, error: e.message }, { status: 400 });
+      } catch (e) {
+        console.error('Setup: MongoDB connection test failed:', e);
+        return Response.json(
+          { success: false, error: describeMongoError(e) },
+          { status: 400 }
+        );
       }
     }
 
@@ -198,10 +248,11 @@ export async function POST(request: NextRequest) {
           success: true, 
           message: `Database migrated successfully! Copied ${copiedCollections} collections (${totalDocs} documents) to ${dbName}.`
         });
-      } catch (e: any) {
+      } catch (e) {
+        console.error('Setup: database migration failed:', e);
         return Response.json({ 
           success: false, 
-          error: e.message || 'Failed to migrate database using Node.js driver' 
+          error: `Migration failed. ${describeMongoError(e)}` 
         }, { status: 500 });
       }
     }

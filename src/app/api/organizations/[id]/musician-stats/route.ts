@@ -1,8 +1,13 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { GroupModel } from '@/server/models/group';
 import { OrganizationModel } from '@/server/models/organization';
 import { UserModel } from '@/server/models/user';
 import { getAuthUser } from '@/lib/auth';
+import { validateParams } from '@/server/validation/http';
+import { objectId } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
 
 // GET /api/organizations/[id]/musician-stats — Get aggregated musician stats
 export async function GET(
@@ -10,7 +15,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
     const auth = getAuthUser(request);
     if (!auth) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });

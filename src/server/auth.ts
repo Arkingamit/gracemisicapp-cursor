@@ -16,6 +16,7 @@ export interface JWTPayload {
   userId: string;
   email: string;
   role: string;
+  roles?: string[];
 }
 
 /**
@@ -27,6 +28,7 @@ export function createToken(user: User): string {
     userId: user.id,
     email: user.email,
     role: user.role,
+    roles: user.roles?.length ? user.roles : [user.role],
   };
   return jwt.sign(payload, getJwtSecret(), { expiresIn: '7d' });
 }

@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { ArrowRightLeft, Check, Loader2, Music, Plus, Users, Search, CheckSquare, Square, MinusSquare } from 'lucide-react';
+import { ArrowRightLeft, Check, Loader2, Music, Files, Plus, Users, Search, CheckSquare, Square, MinusSquare } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -180,30 +180,34 @@ const TransferToSongSetDialog: React.FC<TransferToSongSetDialogProps> = ({
     }
 
     setIsTransferring(true);
-    try {
-      for (const songId of newSongIds) {
-        await addSongToGroup(selectedGroupId, songId);
-      }
+    // Optimistic adds update the target set immediately — close the dialog now
+    setOpen(false);
+    setSelectedGroupId(null);
+    setSelectedSongIds(new Set());
+    setStep('select-songs');
 
+    const results = await Promise.allSettled(
+      newSongIds.map((songId) => addSongToGroup(selectedGroupId, songId))
+    );
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    const succeeded = newSongIds.length - failed;
+
+    if (failed === 0) {
       toast({
         title: 'Transfer complete!',
-        description: `${newSongIds.length} ${newSongIds.length === 1 ? 'song' : 'songs'} from "${collectionName}" added to "${group.name}".`,
+        description: `${succeeded} ${succeeded === 1 ? 'song' : 'songs'} from "${collectionName}" added to "${group.name}".`,
       });
-
-      setOpen(false);
-      setSelectedGroupId(null);
-      setSelectedSongIds(new Set());
-      setStep('select-songs');
-    } catch (error) {
-      console.error('Transfer failed:', error);
+    } else {
       toast({
-        title: 'Transfer failed',
-        description: error instanceof Error ? error.message : 'Could not transfer songs. Please try again.',
+        title: succeeded > 0 ? 'Partially transferred' : 'Transfer failed',
+        description:
+          succeeded > 0
+            ? `Added ${succeeded}; ${failed} failed and were rolled back.`
+            : 'Could not transfer songs. Optimistic changes were restored.',
         variant: 'destructive',
       });
-    } finally {
-      setIsTransferring(false);
     }
+    setIsTransferring(false);
   };
 
   const handleOpenChange = (v: boolean) => {
@@ -374,7 +378,7 @@ const TransferToSongSetDialog: React.FC<TransferToSongSetDialogProps> = ({
                                   {isSelected ? (
                                     <Check className="w-4 h-4 text-primary" />
                                   ) : (
-                                    <Music className="w-4 h-4 text-muted-foreground" />
+                                    <Files className="w-4 h-4 text-muted-foreground" />
                                   )}
                                   <span className="font-medium">{group.name}</span>
                                 </div>

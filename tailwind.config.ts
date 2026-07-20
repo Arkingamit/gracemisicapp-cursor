@@ -72,6 +72,7 @@ export default {
 				chord: ['"Roboto Mono"', 'monospace'],
 				lyric: ['"Inter"', '"Noto Sans"', 'sans-serif'],
 				heading: ['"Inter"', 'sans-serif'],
+				ai: ['var(--font-ai)'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

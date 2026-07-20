@@ -250,14 +250,14 @@ const Profile = () => {
                 )}
               </div>
             </div>
-            {/* User Stats Card */}
-            <UserStatsCard />
           </div>
 
-          {/* Songs Section */}
+          {/* Songs and Stats Section */}
           <div className="md:col-span-2 space-y-6">
-            {(currentUser.role === 'super_admin' || currentUser.role === 'manager') ? (
-              <div className="bg-zinc-900/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6 shadow-xl">
+            {/* User Stats Card */}
+            <UserStatsCard />
+
+            <div className="bg-zinc-900/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6 shadow-xl">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold flex items-center gap-2 text-zinc-100">
                     <Music className="w-5 h-5 text-blue-400" />
@@ -324,17 +324,6 @@ const Profile = () => {
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="bg-zinc-900/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-center text-center py-16">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                  <Shield className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold text-zinc-100 mb-2">Standard Account</h3>
-                <p className="text-zinc-400 max-w-md">
-                  You have a standard user account. If you need to add or edit songs, please contact an administrator to upgrade your role.
-                </p>
-              </div>
-            )}
           </div>
         </div>
       </div>

@@ -1,9 +1,15 @@
 import { NextRequest } from 'next/server';
 import { SettingsModel } from '@/server/models/settings';
 import { getAuthUser } from '@/lib/auth';
+import { enforceRateLimit, invalidateRateLimitConfig } from '@/server/rateLimit';
+import { validateBody } from '@/server/validation/http';
+import { systemSettingsUpdateSchema } from '@/server/validation/schemas';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const limited = await enforceRateLimit(request, { policy: 'public', bucket: 'settings' });
+    if (limited) return limited;
+
     const settings = await SettingsModel.getSettings();
     return Response.json(settings);
   } catch (error) {
@@ -23,8 +29,10 @@ export async function PATCH(request: NextRequest) {
       return Response.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const updatedSettings = await SettingsModel.updateSettings(body);
+    const parsed = await validateBody(request, systemSettingsUpdateSchema);
+    if (!parsed.ok) return parsed.response;
+    const updatedSettings = await SettingsModel.updateSettings(parsed.data);
+    invalidateRateLimitConfig();
     return Response.json(updatedSettings);
   } catch (error) {
     console.error('Update settings error:', error);

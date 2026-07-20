@@ -1,7 +1,13 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { OrganizationModel } from '@/server/models/organization';
 import { UserModel } from '@/server/models/user';
 import { getAuthUser, authError } from '@/lib/auth';
+import { validateBody, validateParams } from '@/server/validation/http';
+import { objectId, email as emailSchema } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
+const emailBodySchema = z.object({ email: emailSchema }).strict();
 
 // POST /api/organizations/[id]/assign-manager — Assign a new manager
 export async function POST(
@@ -14,7 +20,9 @@ export async function POST(
       return authError('Not authenticated');
     }
 
-    const { id: orgId } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id: orgId } = parsedParams.data;
 
     // Verify organization exists first to check its manager
     const organization = await OrganizationModel.findById(orgId);
@@ -33,12 +41,9 @@ export async function POST(
       );
     }
 
-    const body = await request.json();
-    const { email } = body;
-
-    if (!email || typeof email !== 'string') {
-      return Response.json({ error: 'Email is required' }, { status: 400 });
-    }
+    const parsed = await validateBody(request, emailBodySchema);
+    if (!parsed.ok) return parsed.response;
+    const { email } = parsed.data;
 
     // Look up user by email
     const userToAssign = await UserModel.findByEmail(email.trim().toLowerCase());

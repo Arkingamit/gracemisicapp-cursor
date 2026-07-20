@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 
 export async function exportToCSV(filename: string, headers: string[], rows: any[][]) {
@@ -16,7 +16,7 @@ export async function exportToCSV(filename: string, headers: string[], rows: any
         path: `${filename}.csv`,
         data: csvContent,
         directory: Directory.Cache,
-        encoding: 'utf8',
+        encoding: Encoding.UTF8,
       });
       await Share.share({
         title: `${filename}.csv`,

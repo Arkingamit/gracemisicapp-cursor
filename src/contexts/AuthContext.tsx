@@ -14,6 +14,8 @@ interface AuthContextType {
   register: (email: string, password: string, username: string) => Promise<void>;
   loginWithGoogle: (credential: string) => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
+  /** Re-fetch current user from the server (roles, moderation, session). */
+  refreshUser: () => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -191,6 +193,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const refreshUser = async (): Promise<User | null> => {
+    try {
+      const res = await authFetch('/api/auth/me');
+      if (!res.ok) {
+        setCurrentUser(null);
+        return null;
+      }
+      const data = await res.json();
+      setCurrentUser(data.user);
+      return data.user as User;
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+      setCurrentUser(null);
+      return null;
+    }
+  };
+
   const updateProfile = async (updates: Partial<User>) => {
     try {
       const res = await authFetch('/api/auth/me', {
@@ -228,6 +247,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     register,
     loginWithGoogle,
     updateProfile,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

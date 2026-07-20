@@ -61,6 +61,33 @@ export class NotificationModel {
     };
   }
 
+  /**
+   * Create the same notification for many users with a single insertMany
+   * instead of one insertOne per user.
+   */
+  static async createMany(
+    userIds: string[],
+    title: string,
+    message: string,
+    link?: string
+  ): Promise<number> {
+    if (userIds.length === 0) return 0;
+    const collection = await getCollection(COLLECTIONS.NOTIFICATIONS);
+    const now = new Date();
+
+    const docs = userIds.map((userId) => ({
+      userId,
+      title,
+      message,
+      link,
+      isRead: false,
+      createdAt: now,
+    }));
+
+    const result = await collection.insertMany(docs, { ordered: false });
+    return result.insertedCount;
+  }
+
   static async findByUserId(userId: string, limit = 50): Promise<Notification[]> {
     const collection = await getCollection(COLLECTIONS.NOTIFICATIONS);
     const results = await collection

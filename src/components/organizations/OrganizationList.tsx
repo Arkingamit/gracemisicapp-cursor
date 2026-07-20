@@ -3,6 +3,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { REGEXP_ONLY_DIGITS_AND_CHARS } from 'input-otp';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from '@/components/ui/input-otp';
 import {
   Table,
   TableBody,
@@ -11,12 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -29,7 +31,9 @@ import {
 import { useOrganizations } from '@/contexts/OrganizationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Organization } from '@/lib/types';
-import { Building, Plus, Pencil, Trash2, Mail, Info, Users, ListMusic, Key } from 'lucide-react';
+import { Plus, Pencil, Trash2, Mail, Info, Users, Files, Key } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ButtonGroup, ButtonGroupSeparator } from '@/components/ui/button-group';
 
 const OrganizationList = () => {
   const { organizations, loading, deleteOrganization, updateOrganization } = useOrganizations();
@@ -47,13 +51,16 @@ const OrganizationList = () => {
     organization.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleDeleteOrganization = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this organization?')) {
-      try {
-        await deleteOrganization(id);
-      } catch (error) {
-        console.error('Failed to delete organization:', error);
-      }
+  const [orgToDelete, setOrgToDelete] = useState<Organization | null>(null);
+
+  const handleConfirmDeleteOrganization = async () => {
+    if (!orgToDelete) return;
+    const id = orgToDelete.id;
+    setOrgToDelete(null);
+    try {
+      await deleteOrganization(id);
+    } catch (error) {
+      console.error('Failed to delete organization:', error);
     }
   };
 
@@ -99,6 +106,13 @@ const OrganizationList = () => {
 
   const handleJoinOrganization = async () => {
     if (!joinCode.trim()) return;
+
+    if (!currentUser) {
+      // Redirect to the dedicated invite page which handles sign-in prompting
+      router.push(`/invite/${joinCode.trim()}`);
+      return;
+    }
+
     try {
       setIsJoining(true);
       await submitJoinRequest(joinCode.trim());
@@ -112,39 +126,78 @@ const OrganizationList = () => {
   };
 
   return (
-    <div className="container mx-auto px-0 sm:px-4 pt-20 md:pt-28 pb-8">
-      <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x">
-        <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4 sm:p-6">
-          <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
-            <Building className="h-5 w-5 sm:h-6 sm:w-6" />
-            Organizations
-          </CardTitle>
-          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+    <div className="min-h-screen bg-transparent pb-20">
+      {/* Header / Banner Area */}
+      <div className="pt-24 md:pt-32 pb-8">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-3 flex-1">
+              <Badge variant="outline" className="border-zinc-800 text-zinc-400 uppercase tracking-widest text-[10px] font-semibold px-3 py-1 rounded-full w-fit">
+                COMMUNITY
+              </Badge>
+              <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-white">
+                Organizations
+              </h1>
+              <div className="flex items-center gap-3 text-sm text-zinc-400 font-medium">
+                <span className="flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
+                  {filteredOrganizations.length} {filteredOrganizations.length === 1 ? 'organization' : 'organizations'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sticky toolbar */}
+      <div className="sticky top-0 z-20 bg-zinc-950/90 backdrop-blur-md border-b border-white/5 py-4 transition-all duration-300 ease-in-out">
+        <div className="container mx-auto px-4 flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:flex-1 sm:max-w-[280px] flex items-center">
             <Input
               placeholder="Search organizations..."
-              className="w-full sm:max-w-sm"
+              className="w-full border-zinc-800 bg-zinc-900/60 text-zinc-100 rounded-full h-9 pl-4 pr-10 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 transition-colors"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <Users className="w-4 h-4 text-zinc-500" />
+            </div>
+          </div>
+          <ButtonGroup
+            data-tour="org-actions"
+            aria-label="Organization actions"
+            className="w-full sm:w-fit"
+          >
             {canCreate ? (
-              <Button onClick={() => router.push('/organizations/new')} className="w-full sm:w-auto gap-2">
-                <Plus className="h-4 w-4" />
+              <Button
+                onClick={() => router.push('/organizations/new')}
+                variant="secondary"
+                size="sm"
+                className="flex-1 sm:flex-none gap-2"
+              >
+                <Plus className="w-4 h-4 shrink-0" />
                 Create Organization
               </Button>
             ) : (
-              <Button 
-                variant="outline" 
-                className="w-full sm:w-auto gap-2 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary"
+              <Button
+                variant="secondary"
+                size="sm"
+                className="flex-1 sm:flex-none gap-2"
                 onClick={() => window.open('mailto:gamitarkin2@gmail.com', '_blank')}
               >
-                <Mail className="h-4 w-4" />
-                Contact Admin to Create
+                <Mail className="w-4 h-4 shrink-0" />
+                Contact Admin
               </Button>
             )}
+            <ButtonGroupSeparator />
             <Dialog open={joinModalOpen} onOpenChange={setJoinModalOpen}>
               <DialogTrigger asChild>
-                <Button variant="secondary" className="w-full sm:w-auto gap-2 bg-zinc-800 text-zinc-100 hover:bg-zinc-700">
-                  <Key className="h-4 w-4" />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="flex-1 sm:flex-none gap-2"
+                >
+                  <Key className="w-4 h-4 shrink-0" />
                   Join via Code
                 </Button>
               </DialogTrigger>
@@ -155,14 +208,23 @@ const OrganizationList = () => {
                     Enter the 6-character code provided by your organization's manager to request access.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                  <Input
-                    placeholder="e.g., 7X9K2P"
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                    className="text-center text-2xl tracking-widest uppercase bg-zinc-900 border-zinc-700 focus-visible:ring-primary h-14"
+                <div className="py-4 flex justify-center">
+                  <InputOTP
                     maxLength={6}
-                  />
+                    pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+                    value={joinCode}
+                    onChange={(value) => setJoinCode(value.toUpperCase())}
+                  >
+                    <InputOTPGroup>
+                      {[0, 1, 2, 3, 4, 5].map((i) => (
+                        <InputOTPSlot
+                          key={i}
+                          index={i}
+                          className="h-12 w-12 text-xl uppercase bg-zinc-900 border-zinc-700"
+                        />
+                      ))}
+                    </InputOTPGroup>
+                  </InputOTP>
                 </div>
                 <DialogFooter>
                   <Button variant="ghost" onClick={() => setJoinModalOpen(false)}>Cancel</Button>
@@ -172,45 +234,77 @@ const OrganizationList = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-          </div>
-        </CardHeader>
-        
+          </ButtonGroup>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-2 sm:px-4 py-8 space-y-4">
         {!canCreate && !isSuperAdmin && (
-          <div className="px-6 pb-2">
-            <div className="flex items-start gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10 border-dashed">
-              <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <p className="text-sm font-bold text-white">Public Creation Disabled</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Direct organization creation is restricted. Please email the administrator 
-                  to set up your church or group.
-                </p>
-                <a 
-                  href="mailto:gamitarkin2@gmail.com" 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="inline-block pt-1 text-xs font-bold text-primary hover:underline"
-                >
-                  gamitarkin2@gmail.com →
-                </a>
-              </div>
+          <div className="flex items-start gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10 border-dashed">
+            <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-white">Public Creation Disabled</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Direct organization creation is restricted. Please email the administrator 
+                to set up your church or group.
+              </p>
+              <a 
+                href="mailto:gamitarkin2@gmail.com" 
+                target="_blank" 
+                rel="noreferrer"
+                className="inline-block pt-1 text-xs font-bold text-primary hover:underline"
+              >
+                gamitarkin2@gmail.com →
+              </a>
             </div>
           </div>
         )}
-        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+
           {loading ? (
-            <div className="text-center py-12">Loading organizations...</div>
+            <div className="border border-zinc-800/60 rounded-xl bg-zinc-950/30 overflow-hidden">
+              {/* Header skeleton */}
+              <div className="bg-zinc-800 px-2 sm:px-4 py-3 flex items-center gap-3 sm:gap-4 border-b border-zinc-800/80">
+                <Skeleton className="h-4 w-[38%] max-w-[160px]" />
+                <Skeleton className="h-4 w-[24%] max-w-[110px]" />
+                <Skeleton className="h-4 w-[12%] max-w-[60px]" />
+                <Skeleton className="h-7 w-7 rounded-md ml-auto shrink-0" />
+              </div>
+              {/* Row skeletons */}
+              <div className="divide-y divide-zinc-800/60">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 sm:gap-4 px-2 sm:px-4 py-4">
+                    <div className="w-[38%] space-y-1.5">
+                      <Skeleton className="h-4 w-full max-w-[220px]" />
+                    </div>
+                    <Skeleton className="h-4 w-[24%] max-w-[150px]" />
+                    <Skeleton className="h-4 w-[10%] max-w-[40px]" />
+                    <Skeleton className="h-8 w-8 rounded-full ml-auto shrink-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : filteredOrganizations.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              {searchQuery
-                ? 'No organizations match your search criteria'
-                : 'No organizations available. Create an organization to get started!'}
+            <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-4 border border-zinc-800/60 rounded-xl bg-zinc-950/30">
+              <div className="text-lg px-4">
+                {searchQuery
+                  ? 'No organizations match your search criteria'
+                  : 'No organizations available. Create an organization to get started!'}
+              </div>
+              {!searchQuery && canCreate && (
+                <Button
+                  onClick={() => router.push('/organizations/new')}
+                  className="gap-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Organization
+                </Button>
+              )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table className="table-fixed w-full">
+            <div className="overflow-x-auto border border-zinc-800/60 rounded-xl bg-zinc-950/30">
+              <Table className="table-fixed w-full border-collapse">
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="bg-zinc-800 hover:bg-zinc-800 data-[state=selected]:bg-zinc-800 border-b border-zinc-800/80">
                     <TableHead className="w-[42%] px-2 sm:px-4 text-base">Name</TableHead>
                     <TableHead className="w-[21%] px-2 sm:px-4 text-base">
                       <div className="flex items-center">
@@ -220,7 +314,7 @@ const OrganizationList = () => {
                     </TableHead>
                     <TableHead className="w-[22%] px-2 sm:px-4 text-base">
                       <div className="flex items-center">
-                        <ListMusic className="h-4 w-4" />
+                        <Files className="h-4 w-4" />
                         <span className="sr-only">Groups</span>
                       </div>
                     </TableHead>
@@ -282,7 +376,7 @@ const OrganizationList = () => {
                                   size="icon"
                                   className="h-8 w-8 shrink-0"
                                   title="Delete"
-                                  onClick={() => handleDeleteOrganization(organization.id)}
+                                  onClick={() => setOrgToDelete(organization)}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -297,8 +391,17 @@ const OrganizationList = () => {
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
+
+      <ConfirmDialog
+        open={!!orgToDelete}
+        onOpenChange={(open) => { if (!open) setOrgToDelete(null); }}
+        icon={<Trash2 />}
+        title="Delete Organization"
+        description={<>This will permanently delete <span className="font-bold text-white">"{orgToDelete?.name}"</span> and all its data. This action cannot be undone.</>}
+        confirmLabel="Delete"
+        onConfirm={handleConfirmDeleteOrganization}
+      />
     </div>
   );
 };

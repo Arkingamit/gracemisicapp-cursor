@@ -2,7 +2,9 @@
 import SongForm from '@/components/songs/SongForm';
 import { Card } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ADD_SONG_TOUR_START_KEY, ADD_SONG_TOUR_STORAGE_KEY } from '@/lib/tourSteps';
 
 const SongAdd = () => {
   return (
@@ -77,6 +79,21 @@ This is how we paste
                   <h4 className="font-semibold text-base mb-1">Visibility</h4>
                   <p className="text-muted-foreground leading-relaxed">If you're in an organization, you can choose to make this song private to your team or public for everyone.</p>
                 </div>
+              </div>
+
+              <div className="pt-4 mt-2 border-t border-border">
+                <Button 
+                  variant="outline" 
+                  className="w-full gap-2 border-primary/20 hover:bg-primary/10"
+                  onClick={() => {
+                    localStorage.removeItem(ADD_SONG_TOUR_STORAGE_KEY);
+                    localStorage.setItem(ADD_SONG_TOUR_START_KEY, 'true');
+                    window.location.reload();
+                  }}
+                >
+                  <Sparkles className="w-4 h-4 text-purple-400" />
+                  Take Interactive Tour
+                </Button>
               </div>
                 </AccordionContent>
               </AccordionItem>

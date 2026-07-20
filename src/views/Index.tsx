@@ -4,6 +4,22 @@ import { useRouter } from 'next/navigation';
 import { useSongs } from '@/contexts/SongContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+/** Skeleton grid matching the genre/language card layout (2 cols mobile, 3-4 cols desktop) */
+const GenreGridSkeleton = ({ count }: { count: number }) => (
+  <div className="home-genre-grid">
+    {Array.from({ length: count }).map((_, i) => (
+      <div key={i} className="relative overflow-hidden aspect-[4/3] rounded-xl">
+        <Skeleton className="absolute inset-0 rounded-xl" />
+        <div className="absolute bottom-4 left-4 space-y-2">
+          <Skeleton className="h-4 w-24 bg-white/10" />
+          <Skeleton className="h-3 w-16 bg-white/10" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
 
 /* ──────────────────────────────────────────────
    Known genre → visual mapping.
@@ -148,7 +164,7 @@ const Index = () => {
   return (
     <div className="home-page">
       {/* ─── Search Bar ─── */}
-      <form onSubmit={handleSearch} className="home-search-wrapper">
+      <form onSubmit={handleSearch} className="home-search-wrapper" data-tour="search-bar">
         <div className="home-search-bar">
           <Search className="home-search-icon" size={18} />
           <input
@@ -162,11 +178,11 @@ const Index = () => {
       </form>
 
       {/* ─── Languages ─── */}
-      <section className="home-browse-section">
+      <section className="home-browse-section" data-tour="language-section">
         <h2 className="home-browse-title">Languages</h2>
 
         {loading ? (
-          <div className="text-center py-8 text-zinc-400">Loading languages…</div>
+          <GenreGridSkeleton count={3} />
         ) : languageCards.length === 0 ? (
           <div className="text-center py-8 text-zinc-500">
             No languages found.
@@ -202,11 +218,11 @@ const Index = () => {
       </section>
 
       {/* ─── Browse All ─── */}
-      <section className="home-browse-section mt-8">
+      <section className="home-browse-section mt-8" data-tour="genre-section">
         <h2 className="home-browse-title">Browse All</h2>
 
         {loading ? (
-          <div className="text-center py-8 text-zinc-400">Loading genres…</div>
+          <GenreGridSkeleton count={8} />
         ) : genreCards.length === 0 ? (
           <div className="text-center py-8 text-zinc-500">
             No songs yet. Add some songs to see genres here!

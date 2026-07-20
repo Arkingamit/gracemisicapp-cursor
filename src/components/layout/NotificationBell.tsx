@@ -1,39 +1,47 @@
 'use client';
 
-import { Bell } from 'lucide-react';
-import { useNotifications } from '@/contexts/NotificationContext';
+import { useState } from 'react';
+import { Bell, BellRing } from 'lucide-react';
+import { useNotifications, type Notification } from '@/contexts/NotificationContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 
 export function NotificationBell() {
-  const { notifications, unreadCount, markAsRead, pushPermission, requestPushPermission } = useNotifications();
+  const { notifications, unreadCount, markAsRead, pushPermission, requestPushPermission } =
+    useNotifications();
   const router = useRouter();
+  /** Snapshot of notifications shown while the panel is open (marked read on open). */
+  const [visibleNotifications, setVisibleNotifications] = useState<Notification[]>([]);
 
-  const handleNotificationClick = (notificationId: string, link?: string) => {
-    markAsRead([notificationId]);
-    if (link) {
-      router.push(link);
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      const unread = notifications.filter((n) => !n.isRead);
+      setVisibleNotifications(unread);
+      if (unread.length > 0) {
+        void markAsRead(unread.map((n) => n.id));
+      }
+    } else {
+      setVisibleNotifications([]);
     }
   };
 
-  const handleMarkAllRead = () => {
-    const unreadIds = notifications.filter(n => !n.isRead).map(n => n.id);
-    if (unreadIds.length > 0) {
-      markAsRead(unreadIds);
+  const handleNotificationClick = (notification: Notification) => {
+    if (notification.link) {
+      router.push(notification.link);
     }
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
@@ -43,55 +51,68 @@ export function NotificationBell() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuLabel className="flex justify-between items-center">
+        <DropdownMenuLabel>
           <span>Notifications</span>
-          {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={handleMarkAllRead} className="h-auto p-0 text-xs">
-              Mark all read
-            </Button>
-          )}
         </DropdownMenuLabel>
-        
+
         {pushPermission === 'default' && (
           <>
             <DropdownMenuSeparator />
-            <div className="p-3 bg-zinc-900 rounded-md mx-2 my-1 flex flex-col gap-2">
-              <span className="text-xs text-zinc-400">Enable push notifications to stay updated</span>
-              <Button size="sm" onClick={requestPushPermission} className="w-full text-xs h-7">
-                Enable Notifications
-              </Button>
-            </div>
+            <Alert className="mx-2 my-1 w-auto border-zinc-800 bg-zinc-900 p-3 [&>svg]:left-3 [&>svg]:top-3 [&>svg~*]:pl-6">
+              <BellRing className="h-4 w-4 text-zinc-400" />
+              <AlertTitle className="text-xs text-zinc-200">Stay updated</AlertTitle>
+              <AlertDescription className="text-xs text-zinc-400">
+                Enable push notifications
+              </AlertDescription>
+              <AlertAction className="right-2 top-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={requestPushPermission}
+                  className="h-7 text-xs"
+                >
+                  Enable
+                </Button>
+              </AlertAction>
+            </Alert>
           </>
         )}
 
         <DropdownMenuSeparator />
-        
+
         <div className="max-h-[300px] overflow-y-auto">
-          {notifications.length === 0 ? (
+          {visibleNotifications.length === 0 ? (
             <div className="p-4 text-center text-sm text-zinc-500">
-              No notifications yet
+              No new notifications
             </div>
           ) : (
-            notifications.map((notification) => (
-              <DropdownMenuItem
+            visibleNotifications.map((notification) => (
+              <Alert
                 key={notification.id}
-                className={`flex flex-col items-start p-3 gap-1 cursor-pointer ${
-                  !notification.isRead ? 'bg-zinc-900/50' : ''
-                }`}
-                onClick={() => handleNotificationClick(notification.id, notification.link)}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleNotificationClick(notification)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleNotificationClick(notification);
+                  }
+                }}
+                className="mb-1 w-auto cursor-pointer border-zinc-700/50 bg-zinc-800/60 p-3 transition-colors last:mb-0 hover:bg-zinc-800/80 [&>svg]:left-3 [&>svg]:top-[15px] [&>svg~*]:pl-5"
               >
-                <div className="flex justify-between w-full items-center gap-2">
-                  <span className={`text-sm font-medium ${!notification.isRead ? 'text-white' : 'text-zinc-300'}`}>
-                    {notification.title}
-                  </span>
-                  <span className="text-[10px] text-zinc-500 whitespace-nowrap">
+                <span className="absolute left-3 top-[15px] block h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+                <AlertTitle className="pl-5 pr-16 truncate text-sm font-semibold text-white">
+                  {notification.title}
+                </AlertTitle>
+                <AlertDescription className="pl-5 text-xs leading-relaxed text-zinc-300 line-clamp-2">
+                  {notification.message}
+                </AlertDescription>
+                <AlertAction className="right-3 top-3">
+                  <span className="text-[10px] font-medium text-zinc-500 whitespace-nowrap">
                     {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                   </span>
-                </div>
-                <span className={`text-xs ${!notification.isRead ? 'text-zinc-300' : 'text-zinc-500'} line-clamp-2`}>
-                  {notification.message}
-                </span>
-              </DropdownMenuItem>
+                </AlertAction>
+              </Alert>
             ))
           )}
         </div>

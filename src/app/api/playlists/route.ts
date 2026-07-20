@@ -1,7 +1,17 @@
 
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { PlaylistModel } from '@/server/models/playlist';
 import { getAuthUser, authError } from '@/lib/auth';
+import { validateBody } from '@/server/validation/http';
+import { boundedString, objectIdArray, NAME_MAX } from '@/server/validation/schemas';
+
+const playlistCreateSchema = z
+  .object({
+    name: boundedString(NAME_MAX),
+    songs: objectIdArray.max(2000).optional(),
+  })
+  .strict();
 
 // GET /api/playlists - List current user's playlists
 export async function GET(request: NextRequest) {
@@ -27,10 +37,9 @@ export async function POST(request: NextRequest) {
       return authError('Not authenticated');
     }
 
-    const body = await request.json();
-    if (!body.name || body.name.trim() === '') {
-      return Response.json({ error: 'Playlist name is required' }, { status: 400 });
-    }
+    const parsed = await validateBody(request, playlistCreateSchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     // Check system limits
     const { SettingsModel } = await import('@/server/models/settings');

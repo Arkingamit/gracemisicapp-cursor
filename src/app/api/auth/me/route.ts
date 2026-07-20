@@ -1,6 +1,18 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { UserModel } from '@/server/models/user';
 import { getAuthUser, authError } from '@/lib/auth';
+import { validateBody } from '@/server/validation/http';
+
+const updateProfileSchema = z
+  .object({
+    displayName: z.string().max(120).nullish(),
+    photoURL: z.string().max(2_000_000).nullish(),
+    church: z.string().max(120).nullish(),
+    age: z.coerce.number().int().min(1).max(120).nullish(),
+    instrument: z.string().max(80).nullish(),
+  })
+  .strict();
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,19 +40,11 @@ export async function PATCH(request: NextRequest) {
       return authError('Not authenticated');
     }
 
-    const updates = await request.json();
-    
-    // Only allow specific fields to be updated
-    const allowedUpdates: Record<string, unknown> = {};
-    const editableFields = ['displayName', 'photoURL', 'church', 'age', 'instrument'];
-    
-    editableFields.forEach(field => {
-      if (updates[field] !== undefined) {
-        allowedUpdates[field] = updates[field];
-      }
-    });
+    const parsed = await validateBody(request, updateProfileSchema);
+    if (!parsed.ok) return parsed.response;
 
-    const updatedUser = await UserModel.update(authPayload.userId, allowedUpdates);
+    // Strict schema guarantees only these known fields are present.
+    const updatedUser = await UserModel.update(authPayload.userId, parsed.data);
     
     if (!updatedUser) {
       return authError('Failed to update user', 500);

@@ -1,7 +1,14 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { OrganizationModel } from '@/server/models/organization';
 import { GroupModel } from '@/server/models/group';
 import { getAuthUser } from '@/lib/auth';
+import { validateBody, validateParams, validateQuery } from '@/server/validation/http';
+import { objectId, boundedString } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
+const instrumentBodySchema = z.object({ instrument: boundedString(60) }).strict();
+const instrumentQuerySchema = z.object({ instrument: boundedString(60) }).strict();
 
 // POST /api/organizations/[id]/instruments — Add a new custom instrument
 export async function POST(
@@ -9,7 +16,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
     const auth = getAuthUser(request);
     if (!auth) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -27,12 +36,9 @@ export async function POST(
       return Response.json({ error: 'Forbidden: Manager access required' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { instrument } = body;
-
-    if (!instrument || typeof instrument !== 'string' || instrument.trim() === '') {
-      return Response.json({ error: 'Valid instrument name required' }, { status: 400 });
-    }
+    const parsed = await validateBody(request, instrumentBodySchema);
+    if (!parsed.ok) return parsed.response;
+    const { instrument } = parsed.data;
 
     const cleanInstrument = instrument.trim();
     const currentInstruments = org.customInstruments || [];
@@ -58,7 +64,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
     const auth = getAuthUser(request);
     if (!auth) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -76,12 +84,9 @@ export async function DELETE(
       return Response.json({ error: 'Forbidden: Manager access required' }, { status: 403 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const instrument = searchParams.get('instrument');
-
-    if (!instrument || typeof instrument !== 'string') {
-      return Response.json({ error: 'Valid instrument name required as query param' }, { status: 400 });
-    }
+    const queryCheck = validateQuery(request, instrumentQuerySchema);
+    if (!queryCheck.ok) return queryCheck.response;
+    const { instrument } = queryCheck.data;
 
     // Safety Check: Is it assigned anywhere in the org?
     const inUse = await GroupModel.isInstrumentInUse(id, instrument);

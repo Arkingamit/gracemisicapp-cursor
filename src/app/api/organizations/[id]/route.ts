@@ -1,8 +1,33 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { OrganizationModel } from '@/server/models/organization';
 import { getAuthUser, authError } from '@/lib/auth';
 import { AuditLogModel } from '@/server/models/auditLog';
 import { COLLECTIONS } from '@/server/db/collections';
+import { validateBody, validateParams } from '@/server/validation/http';
+import {
+  boundedString,
+  objectId,
+  objectIdArray,
+  musicianStatsVisibilityEnum,
+  NAME_MAX,
+} from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
+
+const orgUpdateSchema = z
+  .object({
+    name: boundedString(NAME_MAX).optional(),
+    members: objectIdArray.max(5000).optional(),
+    maxMembersLimit: z.number().int().min(0).max(1_000_000).nullable().optional(),
+    maxSongsPerGroupLimit: z.number().int().min(0).max(1_000_000).nullable().optional(),
+    maxCustomSongsLimit: z.number().int().min(0).max(1_000_000).nullable().optional(),
+    customInstruments: z.array(boundedString(60)).max(200).optional(),
+    musicianStatsVisibility: musicianStatsVisibilityEnum.optional(),
+    statsDataRetentionMonths: z.number().int().min(0).max(120).nullable().optional(),
+    joinCode: z.string().trim().max(20).optional(),
+  })
+  .strict();
 
 // GET /api/organizations/[id]
 export async function GET(
@@ -13,7 +38,9 @@ export async function GET(
     const auth = getAuthUser(request);
     if (!auth) return authError('Not authenticated');
 
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
     const organization = await OrganizationModel.findById(id);
     if (!organization) {
       return Response.json({ error: 'Organization not found' }, { status: 404 });
@@ -47,7 +74,9 @@ export async function PUT(
     const auth = getAuthUser(request);
     if (!auth) return authError('Not authenticated');
 
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
     const org = await OrganizationModel.findById(id);
     if (!org) {
       return Response.json({ error: 'Organization not found' }, { status: 404 });
@@ -63,7 +92,9 @@ export async function PUT(
       );
     }
 
-    const updates = await request.json();
+    const parsed = await validateBody(request, orgUpdateSchema);
+    if (!parsed.ok) return parsed.response;
+    const updates = parsed.data;
 
     if (!isSuperAdmin) {
       delete updates.maxMembersLimit;
@@ -98,7 +129,9 @@ export async function DELETE(
     const auth = getAuthUser(request);
     if (!auth) return authError('Not authenticated');
 
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
     const org = await OrganizationModel.findById(id);
     if (!org) {
       return Response.json({ error: 'Organization not found' }, { status: 404 });

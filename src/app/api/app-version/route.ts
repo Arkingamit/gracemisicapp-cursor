@@ -1,9 +1,14 @@
+import { NextRequest } from 'next/server';
 import { SettingsModel } from '@/server/models/settings';
+import { enforceRateLimit } from '@/server/rateLimit';
 
 // Public endpoint — no auth required
 // Mobile apps call this on launch to check if an update is needed
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const limited = await enforceRateLimit(request, { policy: 'public', bucket: 'app-version' });
+    if (limited) return limited;
+
     const settings = await SettingsModel.getSettings();
     
     return Response.json({

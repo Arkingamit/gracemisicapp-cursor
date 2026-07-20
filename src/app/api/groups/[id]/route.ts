@@ -1,9 +1,35 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { GroupModel } from '@/server/models/group';
 import { OrganizationModel } from '@/server/models/organization';
 import { getAuthUser, authError } from '@/lib/auth';
 import { AuditLogModel } from '@/server/models/auditLog';
 import { COLLECTIONS } from '@/server/db/collections';
+import { validateBody, validateParams } from '@/server/validation/http';
+import {
+  boundedString,
+  objectId,
+  objectIdArray,
+  songTransposition,
+  musicianAssignment,
+  songEditStates,
+  NAME_MAX,
+} from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
+
+const groupUpdateSchema = z
+  .object({
+    name: boundedString(NAME_MAX).optional(),
+    description: z.string().max(1000).optional(),
+    members: objectIdArray.max(1000).optional(),
+    organizationId: objectId.optional(),
+    songTranspositions: z.array(songTransposition).max(2000).optional(),
+    songs: objectIdArray.max(2000).optional(),
+    songEditStates: songEditStates.optional(),
+    musicianAssignments: z.array(musicianAssignment).max(1000).optional(),
+  })
+  .strict();
 
 // GET /api/groups/[id]
 export async function GET(
@@ -14,7 +40,9 @@ export async function GET(
     const auth = getAuthUser(request);
     if (!auth) return authError('Not authenticated');
 
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
     const group = await GroupModel.findById(id);
     if (!group) {
       return Response.json({ error: 'Group not found' }, { status: 404 });
@@ -52,7 +80,9 @@ export async function PUT(
     const auth = getAuthUser(request);
     if (!auth) return authError('Not authenticated');
 
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
     const group = await GroupModel.findById(id);
     if (!group) return Response.json({ error: 'Group not found' }, { status: 404 });
 
@@ -70,8 +100,12 @@ export async function PUT(
       );
     }
 
-    const updates = await request.json();
-    const updatedGroup = await GroupModel.update(id, updates);
+    const parsed = await validateBody(request, groupUpdateSchema);
+    if (!parsed.ok) return parsed.response;
+    const updatedGroup = await GroupModel.update(
+      id,
+      parsed.data as Parameters<typeof GroupModel.update>[1]
+    );
 
     // Audit log: Song Set updated
     await AuditLogModel.log({
@@ -98,7 +132,9 @@ export async function DELETE(
     const auth = getAuthUser(request);
     if (!auth) return authError('Not authenticated');
 
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
     const group = await GroupModel.findById(id);
     if (!group) return Response.json({ error: 'Group not found' }, { status: 404 });
 

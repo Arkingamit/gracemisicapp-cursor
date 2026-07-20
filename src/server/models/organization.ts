@@ -69,6 +69,23 @@ export class OrganizationModel {
     }
   }
 
+  // Find an organization by join code (public, limited fields)
+  static async findByJoinCodePublic(joinCode: string): Promise<Partial<Organization> | null> {
+    try {
+      if (!joinCode) return null;
+      const collection = await getCollection(COLLECTIONS.ORGANIZATIONS);
+      // Only return _id, name, and joinCode for security
+      const result = await collection.findOne(
+        { joinCode: joinCode.toUpperCase() },
+        { projection: { _id: 1, name: 1, joinCode: 1 } }
+      );
+      return result ? { _id: result._id, name: result.name, joinCode: result.joinCode } : null;
+    } catch (error) {
+      console.error("Error finding public organization by join code:", error);
+      throw error;
+    }
+  }
+
   // Create a new organization
   static async create(orgInput: OrganizationInput, createdBy: string): Promise<Organization> {
     try {

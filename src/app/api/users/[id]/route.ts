@@ -1,8 +1,17 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { UserModel } from '@/server/models/user';
 import { OrganizationModel } from '@/server/models/organization';
 import { SYSTEM_ADMIN_EMAIL } from '@/lib/constants';
 import { verifyToken } from '@/lib/auth';
+import { validateBody, validateParams } from '@/server/validation/http';
+import { objectId } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
+
+const updateUserSchema = z
+  .object({ aiChatLimitMB: z.coerce.number().min(0).max(100000).nullish() })
+  .strict();
 
 export async function DELETE(
   request: NextRequest,
@@ -26,7 +35,9 @@ export async function DELETE(
       return Response.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
 
     // Check if target user exists
     const targetUser = await UserModel.findById(id);
@@ -88,8 +99,12 @@ export async function PATCH(
       return Response.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
-    const { id } = await params;
-    const updates = await request.json();
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
+
+    const parsed = await validateBody(request, updateUserSchema);
+    if (!parsed.ok) return parsed.response;
 
     // Check if target user exists
     const targetUser = await UserModel.findById(id);
@@ -97,10 +112,9 @@ export async function PATCH(
       return Response.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Only allow specific updates (e.g. aiChatLimitMB)
-    const allowedUpdates: Record<string, any> = {};
-    if (updates.aiChatLimitMB !== undefined) {
-      allowedUpdates.aiChatLimitMB = updates.aiChatLimitMB;
+    const allowedUpdates: Record<string, unknown> = {};
+    if (parsed.data.aiChatLimitMB !== undefined) {
+      allowedUpdates.aiChatLimitMB = parsed.data.aiChatLimitMB;
     }
 
     const updatedUser = await UserModel.update(id, allowedUpdates);

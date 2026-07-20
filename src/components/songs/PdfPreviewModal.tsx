@@ -146,13 +146,20 @@ interface PdfPreviewModalProps {
 const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
     open,
     onOpenChange,
-    songs,
+    songs: songsProp,
     title,
     initialTranspositions = {},
     initialUseFlats = {},
     initialFontSize = 22,
     initialEditStates = {},
 }) => {
+    // Songs passed in may be lite objects without lyrics; hydrate them locally
+    // (fetchSongDetails updates the SongContext, but the prop snapshot never re-renders)
+    const [hydratedSongs, setHydratedSongs] = useState<Record<string, Song>>({});
+    const songs = useMemo(
+        () => songsProp.map(s => (!s.lyrics && hydratedSongs[s.id] ? { ...s, ...hydratedSongs[s.id] } : s)),
+        [songsProp, hydratedSongs]
+    );
     // ─── Global settings ───
     const [fontSize, setFontSize] = useState(initialFontSize);
     const [selectedSongId, setSelectedSongId] = useState<string>('');
@@ -201,6 +208,16 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
         if (open && songs.some(s => !s.lyrics)) {
             setLoadingLyrics(true);
             Promise.all(songs.filter(s => !s.lyrics).map(s => fetchSongDetails(s.id)))
+                .then(fullSongs => {
+                    setHydratedSongs(prev => {
+                        const next = { ...prev };
+                        fullSongs.forEach(fs => {
+                            if (fs?.id) next[fs.id] = fs;
+                        });
+                        return next;
+                    });
+                })
+                .catch(e => console.error('Failed to load song lyrics for PDF preview', e))
                 .finally(() => setLoadingLyrics(false));
         }
     }, [open, songs, fetchSongDetails]);

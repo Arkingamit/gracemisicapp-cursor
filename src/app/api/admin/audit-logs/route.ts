@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { getAuthUser, authError } from '@/lib/auth';
 import { AuditLogModel } from '@/server/models/auditLog';
 import { UserModel } from '@/server/models/user';
@@ -6,6 +7,11 @@ import { SongModel } from '@/server/models/song';
 import { getCollection } from '@/server/db/connection';
 import { COLLECTIONS } from '@/server/db/collections';
 import { ObjectId } from 'mongodb';
+import { validateQuery } from '@/server/validation/http';
+
+const auditLogsQuerySchema = z
+  .object({ limit: z.coerce.number().int().min(1).max(2000).optional() })
+  .strict();
 
 // Resolve a document ID to a human-readable name based on the collection
 async function resolveItemName(collectionName: string, documentId: string): Promise<string | null> {
@@ -48,6 +54,9 @@ export async function GET(request: NextRequest) {
     if (!auth || auth.role !== 'super_admin') {
       return authError('Not authorized');
     }
+
+    const queryCheck = validateQuery(request, auditLogsQuerySchema);
+    if (!queryCheck.ok) return queryCheck.response;
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '200', 10);

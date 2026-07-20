@@ -1,7 +1,13 @@
 
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { PlaylistModel } from '@/server/models/playlist';
 import { getAuthUser, authError } from '@/lib/auth';
+import { validateBody, validateParams } from '@/server/validation/http';
+import { objectId, boundedString, NAME_MAX } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
+const playlistPatchSchema = z.object({ name: boundedString(NAME_MAX).optional() }).strict();
 
 // GET /api/playlists/[id] - Get a specific playlist
 export async function GET(
@@ -14,7 +20,9 @@ export async function GET(
       return authError('Not authenticated');
     }
 
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
     const playlist = await PlaylistModel.findById(id);
 
     if (!playlist) {
@@ -44,7 +52,9 @@ export async function PATCH(
       return authError('Not authenticated');
     }
 
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
     const playlist = await PlaylistModel.findById(id);
 
     if (!playlist) {
@@ -55,8 +65,10 @@ export async function PATCH(
       return Response.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    const body = await request.json();
-    
+    const parsed = await validateBody(request, playlistPatchSchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
+
     // Simple update for now (name)
     if (body.name) {
       const updated = await PlaylistModel.update(id, body.name.trim());
@@ -81,7 +93,9 @@ export async function DELETE(
       return authError('Not authenticated');
     }
 
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
     const playlist = await PlaylistModel.findById(id);
 
     if (!playlist) {

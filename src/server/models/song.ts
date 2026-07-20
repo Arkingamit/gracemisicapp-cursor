@@ -23,19 +23,24 @@ export class SongModel {
       language: doc.language || 'English', // Fallback for legacy data before migration
       lyrics: doc.lyrics,
       createdBy: doc.createdBy,
-      createdAt: doc.createdAt.toISOString(),
-      updatedAt: doc.updatedAt?.toISOString() ?? doc.createdAt.toISOString(),
+      createdAt: typeof doc.createdAt?.toISOString === 'function' ? doc.createdAt.toISOString() : doc.createdAt,
+      updatedAt: typeof doc.updatedAt?.toISOString === 'function' ? doc.updatedAt.toISOString() : (doc.updatedAt ?? (typeof doc.createdAt?.toISOString === 'function' ? doc.createdAt.toISOString() : doc.createdAt)),
       organizationId: doc.organizationId || undefined,
       externalUrl: doc.externalUrl || undefined,
       originalKey: doc.originalKey,
       keywords: doc.keywords,
       format: doc.format || 'auto',
+      status: doc.status || 'approved', // Legacy songs are considered approved
+      verifiedBy: doc.verifiedBy,
+      verifiedAt: typeof doc.verifiedAt?.toISOString === 'function' ? doc.verifiedAt.toISOString() : doc.verifiedAt,
+      aliases: doc.aliases || [],
     };
   }
 
   // Find a song by ID
   static async findById(id: string): Promise<Song | null> {
     try {
+      if (!id || !ObjectId.isValid(id)) return null;
       const collection = await getCollection(COLLECTIONS.SONGS);
       const result = await collection.findOne({ _id: new ObjectId(id) });
       return result ? this.toSong(result as unknown as MongoSong) : null;
@@ -62,6 +67,7 @@ export class SongModel {
         originalKey: songInput.originalKey === '___auto___' || !songInput.originalKey ? detectKey(songInput.lyrics || '') : songInput.originalKey,
         keywords: generateKeywords(songInput.lyrics),
         externalUrl: songInput.externalUrl,
+        status: songInput.status || 'approved', // Default fallback
         createdAt: now,
         updatedAt: now
       };
@@ -200,7 +206,7 @@ export class SongModel {
   static async list(
     page = 1, 
     limit = 20, 
-    filters: { genre?: string, artist?: string, createdBy?: string, userOrgIds?: string[], globalLimit?: number, orgLimit?: number } = {}
+    filters: { genre?: string, artist?: string, createdBy?: string, userOrgIds?: string[], globalLimit?: number, orgLimit?: number, status?: string } = {}
   ): Promise<Song[]> {
     try {
       const collection = await getCollection(COLLECTIONS.SONGS);
@@ -210,13 +216,30 @@ export class SongModel {
       if (filters.genre) baseQuery.genre = { $in: [filters.genre] };
       if (filters.artist) baseQuery.artist = { $regex: filters.artist, $options: 'i' };
       if (filters.createdBy) baseQuery.createdBy = filters.createdBy;
+      
+      // If status filter is provided, apply it. For 'approved', also match missing status (legacy).
+      if (filters.status === 'approved') {
+        baseQuery.$or = [
+          { status: 'approved' },
+          { status: { $exists: false } }
+        ];
+      } else if (filters.status) {
+        baseQuery.status = filters.status;
+      }
 
       // If separate global/org limits are requested
       if (filters.globalLimit !== undefined || filters.orgLimit !== undefined) {
         const gLimit = filters.globalLimit ?? 0;
         const oLimit = filters.orgLimit ?? 1000;
 
-        const globalQuery = { ...baseQuery, $or: [{ organizationId: { $exists: false } }, { organizationId: null }, { organizationId: '' }] };
+        const orgOrCondition = [{ organizationId: { $exists: false } }, { organizationId: null }, { organizationId: '' }];
+        const globalQuery: any = { ...baseQuery };
+        if (globalQuery.$or) {
+          globalQuery.$and = [{ $or: globalQuery.$or }, { $or: orgOrCondition }];
+          delete globalQuery.$or;
+        } else {
+          globalQuery.$or = orgOrCondition;
+        }
         let gCursor = collection.find(globalQuery, { projection: { lyrics: 0 } }).sort({ createdAt: -1 });
         if (gLimit > 0) gCursor = gCursor.limit(gLimit);
         const globalDocs = await gCursor.toArray();
@@ -245,12 +268,19 @@ export class SongModel {
       // Default pagination behavior
       const query: any = { ...baseQuery };
       if (filters.userOrgIds) {
-        query.$or = [
+        const orgOrCondition = [
           { organizationId: { $exists: false } },
           { organizationId: null },
           { organizationId: '' },
           { organizationId: { $in: filters.userOrgIds } }
         ];
+
+        if (query.$or) {
+          query.$and = [{ $or: query.$or }, { $or: orgOrCondition }];
+          delete query.$or;
+        } else {
+          query.$or = orgOrCondition;
+        }
       }
       
       let cursor = collection
@@ -267,6 +297,93 @@ export class SongModel {
       return results.map(doc => this.toSong(doc as unknown as MongoSong));
     } catch (error) {
       console.error("Error listing songs:", error);
+      throw error;
+    }
+  }
+
+  // Search approved global library songs by title, artist, or alias
+  static async searchLibrary(query: string, limit = 25): Promise<{ id: string; title: string; artist?: string; aliases?: string[] }[]> {
+    try {
+      const trimmed = query.trim();
+      if (!trimmed) return [];
+
+      const collection = await getCollection(COLLECTIONS.SONGS);
+      const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escaped, 'i');
+
+      const results = await collection
+        .find(
+          {
+            $and: [
+              {
+                $or: [
+                  { status: 'approved' },
+                  { status: { $exists: false } },
+                ],
+              },
+              {
+                $or: [
+                  { organizationId: { $exists: false } },
+                  { organizationId: null },
+                  { organizationId: '' },
+                ],
+              },
+              {
+                $or: [
+                  { title: regex },
+                  { artist: regex },
+                  { aliases: regex },
+                ],
+              },
+            ],
+          },
+          { projection: { title: 1, artist: 1, aliases: 1 } }
+        )
+        .sort({ title: 1 })
+        .limit(limit)
+        .toArray();
+
+      return results.map((doc) => ({
+        id: doc._id.toString(),
+        title: doc.title,
+        artist: doc.artist || undefined,
+        aliases: doc.aliases || [],
+      }));
+    } catch (error) {
+      console.error('Error searching song library:', error);
+      throw error;
+    }
+  }
+
+  /** Lightweight lookup by ids (preserves input order) */
+  static async findByIdsLite(ids: string[]): Promise<{ id: string; title: string; artist?: string; aliases?: string[] }[]> {
+    try {
+      const unique = Array.from(new Set(ids.filter((id) => ObjectId.isValid(id))));
+      if (!unique.length) return [];
+
+      const collection = await getCollection(COLLECTIONS.SONGS);
+      const results = await collection
+        .find(
+          { _id: { $in: unique.map((id) => new ObjectId(id)) } },
+          { projection: { title: 1, artist: 1, aliases: 1 } }
+        )
+        .toArray();
+
+      const byId = new Map(
+        results.map((doc) => [
+          doc._id.toString(),
+          {
+            id: doc._id.toString(),
+            title: doc.title as string,
+            artist: (doc.artist as string) || undefined,
+            aliases: (doc.aliases as string[]) || [],
+          },
+        ])
+      );
+
+      return ids.map((id) => byId.get(id)).filter((s): s is NonNullable<typeof s> => !!s);
+    } catch (error) {
+      console.error('Error finding songs by ids:', error);
       throw error;
     }
   }
@@ -294,7 +411,7 @@ export class SongModel {
       }
       
       const results = await collection
-        .find(query, { projection: { title: 1, artist: 1, genre: 1, originalKey: 1, keywords: 1 } })
+        .find(query, { projection: { title: 1, artist: 1, genre: 1, originalKey: 1, keywords: 1, language: 1, aliases: 1, status: 1 } })
         .toArray();
       
       return results.map(doc => ({
@@ -303,7 +420,10 @@ export class SongModel {
         artist: doc.artist,
         genre: doc.genre,
         originalKey: doc.originalKey,
-        keywords: doc.keywords || []
+        keywords: doc.keywords || [],
+        language: doc.language || 'English',
+        aliases: doc.aliases || [],
+        status: doc.status || 'approved', // default to approved for legacy docs
       }));
     } catch (error) {
       console.error("Error getting song catalog:", error);

@@ -1,7 +1,15 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { OrganizationModel } from '@/server/models/organization';
 import { UserModel } from '@/server/models/user';
 import { getAuthUser, authError } from '@/lib/auth';
+import { validateBody, validateParams } from '@/server/validation/http';
+import { objectId } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
+const appointEditorSchema = z
+  .object({ userId: objectId, role: z.enum(['editor', 'user']).optional() })
+  .strict();
 
 // POST /api/organizations/[id]/appoint-editor — Manager appoints an editor
 export async function POST(
@@ -14,13 +22,13 @@ export async function POST(
       return authError('Not authenticated');
     }
 
-    const { id: orgId } = await params;
-    const body = await request.json();
-    const { userId, role } = body; // role should be 'editor' or 'user' (to revoke)
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id: orgId } = parsedParams.data;
 
-    if (!userId || typeof userId !== 'string') {
-      return Response.json({ error: 'User ID is required' }, { status: 400 });
-    }
+    const parsed = await validateBody(request, appointEditorSchema);
+    if (!parsed.ok) return parsed.response;
+    const { userId, role } = parsed.data; // role should be 'editor' or 'user' (to revoke)
 
     // Verify organization exists
     const organization = await OrganizationModel.findById(orgId);

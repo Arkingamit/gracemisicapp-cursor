@@ -82,29 +82,33 @@ const AddToGroupModal = ({ songId, songTitle, isOpen, onClose }: AddToGroupModal
     }
     
     setIsSubmitting(true);
-    try {
-      // Add song to each selected group
-      const promises = Array.from(selectedGroups).map(groupId => 
-        addSongToGroup(groupId, songId)
-      );
-      
-      await Promise.all(promises);
-      
+    const groupIds = Array.from(selectedGroups);
+    // Optimistic addSongToGroup updates each set instantly — close the modal
+    // right away so the user isn't waiting on the network.
+    onClose();
+    setIsSubmitting(false);
+
+    const results = await Promise.allSettled(
+      groupIds.map((groupId) => addSongToGroup(groupId, songId))
+    );
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    const succeeded = groupIds.length - failed;
+
+    if (succeeded > 0 && failed === 0) {
       toast({
         title: "Song added successfully",
-        description: `"${songTitle}" has been added to ${selectedGroups.size} ${selectedGroups.size === 1 ? 'group' : 'groups'}.`
+        description: `"${songTitle}" has been added to ${succeeded} ${succeeded === 1 ? 'group' : 'groups'}.`,
       });
-      
-      onClose();
-    } catch (error) {
-      console.error("Failed to add song to groups:", error);
+    } else if (failed > 0) {
+      // Per-group rollback toasts already fire from addSongToGroup; add a summary.
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add song to selected groups.",
-        variant: "destructive"
+        title: succeeded > 0 ? "Partially added" : "Couldn't add song",
+        description:
+          succeeded > 0
+            ? `Added to ${succeeded} group(s); ${failed} failed and were restored.`
+            : "The song was not added. Any optimistic changes were rolled back.",
+        variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
   

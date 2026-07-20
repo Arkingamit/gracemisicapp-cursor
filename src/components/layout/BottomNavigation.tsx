@@ -2,7 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Music, Heart, Library, Users, Building } from 'lucide-react';
+import { Music, Heart, Library, Users, Files } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const BottomNavigation = () => {
@@ -10,11 +10,11 @@ const BottomNavigation = () => {
   const { currentUser } = useAuth();
 
   const navItems = [
-    { name: 'Songs', path: '/songs', icon: Music },
-    { name: 'Like', path: '/favorites', icon: Heart },
-    { name: 'Library', path: '/playlists', icon: Library },
-    { name: 'Sets', path: '/groups', icon: Building },
-    { name: 'Org', path: '/organizations', icon: Users },
+    { name: 'Songs', path: '/songs', icon: Music, tour: 'nav-songs' },
+    { name: 'Like', path: '/favorites', icon: Heart, tour: 'nav-favorites' },
+    { name: 'Collection', path: '/playlists', icon: Library, tour: 'nav-library' },
+    { name: 'Sets', path: '/groups', icon: Files, tour: 'nav-sets' },
+    { name: 'Org', path: '/organizations', icon: Users, tour: 'nav-orgs' },
   ];
 
   const isActive = (path: string) => {
@@ -32,6 +32,7 @@ const BottomNavigation = () => {
             <Link
               key={item.path}
               href={item.path}
+              data-tour={item.tour}
               className={`inline-flex flex-col items-center justify-center transition-all duration-300 group ${active ? 'text-primary' : 'text-zinc-500'
                 }`}
             >

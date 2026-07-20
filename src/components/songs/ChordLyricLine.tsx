@@ -83,6 +83,7 @@ interface ChordLyricLineProps {
   perChordColors?: Record<number, string>;
   chordHighlight?: boolean;
   lightTheme?: boolean;
+  noWrap?: boolean;
 }
 
 interface ColoredChar {
@@ -167,6 +168,7 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
   perChordColors = {},
   chordHighlight = false,
   lightTheme = false,
+  noWrap = false,
 }) => {
   const { lyrics, chords } = parsedLine;
   const [editingChordIdx, setEditingChordIdx] = useState<number | null>(null);
@@ -571,7 +573,7 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
     }
 
     return (
-      <div ref={containerRef} className={`whitespace-pre-wrap relative ${className}`} style={{ fontSize: `${fontSize}px`, lineHeight: 1.6 }}>
+      <div ref={containerRef} className={`${noWrap ? 'whitespace-pre' : 'whitespace-pre-wrap'} relative ${className}`} style={{ fontSize: `${fontSize}px`, lineHeight: 1.6 }}>
         {chordColorTarget && (
           <InlineColorPicker
             currentColor={perChordColors[chordColorTarget.chordIdx] || effectiveChordColor || ''}
@@ -582,7 +584,7 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
             }}
           />
         )}
-        <div className="flex flex-wrap items-center">
+        <div className={`flex items-center ${noWrap ? 'flex-nowrap w-max' : 'flex-wrap'}`}>
           {tokens}
         </div>
       </div>
@@ -626,7 +628,7 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
             ref={lyricContentEditableRef}
             contentEditable
             suppressContentEditableWarning
-            className={`w-full font-lyric block outline-none rounded px-1 py-0.5 text-foreground transition-all duration-150 ${
+            className={`w-full font-lyric block outline-none rounded px-1 py-0.5 text-foreground transition-all duration-150 editable-lyric-line ${
               isLyricFocused || showHintBorder 
                 ? 'editing-lyric border border-primary/50 bg-background' 
                 : 'hover:bg-primary/5 cursor-text border border-transparent'
@@ -656,7 +658,7 @@ const ChordLyricLine: React.FC<ChordLyricLineProps> = ({
           />
         </div>
       ) : (
-        <div className="flex flex-wrap">
+        <div className={`flex ${noWrap ? 'flex-nowrap w-max' : 'flex-wrap'}`}>
           {segments.map((seg, i) => (
             <span key={i} className="inline-block whitespace-pre">
               {hasChords && renderChordPart(seg.chordPart, seg.chordIndices, fontSize)}

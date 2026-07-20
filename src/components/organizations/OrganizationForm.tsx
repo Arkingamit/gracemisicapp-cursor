@@ -81,7 +81,8 @@ const OrganizationForm = ({ organization, onSuccess }: OrganizationFormProps) =>
         if (onSuccess) {
           onSuccess(organizationId);
         } else {
-          router.push(`/organizations/view?id=${organizationId}`);
+          // Redirect to create a song set (group) for this new organization as part of onboarding
+          router.push(`/groups/new?organizationId=${organizationId}`);
         }
       }
     } catch (error) {

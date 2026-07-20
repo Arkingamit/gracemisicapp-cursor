@@ -5,22 +5,33 @@ import { COLLECTIONS } from '../db/collections';
 import { User, MongoUser, UserRole } from '@/lib/types';
 import bcrypt from 'bcryptjs';
 import { SYSTEM_ADMIN_EMAIL } from '@/lib/constants';
+import { derivePrimaryRole, normalizeRoles, sanitizeRolesInput } from '@/lib/roles';
 
 export class UserModel {
   static toUser(doc: MongoUser): User {
+    const roles = normalizeRoles({
+      role: doc.role,
+      roles: doc.roles,
+    });
+    const role = derivePrimaryRole(roles);
+
     return {
       id: doc._id.toString(),
       email: doc.email,
       username: doc.username || doc.email, // Fallback to email if username not set
       name: doc.name,
-      role: doc.role,
+      role,
+      roles,
       createdAt: doc.createdAt.toISOString(),
       displayName: doc.displayName || doc.name, // Fallback to name if displayName not set
       photoURL: doc.photoURL || '', // Fallback to empty string if photoURL not set
       aiChatLimitMB: doc.aiChatLimitMB,
       church: doc.church,
       age: doc.age,
-      instrument: doc.instrument
+      instrument: doc.instrument,
+      moderationStatus: doc.moderationStatus || 'ok',
+      spamReportCount: doc.spamReportCount || 0,
+      moderationReason: doc.moderationReason,
     };
   }
 
@@ -39,6 +50,7 @@ export class UserModel {
   // Find user by ID
   static async findById(id: string): Promise<User | null> {
     try {
+      if (!id || !ObjectId.isValid(id)) return null;
       const collection = await getCollection(COLLECTIONS.USERS);
       const result = await collection.findOne({ _id: new ObjectId(id) });
       return result ? this.toUser(result as unknown as MongoUser) : null;
@@ -65,6 +77,7 @@ export class UserModel {
         name: username,
         passwordHash,
         role: finalRole as UserRole,
+        roles: [finalRole as UserRole],
         createdAt: new Date(),
         username,
         displayName: username,
@@ -79,6 +92,7 @@ export class UserModel {
         username,
         name: username,
         role: finalRole as UserRole,
+        roles: [finalRole as UserRole],
         createdAt: newUser.createdAt.toISOString(),
         displayName: username,
         photoURL: ''
@@ -180,8 +194,8 @@ export class UserModel {
     }
   }
 
-  // Update user role (admin function)
-  static async updateRole(id: string, role: UserRole): Promise<User | null> {
+  // Update user role (admin function) — accepts a single role or multi-role list
+  static async updateRole(id: string, roleOrRoles: UserRole | UserRole[]): Promise<User | null> {
     try {
       const collection = await getCollection(COLLECTIONS.USERS);
       const user = await this.findById(id);
@@ -190,9 +204,14 @@ export class UserModel {
          throw new Error("Cannot change role of system admin account");
       }
 
+      const roles = sanitizeRolesInput(
+        Array.isArray(roleOrRoles) ? roleOrRoles : [roleOrRoles]
+      );
+      const role = derivePrimaryRole(roles);
+
       await collection.updateOne(
         { _id: new ObjectId(id) },
-        { $set: { role } }
+        { $set: { role, roles } }
       );
       
       return await this.findById(id);

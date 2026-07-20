@@ -1,7 +1,12 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { OrganizationModel } from '@/server/models/organization';
 import { JoinRequestModel } from '@/server/models/joinRequest';
 import { getAuthUser, authError } from '@/lib/auth';
+import { validateParams } from '@/server/validation/http';
+import { objectId } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
 
 export async function GET(
   request: NextRequest,
@@ -11,7 +16,9 @@ export async function GET(
     const auth = getAuthUser(request);
     if (!auth) return authError('Not authenticated');
 
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
 
     const org = await OrganizationModel.findById(id);
     if (!org) return Response.json({ error: 'Organization not found' }, { status: 404 });

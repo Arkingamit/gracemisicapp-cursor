@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, authFetch } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { NotificationBell } from './NotificationBell';
 import { FeedbackModal } from '../common/FeedbackModal';
@@ -15,13 +15,41 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, X, User, LogOut, Settings, Music, Users, Building2, Heart, ListMusic, Info, Plus, MessageSquare } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, Music, Users, Heart, ListMusic, Info, Plus, MessageSquare, ListChecks, Files } from 'lucide-react';
+import { hasAnyRole } from '@/lib/roles';
+
 const Navigation = () => {
   const { currentUser, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (currentUser && hasAnyRole(currentUser, 'editor', 'verifier')) {
+      const fetchPendingCount = async () => {
+        try {
+          const res = await authFetch('/api/songs?status=pending&limit=1000');
+          if (res.ok) {
+            const data = await res.json();
+            setPendingCount(data.songs?.length || 0);
+          }
+        } catch (e) {
+          console.error("Failed to fetch pending songs count", e);
+        }
+      };
+      fetchPendingCount();
+
+      // Listen for custom event from Verification Queue
+      const handleSongProcessed = () => {
+        setPendingCount((prev) => Math.max(0, prev - 1));
+      };
+      window.addEventListener('pendingSongProcessed', handleSongProcessed);
+      return () => {
+        window.removeEventListener('pendingSongProcessed', handleSongProcessed);
+      };
+    }
+  }, [currentUser]);
 
   const handleLogout = async () => {
     try {
@@ -46,18 +74,15 @@ const Navigation = () => {
   };
 
   const navLinks = [
-    { name: 'Songs', path: '/songs', icon: <Music className="h-4 w-4" /> },
-    { name: 'Favorites', path: '/favorites', icon: <Heart className="h-4 w-4" /> },
-    { name: 'Collections', path: '/playlists', icon: <ListMusic className="h-4 w-4" /> },
-    { name: 'Sets', path: '/groups', icon: <Building2 className="h-4 w-4" /> },
-    { name: 'Orgs', path: '/organizations', icon: <Users className="h-4 w-4" /> },
+    { name: 'Songs', path: '/songs', icon: <Music className="h-4 w-4" />, tour: 'nav-songs' },
+    { name: 'Favorites', path: '/favorites', icon: <Heart className="h-4 w-4" />, tour: 'nav-favorites' },
+    { name: 'Collections', path: '/playlists', icon: <ListMusic className="h-4 w-4" />, tour: 'nav-library' },
+    { name: 'Sets', path: '/groups', icon: <Files className="h-4 w-4" />, tour: 'nav-sets' },
+    { name: 'Orgs', path: '/organizations', icon: <Users className="h-4 w-4" />, tour: 'nav-orgs' },
   ];
   return (
     <>
-      <FeedbackModal 
-        isOpen={isFeedbackOpen} 
-        onClose={() => setIsFeedbackOpen(false)} 
-      />
+
       <header className="absolute top-0 left-0 right-0 z-50 w-full md:pt-4 md:px-4 pointer-events-none">
         <div className="w-full md:max-w-5xl mx-auto bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/100 border-b md:border border-border/9 md:shadow-md md:rounded-full pointer-events-auto  ">
           <div className="container mx-auto px-4 md:px-6 flex justify-between items-center h-16">
@@ -66,16 +91,17 @@ const Navigation = () => {
                 <div className="h-10 w-10 flex items-center justify-center shrink-0">
                   <img src="/lovable-uploads/gracemain.png" alt="Grace Music Logo" className="max-h-full max-w-full object-contain" />
                 </div>
-                <span className="whitespace-nowrap text-zinc-100 group-hover:text-primary transition-colors duration-200">Grace Music</span>
+                <span className="md:hidden lg:block whitespace-nowrap text-zinc-100 group-hover:text-primary transition-colors duration-200">Grace Music</span>
               </Link>
             </div>
           
-          <nav className="hidden md:flex items-center justify-center gap-6 md:flex-auto">
+          <nav className="hidden md:flex items-center justify-center gap-2 lg:gap-6 md:flex-auto">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 href={link.path}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors text-sm font-medium ${
+                data-tour={link.tour}
+                className={`flex items-center gap-1 lg:gap-1.5 px-2 lg:px-3 py-1.5 rounded-md transition-colors text-xs lg:text-sm font-medium ${
                   isActive(link.path)
                     ? 'bg-white/10 text-white'
                     : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-100'
@@ -91,10 +117,12 @@ const Navigation = () => {
           
           {currentUser ? (
             <div className="flex items-center gap-2">
-              <NotificationBell />
+              <div data-tour="notification-bell">
+                <NotificationBell />
+              </div>
               <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-auto rounded-full flex items-center gap-2 pl-1 pr-3 md:pr-4 border border-transparent md:border-border/50 hover:bg-zinc-800/50 transition-all hover:border-zinc-700">
+                <Button data-tour="profile-menu" variant="ghost" className="relative h-10 w-auto rounded-full flex items-center gap-2 pl-1 pr-3 md:pr-4 border border-transparent md:border-border/50 hover:bg-zinc-800/50 transition-all hover:border-zinc-700">
                   <div className="relative">
                     <Avatar className="h-8 w-8 ring-1 ring-white/20 shadow-sm transition-all group-hover:ring-white/40">
                       <AvatarImage src={currentUser.photoURL || ''} alt={currentUser.displayName || currentUser.name} />
@@ -102,9 +130,15 @@ const Navigation = () => {
                         {getInitials(currentUser.displayName || currentUser.name || 'User')}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-zinc-950 rounded-full" />
+                    {pendingCount > 0 ? (
+                      <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white border border-zinc-950 shadow-sm animate-pulse">
+                        {pendingCount > 99 ? '99+' : pendingCount}
+                      </span>
+                    ) : (
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-zinc-950 rounded-full" />
+                    )}
                   </div>
-                  <span className="text-sm font-medium hidden md:block text-zinc-200">
+                  <span className="text-sm font-medium hidden lg:block text-zinc-200">
                     {currentUser.displayName?.split(' ')[0] || currentUser.name?.split(' ')[0] || 'User'}
                   </span>
                 </Button>
@@ -125,17 +159,25 @@ const Navigation = () => {
                   <Info className="mr-2 h-4 w-4" />
                   <span>About & Contact</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsFeedbackOpen(true)}>
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  <span>Give Feedback</span>
+
+                <DropdownMenuItem data-tour="add-song" onClick={() => router.push('/songs/new')}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span>Add Song</span>
                 </DropdownMenuItem>
-                {currentUser.role !== 'user' && (
-                  <DropdownMenuItem onClick={() => router.push('/songs/new')}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    <span>Add Song</span>
+                {hasAnyRole(currentUser, 'verifier', 'editor') && (
+                  <DropdownMenuItem onClick={() => router.push('/verification-queue')} className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <ListChecks className="mr-2 h-4 w-4" />
+                      <span>Pending Songs</span>
+                    </div>
+                    {pendingCount > 0 && (
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white shadow-sm">
+                        {pendingCount > 99 ? '99+' : pendingCount}
+                      </span>
+                    )}
                   </DropdownMenuItem>
                 )}
-                {currentUser.role === 'super_admin' && (
+                {hasAnyRole(currentUser, 'super_admin') && (
                   <DropdownMenuItem onClick={() => router.push('/admin')}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Admin Dashboard</span>

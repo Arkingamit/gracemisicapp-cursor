@@ -7,6 +7,12 @@ import { OrganizationModel } from '@/server/models/organization';
 import { SettingsModel } from '@/server/models/settings';
 import { AuditLogModel } from '@/server/models/auditLog';
 import { appCache } from '@/server/cache';
+import { z } from 'zod';
+import { validateBody, validateParams } from '@/server/validation/http';
+import { objectId } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
+const copyToOrgSchema = z.object({ organizationId: objectId }).strict();
 
 export async function POST(
   request: NextRequest,
@@ -18,16 +24,13 @@ export async function POST(
       return authError('Not authenticated');
     }
 
-    const { id } = await params;
-    const body = await request.json();
-    const { organizationId } = body;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
 
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: 'organizationId is required' },
-        { status: 400 }
-      );
-    }
+    const parsed = await validateBody(request, copyToOrgSchema);
+    if (!parsed.ok) return parsed.response;
+    const { organizationId } = parsed.data;
 
     // Verify the song exists
     const existingSong = await SongModel.findById(id);

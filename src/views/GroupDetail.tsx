@@ -10,10 +10,15 @@ import { Badge } from '@/components/ui/badge';
 import GroupSongList from '@/components/groups/GroupSongList';
 import AddSongsToGroup from '@/components/groups/AddSongsToGroup';
 import PdfPreviewModal from '@/components/songs/PdfPreviewModal';
-import { Plus, Building, FileText, ChevronLeft, History, ListMusic, Edit2, Share2, MessageCircle } from 'lucide-react';
+import { Plus, Users, FileText, ChevronLeft, History, ListMusic, Edit2, Share2, MessageCircle } from 'lucide-react';
 import { useSongs } from '@/contexts/SongContext';
 import MusicianAssignmentPanel from '@/components/groups/MusicianAssignmentPanel';
 import { useToast } from '@/hooks/use-toast';
+import {
+  GROUP_TOUR_START_KEY,
+  GROUP_TOUR_STORAGE_KEY,
+  GROUP_TOUR_READY_EVENT,
+} from '@/lib/tourSteps';
 
 const GroupDetail = () => {
   const searchParams = useSearchParams();
@@ -59,6 +64,21 @@ const GroupDetail = () => {
     }
     return () => { isMounted = false; };
   }, [id, getGroup, router, loading, currentUser]);
+
+  // Start interactive set tour only after the set has ≥1 song (PDF / transpose / etc. are visible then)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !group) return;
+    if (group.songs.length < 1) return;
+    if (localStorage.getItem(GROUP_TOUR_STORAGE_KEY) === 'true') return;
+    if (localStorage.getItem(GROUP_TOUR_START_KEY) !== 'true') return;
+
+    // Let the song list render export/transpose controls first
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event(GROUP_TOUR_READY_EVENT));
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [group?.id, group?.songs.length]);
 
   if (loading) return <div className="min-h-screen bg-transparent flex items-center justify-center text-zinc-400">Loading song set...</div>;
   if (!group) return null;
@@ -147,7 +167,7 @@ const GroupDetail = () => {
                 </Badge>
                 {organization?.name && (
                   <Badge variant="secondary" className="bg-zinc-800 text-zinc-300 border-none uppercase tracking-widest text-[10px] font-black px-3 py-1 rounded-full cursor-pointer hover:bg-zinc-700 flex items-center gap-1" onClick={() => router.push(`/organizations/view?id=${group.organizationId}`)}>
-                    <Building className="w-3 h-3" /> {organization.name}
+                    <Users className="w-3 h-3" /> {organization.name}
                   </Badge>
                 )}
               </div>
@@ -218,6 +238,7 @@ const GroupDetail = () => {
                   className="gap-2 rounded-full border-zinc-800 bg-zinc-900/60 text-zinc-100 hover:bg-zinc-800 hover:text-white transition-all font-medium"
                   onClick={handleShare}
                   title="Copy link to clipboard"
+                  data-tour="set-share-link"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Share Link</span>
@@ -228,6 +249,7 @@ const GroupDetail = () => {
                   className="gap-2 rounded-full border-zinc-800 bg-green-900/20 text-green-400 hover:bg-green-900/40 hover:text-green-300 transition-all font-medium"
                   onClick={handleWhatsAppShare}
                   title="Share to WhatsApp"
+                  data-tour="set-share-whatsapp"
                 >
                   <MessageCircle className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">WhatsApp</span>
@@ -241,6 +263,7 @@ const GroupDetail = () => {
                 variant="outline" 
                 size="sm" 
                 className="gap-2 rounded-full border-zinc-800 bg-zinc-900/60 text-zinc-100 hover:bg-zinc-800 hover:text-white transition-all font-medium"
+                data-tour="set-add-songs"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Songs</span>
@@ -253,6 +276,7 @@ const GroupDetail = () => {
                 size="sm"
                 className="gap-2 rounded-full border-zinc-800 bg-zinc-900/60 text-zinc-100 hover:bg-zinc-800 hover:text-white transition-all font-medium"
                 onClick={handleExportPdf}
+                data-tour="set-export-pdf"
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>Export PDF</span>
@@ -272,14 +296,16 @@ const GroupDetail = () => {
         ) : (
           isMember ? (
             <div className="space-y-4 mx-4 sm:mx-0">
-              {/* Only show musician assignments to org managers/editors and super admins */}
-              {canEditSongs && (
-                <MusicianAssignmentPanel
-                  groupId={group.id}
-                  organizationId={group.organizationId}
-                  assignments={group.musicianAssignments || []}
-                  canEdit={canEditSongs}
-                />
+              {/* Show musician assignments to set owners and org managers/editors */}
+              {(canEditSongs || isOwner) && (
+                <div data-tour="set-musicians">
+                  <MusicianAssignmentPanel
+                    groupId={group.id}
+                    organizationId={group.organizationId}
+                    assignments={group.musicianAssignments || []}
+                    canEdit={!!(canEditSongs || isOwner)}
+                  />
+                </div>
               )}
               
               <GroupSongList

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { usePlaylists } from '@/contexts/PlaylistContext';
 import { useSongs } from '@/contexts/SongContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -17,12 +17,23 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogMedia,
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { Input } from '@/components/ui/input';
 import TransferToSongSetDialog from '@/components/groups/TransferToSongSetDialog';
 import PdfPreviewModal from '@/components/songs/PdfPreviewModal';
+import { DEFAULT_PAGE_SIZE, getPageNumbers } from '@/lib/pagination';
 
 export default function PlaylistsPage() {
   const { playlists, deletePlaylist, createPlaylist, loading } = usePlaylists();
@@ -30,6 +41,7 @@ export default function PlaylistsPage() {
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [pdfPlaylistId, setPdfPlaylistId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const router = useRouter();
 
   const handleCreate = async () => {
@@ -41,6 +53,17 @@ export default function PlaylistsPage() {
 
   const getPlaylistSongs = (songIds: string[]) => {
     return songs.filter(s => songIds.includes(s.id));
+  };
+
+  const totalPages = Math.max(1, Math.ceil(playlists.length / DEFAULT_PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedPlaylists = useMemo(
+    () => playlists.slice((safePage - 1) * DEFAULT_PAGE_SIZE, safePage * DEFAULT_PAGE_SIZE),
+    [playlists, safePage]
+  );
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(totalPages, page)));
   };
 
   return (
@@ -137,91 +160,129 @@ export default function PlaylistsPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {playlists.map((playlist) => {
-              const playlistSongs = getPlaylistSongs(playlist.songs);
-              return (
-                <Card key={playlist.id} className="group overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 bg-zinc-900/40 backdrop-blur-xl border-zinc-800 rounded-2xl">
-                  <CardHeader className="pb-3 flex-row items-start justify-between space-y-0">
-                    <div className="space-y-1">
-                      <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors line-clamp-1">
-                        {playlist.name}
-                      </CardTitle>
-                      <CardDescription className="flex items-center gap-2 text-zinc-400">
-                        <Music className="w-3.5 h-3.5 text-zinc-500" />
-                        {playlistSongs.length} {playlistSongs.length === 1 ? 'song' : 'songs'}
-                      </CardDescription>
-                    </div>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paginatedPlaylists.map((playlist) => {
+                const playlistSongs = getPlaylistSongs(playlist.songs);
+                return (
+                  <Card key={playlist.id} className="group overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 bg-zinc-900/40 backdrop-blur-xl border-zinc-800 rounded-2xl">
+                    <CardHeader className="pb-3 flex-row items-start justify-between space-y-0">
+                      <div className="space-y-1">
+                        <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors line-clamp-1">
+                          {playlist.name}
+                        </CardTitle>
+                        <CardDescription className="flex items-center gap-2 text-zinc-400">
+                          <Music className="w-3.5 h-3.5 text-zinc-500" />
+                          {playlistSongs.length} {playlistSongs.length === 1 ? 'song' : 'songs'}
+                        </CardDescription>
+                      </div>
+                      
+                      <div className="flex items-center gap-0.5">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-full">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent size="sm" className="bg-zinc-900 border border-zinc-800 text-white">
+                            <AlertDialogHeader>
+                              <AlertDialogMedia className="bg-red-950/60 text-red-400">
+                                <Trash2 />
+                              </AlertDialogMedia>
+                              <AlertDialogTitle>Delete Collection</AlertDialogTitle>
+                              <AlertDialogDescription className="text-zinc-400">
+                                Are you sure you want to delete <span className="font-bold text-white">"{playlist.name}"</span>? 
+                                This collection will be removed but the songs will remain in your library.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700">Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                className="bg-red-500 hover:bg-red-600 text-white"
+                                onClick={() => deletePlaylist(playlist.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+
+                        <TransferToSongSetDialog
+                          songIds={playlist.songs}
+                          collectionName={playlist.name}
+                          trigger={
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-primary hover:bg-primary/10 rounded-full" title="Transfer to Song Set">
+                              <ArrowRightLeft className="w-4 h-4" />
+                            </Button>
+                          }
+                        />
+
+                        {playlistSongs.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-full"
+                            title="Export as PDF"
+                            onClick={() => setPdfPlaylistId(playlist.id)}
+                          >
+                            <FileText className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </CardHeader>
                     
-                    <div className="flex items-center gap-0.5">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-full">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-zinc-900 border border-zinc-800 text-white">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Collection</AlertDialogTitle>
-                            <AlertDialogDescription className="text-zinc-400">
-                              Are you sure you want to delete <span className="font-bold text-white">"{playlist.name}"</span>? 
-                              This collection will be removed but the songs will remain in your library.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel className="bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700">Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              className="bg-red-500 hover:bg-red-600 text-white"
-                              onClick={() => deletePlaylist(playlist.id)}
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                    <CardFooter className="pt-2">
+                      <Button asChild variant="outline" className="w-full text-xs h-8 rounded-full border-zinc-850 bg-zinc-900/60 text-zinc-100 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300 font-medium">
+                        <Link href={`/playlists/view?id=${playlist.id}`} className="flex items-center justify-center">
+                          Open Collection
+                          <ChevronRight className="w-3 h-3 ml-1" />
+                        </Link>
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                );
+              })}
+            </div>
 
-                      {/* Transfer to Song Set button */}
-                      <TransferToSongSetDialog
-                        songIds={playlist.songs}
-                        collectionName={playlist.name}
-                        trigger={
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-primary hover:bg-primary/10 rounded-full" title="Transfer to Song Set">
-                            <ArrowRightLeft className="w-4 h-4" />
-                          </Button>
-                        }
-                      />
-
-                      {/* PDF Export button */}
-                      {playlistSongs.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-full"
-                          title="Export as PDF"
-                          onClick={() => setPdfPlaylistId(playlist.id)}
+            {totalPages > 1 && (
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      className={`cursor-pointer select-none ${safePage <= 1 ? 'pointer-events-none opacity-40' : ''}`}
+                      onClick={() => goToPage(safePage - 1)}
+                    />
+                  </PaginationItem>
+                  {getPageNumbers(safePage, totalPages).map((p, idx) =>
+                    p === 'ellipsis' ? (
+                      <PaginationItem key={`e-${idx}`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    ) : (
+                      <PaginationItem key={p}>
+                        <PaginationLink
+                          className="cursor-pointer select-none"
+                          isActive={p === safePage}
+                          onClick={() => goToPage(p)}
                         >
-                          <FileText className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </CardHeader>
-                  
-                  <CardFooter className="pt-2">
-                    <Button asChild variant="outline" className="w-full text-xs h-8 rounded-full border-zinc-850 bg-zinc-900/60 text-zinc-100 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300 font-medium">
-                      <Link href={`/playlists/view?id=${playlist.id}`} className="flex items-center justify-center">
-                        Open Collection
-                        <ChevronRight className="w-3 h-3 ml-1" />
-                      </Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              );
-            })}
+                          {p}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )
+                  )}
+                  <PaginationItem>
+                    <PaginationNext
+                      className={`cursor-pointer select-none ${safePage >= totalPages ? 'pointer-events-none opacity-40' : ''}`}
+                      onClick={() => goToPage(safePage + 1)}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
           </div>
         )}
       </div>
 
-      {/* PDF Preview Modal */}
       {pdfPlaylistId && (() => {
         const pl = playlists.find(p => p.id === pdfPlaylistId);
         const pdfSongs = pl ? getPlaylistSongs(pl.songs) : [];
@@ -238,4 +299,3 @@ export default function PlaylistsPage() {
     </div>
   );
 }
-

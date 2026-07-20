@@ -1,7 +1,13 @@
 
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { FavoriteModel } from '@/server/models/favorite';
 import { getAuthUser, authError } from '@/lib/auth';
+import { enforceRateLimit } from '@/server/rateLimit';
+import { validateBody } from '@/server/validation/http';
+import { objectId } from '@/server/validation/schemas';
+
+const favoriteSchema = z.object({ songId: objectId }).strict();
 
 // GET /api/favorites - List current user's favorite song IDs
 export async function GET(request: NextRequest) {
@@ -27,12 +33,16 @@ export async function POST(request: NextRequest) {
       return authError('Not authenticated');
     }
 
-    const body = await request.json();
-    const { songId } = body;
+    const limited = await enforceRateLimit(request, {
+      policy: 'authenticated',
+      bucket: 'favorites-toggle',
+      identifier: auth.userId,
+    });
+    if (limited) return limited;
 
-    if (!songId) {
-      return Response.json({ error: 'Song ID is required' }, { status: 400 });
-    }
+    const parsed = await validateBody(request, favoriteSchema);
+    if (!parsed.ok) return parsed.response;
+    const { songId } = parsed.data;
 
     const result = await FavoriteModel.toggleLike(auth.userId, songId);
     return Response.json(result);

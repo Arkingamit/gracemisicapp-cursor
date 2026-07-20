@@ -6,6 +6,12 @@ import { SettingsModel } from '@/server/models/settings';
 import { getAuthUser, authError } from '@/lib/auth';
 import { AuditLogModel } from '@/server/models/auditLog';
 import { COLLECTIONS } from '@/server/db/collections';
+import { z } from 'zod';
+import { validateBody, validateParams } from '@/server/validation/http';
+import { objectId } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
+const songIdBodySchema = z.object({ songId: objectId }).strict();
 
 // POST /api/groups/[id]/songs - Add a song to the group
 export async function POST(
@@ -18,8 +24,13 @@ export async function POST(
       return authError('Not authenticated');
     }
 
-    const { id } = await params;
-    const { songId } = await request.json();
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
+
+    const parsed = await validateBody(request, songIdBodySchema);
+    if (!parsed.ok) return parsed.response;
+    const { songId } = parsed.data;
 
     // Check permissions: only org editors, managers, or super_admin
     const group = await GroupModel.findById(id);
@@ -89,8 +100,13 @@ export async function DELETE(
       return authError('Not authenticated');
     }
 
-    const { id } = await params;
-    const { songId } = await request.json();
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
+
+    const parsed = await validateBody(request, songIdBodySchema);
+    if (!parsed.ok) return parsed.response;
+    const { songId } = parsed.data;
 
     // Check permissions: only org editors, managers, or super_admin
     const group = await GroupModel.findById(id);

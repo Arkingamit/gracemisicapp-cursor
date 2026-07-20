@@ -9,6 +9,7 @@ import { useGroups } from '@/contexts/groups';
 import { useOrganizations } from '@/contexts/OrganizationContext';
 import { authFetch } from '@/contexts/AuthContext';
 import { Music, Plus, X, ChevronDown, ChevronUp, Save, Users } from 'lucide-react';
+import { GROUP_TOUR_EXPAND_MUSICIANS_EVENT } from '@/lib/tourSteps';
 
 const DEFAULT_INSTRUMENTS = [
   'Vocals',
@@ -79,8 +80,20 @@ export default function MusicianAssignmentPanel({
   const [newUserId, setNewUserId] = useState('');
   const [newInstrument, setNewInstrument] = useState('');
 
+  // Expand when the set onboarding tour highlights this panel
+  useEffect(() => {
+    const expandForTour = () => {
+      setIsExpanded(true);
+      setShowAddRow(true);
+    };
+    window.addEventListener(GROUP_TOUR_EXPAND_MUSICIANS_EVENT, expandForTour);
+    return () => window.removeEventListener(GROUP_TOUR_EXPAND_MUSICIANS_EVENT, expandForTour);
+  }, []);
+
   const organization = getOrganization(organizationId);
   const availableInstruments = organization?.customInstruments || [];
+
+  const [resolvedNames, setResolvedNames] = useState<Record<string, string>>({});
 
   // Fetch org members
   useEffect(() => {
@@ -98,6 +111,27 @@ export default function MusicianAssignmentPanel({
     fetchMembers();
   }, [organizationId]);
 
+  // Fetch server-resolved names for assigned users (covers users who left the org
+  // or cases where the member list isn't accessible)
+  useEffect(() => {
+    const fetchAssignmentNames = async () => {
+      try {
+        const res = await authFetch(`/api/groups/${groupId}/musicians`);
+        if (res.ok) {
+          const data = await res.json();
+          const map: Record<string, string> = {};
+          for (const a of data.assignments || []) {
+            if (a.userId && a.userName) map[a.userId] = a.userName;
+          }
+          setResolvedNames(map);
+        }
+      } catch (e) {
+        console.error('Failed to fetch musician names:', e);
+      }
+    };
+    fetchAssignmentNames();
+  }, [groupId, assignments]);
+
   // Sync local state when prop changes
   useEffect(() => {
     setLocalAssignments(assignments || []);
@@ -106,7 +140,7 @@ export default function MusicianAssignmentPanel({
 
   const getMemberName = (userId: string) => {
     const m = members.find(m => m.id === userId);
-    return m?.name || m?.email || userId;
+    return m?.name || m?.email || resolvedNames[userId] || 'Unknown member';
   };
 
   const getInstrumentIcon = (instrument: string) => {

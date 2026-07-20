@@ -12,8 +12,11 @@ import { Song } from '@/lib/types';
 import { getTransposedKeyName } from '@/lib/chordUtils';
 import { detectKey } from '@/lib/keyDetection';
 import { Badge } from '@/components/ui/badge';
-import { Download, ChevronLeft, History, FileText, Edit2 } from 'lucide-react';
+import { Download, ChevronLeft, History, FileText, Edit2, User, CheckCircle2, Flag, Trash2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import CopyToOrgButton from '@/components/organizations/CopyToOrgButton';
+import ReportSongModal from '@/components/songs/ReportSongModal';
+import { hasAnyRole } from '@/lib/roles';
 
 const SongDetail = () => {
   const searchParams = useSearchParams();
@@ -30,6 +33,8 @@ const SongDetail = () => {
   const [showChords, setShowChords] = useState(true);
   const [fontSize, setFontSize] = useState(16);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -45,19 +50,28 @@ const SongDetail = () => {
   }, [id, fetchSongDetails, getSong, router]);
 
   const canEdit = song && currentUser && (
-    currentUser.role === 'super_admin' || 
-    currentUser.role === 'editor' ||
+    hasAnyRole(currentUser, 'editor') ||
     (currentUser.role === 'manager' && song.createdBy === currentUser.id)
   );
 
-  const handleDelete = async () => {
-    if (song && window.confirm('Are you sure you want to delete this song?')) {
-      try {
-        await deleteSong(song.id);
-        router.push('/songs');
-      } catch (error) {
-        console.error('Failed to delete song:', error);
-      }
+  const canReport =
+    !!currentUser &&
+    !!song &&
+    !!song.createdBy &&
+    song.createdBy !== currentUser.id;
+
+  const canFlagSpammer = hasAnyRole(currentUser, 'editor', 'verifier');
+
+  const handleDelete = () => setConfirmDeleteOpen(true);
+
+  const handleConfirmDelete = async () => {
+    if (!song) return;
+    setConfirmDeleteOpen(false);
+    try {
+      await deleteSong(song.id);
+      router.push('/songs');
+    } catch (error) {
+      console.error('Failed to delete song:', error);
     }
   };
 
@@ -105,11 +119,25 @@ const SongDetail = () => {
                 {song.title}
               </h1>
 
-              <div className="flex items-center gap-3 text-sm text-zinc-400 font-medium">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-400 font-medium">
                 <span className="flex items-center gap-1.5">
                   <History className="w-3.5 h-3.5" />
                   Updated {new Date(song.updatedAt || Date.now()).toLocaleDateString()}
                 </span>
+                
+                {song.createdByName && (
+                  <span className="flex items-center gap-1.5 border-l border-zinc-700 pl-3">
+                    <User className="w-3.5 h-3.5" />
+                    Contributed by {song.createdByName}
+                  </span>
+                )}
+                
+                {song.verifiedByName && (
+                  <span className="flex items-center gap-1.5 border-l border-zinc-700 pl-3">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                    Verified by {song.verifiedByName}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -142,6 +170,18 @@ const SongDetail = () => {
               <FileText className="w-3.5 h-3.5" />
               <span>Export PDF</span>
             </Button>
+
+            {canReport && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 rounded-full border-orange-500/30 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20 hover:text-orange-200 transition-all font-medium"
+                onClick={() => setReportOpen(true)}
+              >
+                <Flag className="w-3.5 h-3.5" />
+                <span>Report</span>
+              </Button>
+            )}
             
             {canEdit && (
               <>
@@ -193,6 +233,26 @@ const SongDetail = () => {
           initialFontSize={fontSize}
         />
       )}
+
+      {canReport && song && (
+        <ReportSongModal
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          songId={song.id}
+          songTitle={song.title}
+          allowSpammerFlag={canFlagSpammer}
+        />
+      )}
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onOpenChange={setConfirmDeleteOpen}
+        icon={<Trash2 />}
+        title="Delete Song"
+        description={<>This will permanently delete <span className="font-bold text-white">"{song?.title}"</span>. This action cannot be undone.</>}
+        confirmLabel="Delete"
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 };

@@ -1,6 +1,15 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { MessageModel } from '@/server/models/message';
 import { getAuthUser, authError } from '@/lib/auth';
+import { validateBody, validateParams, validateQuery } from '@/server/validation/http';
+import { objectId, boundedString, MESSAGE_MAX } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
+const messagesQuerySchema = z
+  .object({ limit: z.coerce.number().int().min(1).max(500).optional() })
+  .strict();
+const messageBodySchema = z.object({ content: boundedString(MESSAGE_MAX) }).strict();
 
 // GET /api/groups/[id]/messages - Get messages for a group
 export async function GET(
@@ -8,7 +17,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
+
+    const queryCheck = validateQuery(request, messagesQuerySchema);
+    if (!queryCheck.ok) return queryCheck.response;
+
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
 
@@ -31,8 +46,13 @@ export async function POST(
       return authError('Not authenticated');
     }
 
-    const { id } = await params;
-    const { content } = await request.json();
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
+
+    const parsed = await validateBody(request, messageBodySchema);
+    if (!parsed.ok) return parsed.response;
+    const { content } = parsed.data;
     const message = await MessageModel.create({ content, groupId: id }, auth.userId);
     return Response.json({ message }, { status: 201 });
   } catch (error) {

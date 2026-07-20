@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,10 +23,13 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Song, SongInput, Genre } from '@/lib/types';
-import { X } from 'lucide-react';
+import { ADD_SONG_TOUR_START_KEY, ADD_SONG_TOUR_STORAGE_KEY } from '@/lib/tourSteps';
+import { X, ChevronRight, ChevronLeft, ArrowRight } from 'lucide-react';
+import LyricsDisplay from './LyricsDisplay';
 import { useSongs } from '@/contexts/SongContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganizations } from '@/contexts/OrganizationContext';
+import { hasAnyRole } from '@/lib/roles';
 import { useRouter } from 'next/navigation';
 import {
   AlertDialog,
@@ -35,15 +38,39 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogMedia,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { AlertCircle } from 'lucide-react';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable';
+
+const TITLE_MAX = 50;
+const ARTIST_MAX = 30;
+const GENRE_MAX = 20;
+const LANGUAGE_MAX = 20;
 
 const formSchema = z.object({
-  title: z.string().min(2, { message: 'Title must be at least 2 characters' }),
-  artist: z.string().min(2, { message: 'Artist must be at least 2 characters' }),
-  language: z.string().min(1, { message: 'Please select a language' }),
-  genre: z.array(z.string()).min(1, { message: 'Please select at least one genre' }),
+  title: z
+    .string()
+    .min(2, { message: 'Title must be at least 2 characters' })
+    .max(TITLE_MAX, { message: `Title must be at most ${TITLE_MAX} characters` }),
+  artist: z
+    .string()
+    .min(2, { message: 'Artist must be at least 2 characters' })
+    .max(ARTIST_MAX, { message: `Artist must be at most ${ARTIST_MAX} characters` }),
+  language: z
+    .string()
+    .min(1, { message: 'Please select a language' })
+    .max(LANGUAGE_MAX, { message: `Language must be at most ${LANGUAGE_MAX} characters` }),
+  genre: z
+    .array(
+      z.string().max(GENRE_MAX, { message: `Genre must be at most ${GENRE_MAX} characters` })
+    )
+    .min(1, { message: 'Please select at least one genre' }),
   lyrics: z.string().min(10, { message: 'Lyrics must be at least 10 characters' }),
   originalKey: z.string().optional(),
   externalUrl: z.union([z.literal(''), z.string().url('Must be a valid URL')]).optional(),
@@ -67,6 +94,7 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
   const [languages, setLanguages] = useState<string[]>([]);
   const [limitErrorModalOpen, setLimitErrorModalOpen] = useState(false);
   const [limitErrorMsg, setLimitErrorMsg] = useState('');
+  const [step, setStep] = useState<1 | 2>(1);
   const { toast } = useToast();
   const { songs, addSong, updateSong } = useSongs();
   const { currentUser } = useAuth();
@@ -74,11 +102,18 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
   const router = useRouter();
   const isEditing = !!song;
   const userOrgs = getUserOrganizations();
-  const isManager = currentUser?.role === 'manager';
-  // Managers only see orgs they manage
-  const managedOrgs = isManager 
-    ? userOrgs.filter(org => (currentUser?.id && org.managerIds.includes(currentUser.id)) || org.createdBy === currentUser?.id)
-    : userOrgs;
+  
+  const canAddGlobal = hasAnyRole(currentUser, 'editor');
+  
+  // Only org managers or super_admins can add to an org's private library
+  const managedOrgs = userOrgs.filter(org => 
+    hasAnyRole(currentUser, 'super_admin') || 
+    (currentUser?.id && org.managerIds?.includes(currentUser.id)) || 
+    org.createdBy === currentUser?.id
+  );
+  
+  const defaultOrgId = song?.organizationId || 
+    (canAddGlobal ? 'global' : (managedOrgs.length > 0 ? managedOrgs[0].id : ''));
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -94,9 +129,17 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
     },
   });
 
-  const [selectedOrgId, setSelectedOrgId] = useState<string>(
-    song?.organizationId || (isManager && managedOrgs.length > 0 ? managedOrgs[0].id : '')
-  );
+  const [selectedOrgId, setSelectedOrgId] = useState<string>(defaultOrgId);
+
+  useEffect(() => {
+    // Only trigger tour on 'new song' mode, not when editing
+    if (!isEditing) {
+      const hasSeenTour = localStorage.getItem(ADD_SONG_TOUR_STORAGE_KEY);
+      if (!hasSeenTour) {
+        localStorage.setItem(ADD_SONG_TOUR_START_KEY, 'true');
+      }
+    }
+  }, [isEditing]);
 
   // Extract languages from existing songs
   useEffect(() => {
@@ -171,6 +214,17 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
       return;
     }
 
+    // Removed restriction on global library to allow pending submissions
+
+    if (selectedOrgId && selectedOrgId !== 'global' && !managedOrgs.find(o => o.id === selectedOrgId)) {
+      toast({
+        title: 'Not authorized',
+        description: 'You must be a manager of the selected organization to add a song to it.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
@@ -201,9 +255,13 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
         
         await addSong(songInput);
         
+        const isPending = (!selectedOrgId || selectedOrgId === 'global') && !canAddGlobal;
+        
         toast({
-          title: 'Song added',
-          description: `${data.title} has been added successfully`,
+          title: isPending ? 'Song submitted for verification' : 'Song added',
+          description: isPending 
+            ? `${data.title} is now pending verification by an administrator.`
+            : `${data.title} has been added successfully`,
         });
       }
       
@@ -229,12 +287,174 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
     }
   };
 
+  // Desktop (web view) uses resizable side-by-side panes; mobile stays stacked
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 1280px)');
+    const onChange = () => setIsDesktop(mql.matches);
+    onChange();
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+
+  const lyricsEditorPane = (
+    <div className="flex h-full flex-1 flex-col space-y-4">
+      <FormField
+        control={form.control}
+        name="format"
+        render={({ field }) => (
+          <FormItem>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2" data-tour="song-format-select">
+              <FormLabel className="text-lg">Paste Lyrics & Chords</FormLabel>
+              <Select 
+                onValueChange={field.onChange} 
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger className="w-[240px] bg-zinc-900/50">
+                    <SelectValue placeholder="Auto-detect chords" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="auto">Auto-detect chords over lyrics</SelectItem>
+                  <SelectItem value="chordpro">Bracket format [Chord]</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-sm text-zinc-400">
+              Paste your song exactly as you see it! We'll instantly highlight detected chords in the preview panel.
+            </p>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      
+      <FormField
+        control={form.control}
+        name="lyrics"
+        render={({ field }) => (
+          <FormItem className="flex-1 flex flex-col" data-tour="song-lyrics-input">
+            <FormControl>
+              <Textarea 
+                placeholder={form.watch('format') === 'chordpro' 
+                  ? `[Em]Water You [C]turned into [G]wine\n[Em]Opened the [C]eyes of the [G]blind\nThere's no one [Am]like You`
+                  : `Em         C            G\nWater You turned into wine\nEm         C            G\nOpened the eyes of the blind\n                 Am\nThere's no one like You`}
+                className="flex-1 min-h-[400px] xl:min-h-[600px] font-mono whitespace-pre text-base bg-zinc-950/50 border-zinc-800 focus-visible:ring-primary/30"
+                {...field} 
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
+  );
+
+  const livePreviewPane = (
+    <div className="flex h-full flex-1 flex-col border border-zinc-800/60 rounded-xl bg-zinc-900/30 overflow-hidden min-h-[400px] xl:min-h-[600px]" data-tour="song-live-preview">
+      <div className="bg-zinc-800/40 px-4 py-3 border-b border-zinc-800/60 flex items-center justify-between">
+        <span className="font-semibold text-zinc-300">Live Preview</span>
+        <span className="text-xs text-primary/80 bg-primary/10 px-2 py-1 rounded-full font-medium">Chords Highlighted</span>
+      </div>
+      <div className="p-4 overflow-y-auto flex-1 custom-scrollbar">
+        {form.watch('lyrics').trim().length > 0 ? (
+          <LyricsDisplay 
+            lyrics={form.watch('lyrics')}
+            format={form.watch('format')}
+            chordHighlight={true}
+            fontSize={15}
+            columns={1}
+          />
+        ) : (
+          <div className="h-full flex flex-col items-center justify-center text-zinc-500 gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-zinc-800/30 flex items-center justify-center">
+              <span className="text-3xl opacity-50">🎵</span>
+            </div>
+            <p>Your preview will appear here</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <>
-    <Card className="max-w-2xl mx-auto">
-      <CardContent className="pt-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <div className="max-w-5xl mx-auto">
+      {/* Progress Indicator */}
+      <div className="flex items-center justify-center mb-8">
+        <div className={`flex items-center ${step >= 1 ? 'text-primary' : 'text-zinc-500'}`}>
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 font-bold ${step >= 1 ? 'border-primary bg-primary/10' : 'border-zinc-500'}`}>
+            1
+          </div>
+          <span className="ml-2 font-medium hidden sm:inline">Lyrics & Chords</span>
+        </div>
+        <div className={`w-12 sm:w-24 h-1 mx-4 rounded-full ${step >= 2 ? 'bg-primary' : 'bg-zinc-800'}`} />
+        <div className={`flex items-center ${step >= 2 ? 'text-primary' : 'text-zinc-500'}`}>
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 font-bold ${step >= 2 ? 'border-primary bg-primary/10' : 'border-zinc-500'}`}>
+            2
+          </div>
+          <span className="ml-2 font-medium hidden sm:inline">Song Details</span>
+        </div>
+      </div>
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          
+          {/* STEP 1: Lyrics & Chords Canvas */}
+          <div className={step === 1 ? 'block' : 'hidden'}>
+            <Card className="border-primary/20 shadow-lg shadow-primary/5">
+              <CardContent className="pt-6">
+                {isDesktop ? (
+                  <ResizablePanelGroup direction="horizontal" className="min-h-[600px]">
+                    <ResizablePanel defaultSize={50} minSize={30} className="pr-4">
+                      {lyricsEditorPane}
+                    </ResizablePanel>
+                    <ResizableHandle withHandle className="bg-zinc-800" />
+                    <ResizablePanel defaultSize={50} minSize={30} className="pl-4">
+                      {livePreviewPane}
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
+                ) : (
+                  <div className="flex flex-col gap-6">
+                    {lyricsEditorPane}
+                    {livePreviewPane}
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center mt-8 pt-6 border-t border-zinc-800/60">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => router.back()}
+                    className="text-zinc-400 hover:text-white"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="button" 
+                    size="lg"
+                    className="gap-2 px-8"
+                    data-tour="song-next-btn"
+                    onClick={async () => {
+                      // Trigger validation only for the lyrics and format fields before moving to step 2
+                      const isValid = await form.trigger(['lyrics', 'format']);
+                      if (isValid) {
+                        setStep(2);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
+                  >
+                    Next: Song Details <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* STEP 2: Song Details */}
+          <div className={step === 2 ? 'block' : 'hidden'}>
+            <Card className="max-w-2xl mx-auto border-primary/20 shadow-lg shadow-primary/5">
+              <CardContent className="pt-8 space-y-6">
             <FormField
               control={form.control}
               name="title"
@@ -242,8 +462,15 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter song title" {...field} />
+                    <Input
+                      placeholder="Enter song title"
+                      maxLength={TITLE_MAX}
+                      {...field}
+                    />
                   </FormControl>
+                  <p className="text-[11px] text-muted-foreground text-right">
+                    {field.value?.length || 0}/{TITLE_MAX}
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
@@ -257,8 +484,15 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
                   <FormItem>
                     <FormLabel>Artist</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter artist name" {...field} />
+                      <Input
+                        placeholder="Enter artist name"
+                        maxLength={ARTIST_MAX}
+                        {...field}
+                      />
                     </FormControl>
+                    <p className="text-[11px] text-muted-foreground text-right">
+                      {field.value?.length || 0}/{ARTIST_MAX}
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -373,11 +607,13 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
                     <div className="flex gap-2">
                       <FormControl>
                         <Input 
-                          placeholder="Enter new language" 
+                          placeholder="Enter new language"
+                          maxLength={LANGUAGE_MAX}
                           value={newLanguageName}
                           onChange={(e) => {
-                            setNewLanguageName(e.target.value);
-                            field.onChange(e.target.value);
+                            const val = e.target.value.slice(0, LANGUAGE_MAX);
+                            setNewLanguageName(val);
+                            field.onChange(val);
                           }}
                           autoFocus
                         />
@@ -459,12 +695,13 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
                     <div className="flex items-center gap-2">
                       <FormControl>
                         <Input 
-                          placeholder="Type new genre name..." 
+                          placeholder="Type new genre name..."
+                          maxLength={GENRE_MAX}
                           autoFocus 
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              const val = (e.target as HTMLInputElement).value.trim();
+                              const val = (e.target as HTMLInputElement).value.trim().slice(0, GENRE_MAX);
                               if (val && !field.value.includes(val)) {
                                 field.onChange([...field.value, val]);
                               }
@@ -479,7 +716,7 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
                         onClick={(e) => {
                           const input = (e.currentTarget.previousElementSibling?.querySelector('input') || 
                             e.currentTarget.parentElement?.querySelector('input')) as HTMLInputElement | null;
-                          const val = input?.value?.trim();
+                          const val = input?.value?.trim().slice(0, GENRE_MAX);
                           if (val && !field.value.includes(val)) {
                             field.onChange([...field.value, val]);
                           }
@@ -503,62 +740,8 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
               )}
             />
             
-            <FormField
-              control={form.control}
-              name="format"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Chord Format</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Auto-detect chords over lyrics" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="auto">Auto-detect chords over lyrics</SelectItem>
-                      <SelectItem value="chordpro">Bracket format [Chord]</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Choose <b>Auto-detect</b> to automatically convert chords placed above lyrics lines. Choose <b>Bracket format</b> if you define chords exactly within brackets `[C]` to avoid false detections.
-                  </p>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="lyrics"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Lyrics and Chords</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder={`Em         C            G
-Water You turned into wine
-Em         C            G
-Opened the eyes of the blind
-                 Am
-There's no one like You`}
-                      className="min-h-[300px] font-mono whitespace-pre"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Paste your song exactly as you see it! You can paste standard format with chords on the line above the lyrics, or use [ChordPro] bracket format.
-                  </p>
-                </FormItem>
-              )}
-            />
-
-            {/* Organization Visibility Selector */}
-            {!isEditing && (userOrgs.length > 0) && (
+            {/* Visibility Selector */}
+            {!isEditing && (
               <FormItem>
                 <FormLabel>Visibility</FormLabel>
                 <Select onValueChange={setSelectedOrgId} defaultValue={selectedOrgId}>
@@ -568,8 +751,10 @@ There's no one like You`}
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="global">🌐 Global (visible to everyone)</SelectItem>
-                    {(isManager ? managedOrgs : userOrgs).map((org) => (
+                    <SelectItem value="global">
+                      🌐 Global (visible to everyone) {!canAddGlobal && '(Requires Verification)'}
+                    </SelectItem>
+                    {managedOrgs.map((org) => (
                       <SelectItem key={org.id} value={org.id}>
                         🔒 {org.name} (private)
                       </SelectItem>
@@ -579,34 +764,42 @@ There's no one like You`}
                 <p className="text-sm text-muted-foreground mt-1">
                   {selectedOrgId && selectedOrgId !== 'global'
                     ? 'Only members of this organization can see this song'
-                    : 'Everyone can see this song'}
+                    : 'Everyone can see this song once verified'}
                 </p>
               </FormItem>
             )}
                         
-            <div className="flex justify-end space-x-2">
+            <div className="flex justify-between items-center mt-8 pt-6 border-t border-zinc-800/60">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.back()}
+                className="gap-2"
+                onClick={() => {
+                  setStep(1);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 disabled={isSubmitting}
               >
-                Cancel
+                <ChevronLeft className="w-4 h-4" /> Back to Lyrics
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : isEditing ? 'Update Song' : 'Add Song'}
+              <Button type="submit" size="lg" className="px-8" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : isEditing ? 'Update Song' : 'Submit Song'}
               </Button>
             </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </form>
+      </Form>
+    </div>
 
     <AlertDialog open={limitErrorModalOpen} onOpenChange={setLimitErrorModalOpen}>
-      <AlertDialogContent className="bg-transparent border border-white/10 text-white">
+      <AlertDialogContent size="sm" className="bg-zinc-950 border border-white/10 text-white">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-destructive flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" />
+          <AlertDialogMedia className="bg-red-950/60 text-red-400">
+            <AlertCircle />
+          </AlertDialogMedia>
+          <AlertDialogTitle className="text-destructive">
             Limit Reached
           </AlertDialogTitle>
           <AlertDialogDescription className="text-zinc-400">

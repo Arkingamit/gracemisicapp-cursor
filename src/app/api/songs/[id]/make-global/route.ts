@@ -1,6 +1,11 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { z } from 'zod';
 import { SongModel } from '@/server/models/song';
 import { getAuthUser, authError } from '@/lib/auth';
+import { validateParams } from '@/server/validation/http';
+import { objectId } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
 
 export async function POST(
   request: NextRequest,
@@ -17,7 +22,9 @@ export async function POST(
       );
     }
 
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
     
     // Make sure the song exists
     const existingSong = await SongModel.findById(id);

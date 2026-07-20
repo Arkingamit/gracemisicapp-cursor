@@ -1,7 +1,14 @@
 
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { PlaylistModel } from '@/server/models/playlist';
 import { getAuthUser, authError } from '@/lib/auth';
+import { validateBody, validateParams, validateQuery } from '@/server/validation/http';
+import { objectId } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
+const songIdBodySchema = z.object({ songId: objectId }).strict();
+const songIdQuerySchema = z.object({ songId: objectId }).strict();
 
 // POST /api/playlists/[id]/songs - Add a song to a playlist
 export async function POST(
@@ -14,13 +21,13 @@ export async function POST(
       return authError('Not authenticated');
     }
 
-    const { id } = await params;
-    const body = await request.json();
-    const { songId } = body;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
 
-    if (!songId) {
-      return Response.json({ error: 'Song ID is required' }, { status: 400 });
-    }
+    const parsed = await validateBody(request, songIdBodySchema);
+    if (!parsed.ok) return parsed.response;
+    const { songId } = parsed.data;
 
     const playlist = await PlaylistModel.findById(id);
     if (!playlist) {
@@ -62,13 +69,13 @@ export async function DELETE(
       return authError('Not authenticated');
     }
 
-    const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const songId = searchParams.get('songId');
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
 
-    if (!songId) {
-      return Response.json({ error: 'Song ID is required' }, { status: 400 });
-    }
+    const queryCheck = validateQuery(request, songIdQuerySchema);
+    if (!queryCheck.ok) return queryCheck.response;
+    const { songId } = queryCheck.data;
 
     const playlist = await PlaylistModel.findById(id);
     if (!playlist) {

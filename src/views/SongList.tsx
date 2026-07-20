@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,15 +18,16 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useSongs } from '@/contexts/SongContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, authFetch } from '@/contexts/AuthContext';
 import AddToGroupButton from '@/components/groups/AddToGroupButton';
 import LikeButton from '@/components/songs/LikeButton';
 import AddToPlaylistDialog from '@/components/playlists/AddToPlaylistDialog';
-import { Pencil, Trash2, Globe, Lock, X, ArrowLeft, Heart, ListMusic, Copy, ChevronLeft, Plus, Music, MoreVertical, Settings } from 'lucide-react';
+import { Pencil, Trash2, Globe, Lock, X, ArrowLeft, Heart, ListMusic, Copy, ChevronLeft, Plus, Music, MoreVertical, Settings, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { detectKey } from '@/lib/keyDetection';
 import { getKeyDisplayName } from '@/lib/chordUtils';
 import CopyToOrgButton from '@/components/organizations/CopyToOrgButton';
+import TopContributors from '@/components/songs/TopContributors';
 import {
   Select,
   SelectContent,
@@ -39,6 +41,32 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+
+const SONGS_PER_PAGE = 25;
+
+/** Page numbers to render: 1 … around current … last */
+const getPageNumbers = (current: number, total: number): (number | 'ellipsis')[] => {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | 'ellipsis')[] = [1];
+  if (current > 3) pages.push('ellipsis');
+  for (let p = Math.max(2, current - 1); p <= Math.min(total - 1, current + 1); p++) {
+    pages.push(p);
+  }
+  if (current < total - 2) pages.push('ellipsis');
+  pages.push(total);
+  return pages;
+};
 
 const MUSICAL_KEYS = [
   // Major keys
@@ -81,7 +109,57 @@ const SongList = () => {
   const [keyFilter, setKeyFilter] = useState('all');
   const [genreFilter, setGenreFilter] = useState<string | null>(searchParams.get('genre'));
   const [languageFilter, setLanguageFilter] = useState<string | null>(searchParams.get('language'));
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
+  const [isAiEnabled, setIsAiEnabled] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [aiResults, setAiResults] = useState<string[] | null>(null);
+  const [aiSearching, setAiSearching] = useState(false);
+  const aiDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // AI search: debounced call to /api/ai/search
+  const performAiSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setAiResults(null);
+      setAiSearching(false);
+      return;
+    }
+    setAiSearching(true);
+    try {
+      const res = await authFetch('/api/ai/search', {
+        method: 'POST',
+        body: JSON.stringify({ query }),
+      });
+      const data = await res.json();
+      if (res.ok && data.songIds) {
+        setAiResults(data.songIds);
+      } else {
+        setAiResults([]);
+      }
+    } catch {
+      setAiResults([]);
+    } finally {
+      setAiSearching(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isAiEnabled) {
+      setAiResults(null);
+      return;
+    }
+    if (aiDebounceRef.current) clearTimeout(aiDebounceRef.current);
+    if (!searchQuery.trim()) {
+      setAiResults(null);
+      return;
+    }
+    aiDebounceRef.current = setTimeout(() => {
+      performAiSearch(searchQuery);
+    }, 600);
+    return () => {
+      if (aiDebounceRef.current) clearTimeout(aiDebounceRef.current);
+    };
+  }, [searchQuery, isAiEnabled, performAiSearch]);
 
   // Long press state
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
@@ -168,62 +246,99 @@ const SongList = () => {
   }, [songs]);
 
   // Filter songs based on genre filter, search query, key filter + tab filter
-  const filteredSongs = songs.filter(song => {
-    // 1. Genre filter
-    if (genreFilter && !song.genre.some(g => g.toLowerCase() === genreFilter.toLowerCase())) {
-      return false;
+  const filteredSongs = useMemo(() => {
+    // If AI search is active and has results, use those
+    if (isAiEnabled && aiResults !== null) {
+      // Preserve the order from AI (most relevant first)
+      return aiResults
+        .map(id => songs.find(s => s.id === id))
+        .filter((s): s is typeof songs[number] => !!s);
     }
 
-    // 2. Language filter
-    if (languageFilter && song.language?.toLowerCase() !== languageFilter.toLowerCase()) {
-      return false;
-    }
-
-    const songKey = songKeys[song.id] || '';
-    
-    // 3. Key filter
-    if (keyFilter !== 'all') {
-      const allowedKeys = keyFilter.split(/ \/ /);
-      if (!allowedKeys.includes(songKey)) {
+    return songs.filter(song => {
+      // 1. Genre filter
+      if (genreFilter && !song.genre.some(g => g.toLowerCase() === genreFilter.toLowerCase())) {
         return false;
       }
-    }
 
-    // 4. Search query
-    const q = searchQuery.toLowerCase().trim();
-    if (q) {
-      let matchesSearch = false;
-      if (q.startsWith('key:')) {
-        // Explicit key search (e.g. "key:G")
-        const keyQuery = q.substring(4).trim();
-        matchesSearch = songKey.toLowerCase() === keyQuery;
-      } else {
-        // Tokenized general search (google style)
-        const searchTokens = q.split(/\s+/).filter(Boolean);
-        matchesSearch = searchTokens.every(token => 
-          songKey.toLowerCase() === token || // exact key match
-          song.title.toLowerCase().includes(token) ||
-          song.artist.toLowerCase().includes(token) ||
-          song.genre.some(g => g.toLowerCase().includes(token))
-        );
+      // 2. Language filter
+      if (languageFilter && song.language?.toLowerCase() !== languageFilter.toLowerCase()) {
+        return false;
       }
-      if (!matchesSearch) return false;
-    }
 
-    // 5. Tab filter
-    if (activeFilter === 'global') return !song.organizationId;
-    if (activeFilter === 'org') return !!song.organizationId;
-    
-    return true; // matches all active filters
-  });
-
-  const handleDeleteSong = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this song?')) {
-      try {
-        await deleteSong(id);
-      } catch (error) {
-        console.error('Failed to delete song:', error);
+      const songKey = songKeys[song.id] || '';
+      
+      // 3. Key filter
+      if (keyFilter !== 'all') {
+        const allowedKeys = keyFilter.split(/ \/ /);
+        if (!allowedKeys.includes(songKey)) {
+          return false;
+        }
       }
+
+      // 4. Search query (normal mode)
+      if (!isAiEnabled) {
+        const q = searchQuery.toLowerCase().trim();
+        if (q) {
+          let matchesSearch = false;
+          if (q.startsWith('key:')) {
+            const keyQuery = q.substring(4).trim();
+            matchesSearch = songKey.toLowerCase() === keyQuery;
+          } else {
+            const searchTokens = q.split(/\s+/).filter(Boolean);
+            matchesSearch = searchTokens.every(token => 
+              songKey.toLowerCase() === token ||
+              song.title.toLowerCase().includes(token) ||
+              song.artist.toLowerCase().includes(token) ||
+              song.genre.some(g => g.toLowerCase().includes(token)) ||
+              // Also match against song aliases (alternate titles)
+              (song.aliases || []).some(alias => alias.toLowerCase().includes(token))
+            );
+          }
+          if (!matchesSearch) return false;
+        }
+      }
+
+      // 5. Tab filter
+      if (activeFilter === 'global') return !song.organizationId;
+      if (activeFilter === 'org') return !!song.organizationId;
+      
+      return true;
+    });
+  }, [songs, genreFilter, languageFilter, keyFilter, searchQuery, activeFilter, songKeys, isAiEnabled, aiResults]);
+
+  // ─── Pagination ───
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredSongs.length / SONGS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedSongs = useMemo(
+    () => filteredSongs.slice((safePage - 1) * SONGS_PER_PAGE, safePage * SONGS_PER_PAGE),
+    [filteredSongs, safePage]
+  );
+
+  // Back to first page whenever filters/search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, genreFilter, languageFilter, keyFilter, activeFilter, isAiEnabled]);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(totalPages, page)));
+  };
+
+  const [pendingAction, setPendingAction] = useState<
+    { kind: 'delete' | 'move' | 'copy'; songId: string; title: string } | null
+  >(null);
+
+  const handleConfirmPendingAction = async () => {
+    if (!pendingAction) return;
+    const { kind, songId } = pendingAction;
+    setPendingAction(null);
+    try {
+      if (kind === 'delete') await deleteSong(songId);
+      else if (kind === 'move') await makeSongGlobal(songId);
+      else await copySongToGlobal(songId);
+    } catch (error) {
+      console.error(`Failed to ${kind} song:`, error);
     }
   };
 
@@ -243,7 +358,7 @@ const SongList = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-transparent pb-20">
+    <div className="bg-transparent pb-4 md:pb-8">
       {/* Header / Banner Area */}
       <div className="pt-24 md:pt-32 pb-8">
         <div className="container mx-auto px-4">
@@ -279,7 +394,7 @@ const SongList = () => {
       </div>
 
       <div className="sticky top-0 z-20 bg-zinc-950/90 backdrop-blur-md border-b border-white/5 py-4 transition-all duration-300 ease-in-out">
-        <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="container mx-auto px-4 flex flex-col md:flex-row flex-wrap items-center justify-between gap-4">
           {/* Filter Tabs */}
           <div className="flex p-0.5 border border-zinc-800 rounded-lg bg-zinc-900/60 w-full sm:w-auto">
             {filterTabs.map(tab => (
@@ -298,16 +413,74 @@ const SongList = () => {
             ))}
           </div>
 
-          <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-2 w-full md:w-auto sm:flex-row sm:flex-wrap sm:items-center">
             {/* Search and Add Song Row */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Input
-                placeholder="Search songs..."
-                className="flex-1 sm:w-[200px] border-zinc-800 bg-zinc-900/60 text-zinc-100 rounded-full h-9 px-4 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {currentUser && currentUser.role !== 'user' && (
+            <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+              <div className="relative flex-1 sm:w-[200px] flex items-center z-30">
+                <Input
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
+                  placeholder={isAiEnabled ? "Search with AI..." : "Search songs..."}
+                  className={`w-full border-zinc-800 bg-zinc-900/60 text-zinc-100 rounded-full h-9 pl-4 pr-10 focus-visible:ring-1 focus-visible:ring-offset-0 transition-colors ${isAiEnabled ? 'focus-visible:ring-purple-500 border-purple-500/50' : 'focus-visible:ring-primary'}`}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  {aiSearching ? (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    >
+                      <Sparkles className="w-4 h-4 text-purple-400" />
+                    </motion.div>
+                  ) : isAiEnabled ? (
+                    <Sparkles className="w-4 h-4 text-purple-400" />
+                  ) : (
+                    <Music className="w-4 h-4 text-zinc-500" />
+                  )}
+                </div>
+
+                <AnimatePresence>
+                  {isSearchFocused && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 5 }}
+                      transition={{ duration: 0.15 }}
+                      onMouseDown={(e) => e.preventDefault()} // Prevent input blur when clicking dropdown
+                      className="absolute top-[calc(100%+8px)] left-0 w-full bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden flex flex-col"
+                    >
+                      <button
+                        onClick={() => {
+                          setIsAiEnabled(false);
+                          setIsSearchFocused(false);
+                        }}
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm transition-colors text-left ${!isAiEnabled ? 'bg-zinc-800/50 text-white font-medium' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'}`}
+                      >
+                        <Music className="w-4 h-4 shrink-0" />
+                        <div className="flex flex-col">
+                          <span>Normal Search</span>
+                          <span className="text-[10px] text-zinc-500 font-normal">Search by title or lyrics</span>
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsAiEnabled(true);
+                          setIsSearchFocused(false);
+                        }}
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm transition-colors text-left border-t border-zinc-800/50 ${isAiEnabled ? 'bg-purple-500/10 text-purple-400 font-medium' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'}`}
+                      >
+                        <Sparkles className="w-4 h-4 shrink-0" />
+                        <div className="flex flex-col">
+                          <span>AI Search</span>
+                          <span className="text-[10px] text-zinc-500 font-normal">Describe the song or mood</span>
+                        </div>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              {currentUser && (
                 <Button 
                   onClick={() => router.push('/songs/new')} 
                   variant="outline" 
@@ -321,7 +494,7 @@ const SongList = () => {
             </div>
 
             {/* Filters Row */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
               <Select value={languageFilter || 'all'} onValueChange={handleLanguageChange}>
                 <SelectTrigger className="flex-1 sm:w-[120px] shrink-0 border-zinc-800 bg-zinc-900/60 text-zinc-100 rounded-full h-9 font-medium hover:bg-zinc-800 transition-colors px-2 sm:px-4">
                   <SelectValue placeholder="Language" />
@@ -350,15 +523,76 @@ const SongList = () => {
       </div>
 
       <div className="container mx-auto px-2 sm:px-4 py-8">
+          {activeFilter === 'global' && <TopContributors />}
+          
           {loading ? (
-            <div className="text-center py-4">Loading songs...</div>
+            <div className="border border-zinc-800/60 rounded-xl bg-zinc-950/30 overflow-hidden">
+              {/* Header skeleton */}
+              <div className="bg-zinc-800 px-2 sm:px-4 py-3 flex items-center gap-3 sm:gap-4 border-b border-zinc-800/80">
+                <Skeleton className="h-4 w-[38%] max-w-[160px]" />
+                <Skeleton className="h-4 w-[24%] max-w-[110px]" />
+                <Skeleton className="h-4 w-[12%] max-w-[60px]" />
+                <Skeleton className="h-7 w-7 rounded-md ml-auto shrink-0" />
+              </div>
+              {/* Row skeletons */}
+              <div className="divide-y divide-zinc-800/60">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 sm:gap-4 px-2 sm:px-4 py-4">
+                    <div className="w-[38%] space-y-1.5">
+                      <Skeleton className="h-4 w-full max-w-[220px]" />
+                      <Skeleton className="h-3 w-2/3 max-w-[140px] sm:hidden" />
+                    </div>
+                    <Skeleton className="h-4 w-[24%] max-w-[150px]" />
+                    <Skeleton className="h-4 w-[10%] max-w-[40px]" />
+                    <Skeleton className="h-8 w-8 rounded-full ml-auto shrink-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : aiSearching ? (
+            <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-3">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+              >
+                <Sparkles className="w-6 h-6 text-purple-400" />
+              </motion.div>
+              <span className="text-sm">AI is searching...</span>
+            </div>
           ) : filteredSongs.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">
-              {searchQuery
-                ? 'No songs match your search criteria'
-                : activeFilter === 'org'
-                  ? 'No organization songs yet. Create one with the "Add Song" button!'
-                  : 'No songs available. Add some songs to get started!'}
+            <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-4 border border-zinc-800/60 rounded-xl bg-zinc-950/30">
+              <div className="text-lg">
+                {searchQuery
+                  ? (isAiEnabled ? 'AI couldn\'t find matching songs. Try a different description.' : 'No songs match your search criteria')
+                  : activeFilter === 'org'
+                    ? 'No organization songs yet. Create one with the "Add Song" button!'
+                    : 'No songs available. Add some songs to get started!'}
+              </div>
+              
+              {searchQuery && (
+                <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
+                  {!isAiEnabled && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsAiEnabled(true)}
+                      className="gap-2 rounded-full border-purple-500/30 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 hover:text-purple-300 hover:border-purple-500/50 transition-all font-medium"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Try AI Search
+                    </Button>
+                  )}
+                  
+                  {currentUser && (
+                    <Button 
+                      onClick={() => router.push('/songs/new')} 
+                      className="gap-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all font-medium"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Song
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto border border-zinc-800/60 rounded-xl bg-zinc-950/30">
@@ -379,7 +613,7 @@ const SongList = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSongs.map((song) => (
+                  {paginatedSongs.map((song) => (
                     <TableRow
                       key={song.id}
                       className="cursor-pointer select-none"
@@ -449,7 +683,7 @@ const SongList = () => {
                                       <Pencil className="mr-2 h-4 w-4" />
                                       <span>Edit</span>
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDeleteSong(song.id)} className="text-red-400 focus:text-red-400 focus:bg-red-500/10">
+                                    <DropdownMenuItem onClick={() => setPendingAction({ kind: 'delete', songId: song.id, title: song.title })} className="text-red-400 focus:text-red-400 focus:bg-red-500/10">
                                       <Trash2 className="mr-2 h-4 w-4" />
                                       <span>Delete</span>
                                     </DropdownMenuItem>
@@ -457,19 +691,11 @@ const SongList = () => {
                                 )}
                                 {currentUser && currentUser.role === 'super_admin' && song.organizationId && (
                                   <>
-                                    <DropdownMenuItem onClick={() => {
-                                      if (confirm(`Are you sure you want to MOVE "${song.title}" to the global library? It will no longer belong to this organization.`)) {
-                                        makeSongGlobal(song.id);
-                                      }
-                                    }}>
+                                    <DropdownMenuItem onClick={() => setPendingAction({ kind: 'move', songId: song.id, title: song.title })}>
                                       <Globe className="mr-2 h-4 w-4 text-blue-400" />
                                       <span>Move to Global</span>
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => {
-                                      if (confirm(`Are you sure you want to COPY "${song.title}" to the global library? A duplicate will be created in the public library.`)) {
-                                        copySongToGlobal(song.id);
-                                      }
-                                    }}>
+                                    <DropdownMenuItem onClick={() => setPendingAction({ kind: 'copy', songId: song.id, title: song.title })}>
                                       <Copy className="mr-2 h-4 w-4 text-green-400" />
                                       <span>Copy to Global</span>
                                     </DropdownMenuItem>
@@ -484,9 +710,71 @@ const SongList = () => {
                   ))}
                 </TableBody>
               </Table>
+
+              {totalPages > 1 && (
+                <div className="py-3 border-t border-zinc-800/60">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          className={`cursor-pointer select-none ${safePage <= 1 ? 'pointer-events-none opacity-40' : ''}`}
+                          onClick={() => goToPage(safePage - 1)}
+                        />
+                      </PaginationItem>
+                      {getPageNumbers(safePage, totalPages).map((p, idx) =>
+                        p === 'ellipsis' ? (
+                          <PaginationItem key={`e-${idx}`}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        ) : (
+                          <PaginationItem key={p}>
+                            <PaginationLink
+                              className="cursor-pointer select-none"
+                              isActive={p === safePage}
+                              onClick={() => goToPage(p)}
+                            >
+                              {p}
+                            </PaginationLink>
+                          </PaginationItem>
+                        )
+                      )}
+                      <PaginationItem>
+                        <PaginationNext
+                          className={`cursor-pointer select-none ${safePage >= totalPages ? 'pointer-events-none opacity-40' : ''}`}
+                          onClick={() => goToPage(safePage + 1)}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </div>
           )}
       </div>
+
+      <ConfirmDialog
+        open={!!pendingAction}
+        onOpenChange={(open) => { if (!open) setPendingAction(null); }}
+        destructive={pendingAction?.kind === 'delete'}
+        icon={pendingAction?.kind === 'delete' ? <Trash2 /> : pendingAction?.kind === 'move' ? <Globe /> : <Copy />}
+        title={
+          pendingAction?.kind === 'delete' ? 'Delete Song'
+          : pendingAction?.kind === 'move' ? 'Move to Global Library'
+          : 'Copy to Global Library'
+        }
+        description={
+          pendingAction?.kind === 'delete'
+            ? <>This will permanently delete <span className="font-bold text-white">"{pendingAction?.title}"</span>. This action cannot be undone.</>
+            : pendingAction?.kind === 'move'
+              ? <>"{pendingAction?.title}" will be moved to the global library and will no longer belong to this organization.</>
+              : <>A duplicate of "{pendingAction?.title}" will be created in the public library.</>
+        }
+        confirmLabel={
+          pendingAction?.kind === 'delete' ? 'Delete'
+          : pendingAction?.kind === 'move' ? 'Move' : 'Copy'
+        }
+        onConfirm={handleConfirmPendingAction}
+      />
     </div>
   );
 };

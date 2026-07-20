@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { useAuth, authFetch } from './AuthContext';
 import { Capacitor } from '@capacitor/core';
 import { initNativePushNotifications, removeNativePushListeners } from '@/lib/nativePushNotifications';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Bell } from 'lucide-react';
 
 export interface Notification {
   id: string;
@@ -85,13 +87,22 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (currentUser && Capacitor.isNativePlatform() && !nativePushInitialized.current) {
       nativePushInitialized.current = true;
-      initNativePushNotifications().catch(console.error);
+      initNativePushNotifications(true).catch(console.error);
     }
 
     // Cleanup listeners when user logs out
     if (!currentUser && nativePushInitialized.current) {
       nativePushInitialized.current = false;
       removeNativePushListeners().catch(console.error);
+    }
+  }, [currentUser]);
+
+  // Web push permission prompt
+  useEffect(() => {
+    if (currentUser && !Capacitor.isNativePlatform() && typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        requestPushPermission();
+      }
     }
   }, [currentUser]);
 
@@ -124,17 +135,34 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const markAsRead = async (notificationIds: string[]) => {
-    try {
-      setNotifications(prev => 
-        prev.map(n => notificationIds.includes(n.id) ? { ...n, isRead: true } : n)
-      );
+    if (notificationIds.length === 0) return;
 
-      await authFetch('/api/notifications/mark-read', {
+    // Snapshot only the ones we're flipping so we can restore precisely
+    const previousUnread = notifications.filter(
+      (n) => notificationIds.includes(n.id) && !n.isRead
+    );
+    if (previousUnread.length === 0) return;
+
+    // Optimistic: badge/list update immediately
+    setNotifications((prev) =>
+      prev.map((n) =>
+        notificationIds.includes(n.id) ? { ...n, isRead: true } : n
+      )
+    );
+
+    try {
+      const res = await authFetch('/api/notifications/mark-read', {
         method: 'POST',
-        body: JSON.stringify({ notificationIds })
+        body: JSON.stringify({ notificationIds }),
       });
+      if (!res.ok) throw new Error('mark-read failed');
     } catch (error) {
       console.error('Error marking notifications read:', error);
+      // Rollback unread state for the ones we optimistically marked
+      const restoreIds = new Set(previousUnread.map((n) => n.id));
+      setNotifications((prev) =>
+        prev.map((n) => (restoreIds.has(n.id) ? { ...n, isRead: false } : n))
+      );
     }
   };
 

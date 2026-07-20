@@ -1,9 +1,14 @@
 const { MongoClient } = require('mongodb');
+require('dotenv').config({ path: '.env.local' });
 async function run() {
-  const uri = 'mongodb+srv://gracemusic:Ashish%40123@gracemusic.hwukmyy.mongodb.net/?appName=gracemusic';
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    console.error('Missing MONGODB_URI in .env.local');
+    process.exit(1);
+  }
   const client = new MongoClient(uri);
   await client.connect();
-  const db = client.db('gracemusic_backup_2026_06_13');
+  const db = client.db(process.env.MONGODB_DB_NAME || 'gracemusic');
   
   const userId = '69e2a5e797915847f55a7532';
   const orgs = await db.collection('organizations').find({

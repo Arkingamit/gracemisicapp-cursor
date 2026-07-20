@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,14 +14,34 @@ import {
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { useGroups } from '@/contexts/groups';
 import { useOrganizations } from '@/contexts/OrganizationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Group } from '@/lib/types';
-import { Building, Pencil, Trash2, Music } from 'lucide-react';
+import { Users, Pencil, Trash2, Music, Files, Plus, Sparkles } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { getPageNumbers } from '@/lib/pagination';
+
+const SETS_PER_PAGE = 10;
 
 const GroupList = () => {
   const { groups, loading, deleteGroup, updateGroup } = useGroups();
@@ -31,7 +51,19 @@ const GroupList = () => {
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = useState('');
   const [showAllGroups, setShowAllGroups] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [createChoiceOpen, setCreateChoiceOpen] = useState(false);
   const router = useRouter();
+
+  const handleCreateWithAI = () => {
+    setCreateChoiceOpen(false);
+    router.push('/groups/new/ai');
+  };
+
+  const handleCreateManually = () => {
+    setCreateChoiceOpen(false);
+    router.push('/groups/new');
+  };
 
   // Get user's organizations
   const userOrganizations = getUserOrganizations();
@@ -57,15 +89,31 @@ const GroupList = () => {
     );
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredGroups.length / SETS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedGroups = useMemo(
+    () => filteredGroups.slice((safePage - 1) * SETS_PER_PAGE, safePage * SETS_PER_PAGE),
+    [filteredGroups, safePage]
+  );
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
-  const handleDeleteGroup = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this song set?')) {
-      try {
-        await deleteGroup(id);
-      } catch (error) {
-        console.error('Failed to delete song set:', error);
-      }
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(totalPages, page)));
+  };
+
+  const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
+
+  const handleConfirmDeleteGroup = async () => {
+    if (!groupToDelete) return;
+    const id = groupToDelete.id;
+    setGroupToDelete(null);
+    try {
+      await deleteGroup(id);
+    } catch (error) {
+      console.error('Failed to delete song set:', error);
     }
   };
 
@@ -128,44 +176,109 @@ const GroupList = () => {
   }
 
   return (
-    <div className="container mx-auto px-0 sm:px-4 py-8">
-      <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x">
-        <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4 sm:p-6">
-          <CardTitle className="text-2xl sm:text-3xl">Song Sets</CardTitle>
-          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+    <div className="min-h-screen bg-transparent pb-20">
+      {/* Header / Banner Area */}
+      <div className="pt-24 md:pt-32 pb-8">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-3 flex-1">
+              <Badge variant="outline" className="border-zinc-800 text-zinc-400 uppercase tracking-widest text-[10px] font-semibold px-3 py-1 rounded-full w-fit">
+                LIBRARY
+              </Badge>
+              <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-white">
+                Song Sets
+              </h1>
+              <div className="flex items-center gap-3 text-sm text-zinc-400 font-medium">
+                <span className="flex items-center gap-1.5">
+                  <Files className="w-3.5 h-3.5" />
+                  {filteredGroups.length} {filteredGroups.length === 1 ? 'set' : 'sets'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sticky toolbar */}
+      <div className="sticky top-0 z-20 bg-zinc-950/90 backdrop-blur-md border-b border-white/5 py-4 transition-all duration-300 ease-in-out">
+        <div className="container mx-auto px-4 flex items-center gap-2 flex-wrap">
+          <div className="relative flex-1 sm:max-w-[280px] flex items-center">
             <Input
               placeholder="Search song sets..."
-              className="w-full sm:max-w-sm"
+              className="w-full border-zinc-800 bg-zinc-900/60 text-zinc-100 rounded-full h-9 pl-4 pr-10 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 transition-colors"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            {currentUser && (
-              <Button onClick={() => router.push('/groups/new')} className="w-full sm:w-auto">
-                Create Song Set
-              </Button>
-            )}
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <Files className="w-4 h-4 text-zinc-500" />
+            </div>
           </div>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+          <Button
+            data-tour="create-set"
+            onClick={() => setCreateChoiceOpen(true)}
+            variant="outline"
+            size="sm"
+            className="w-9 px-0 sm:w-auto sm:px-4 shrink-0 rounded-full border-zinc-800 bg-zinc-900/60 text-zinc-100 hover:bg-zinc-800 hover:text-white transition-all font-medium h-9 flex items-center justify-center gap-2"
+          >
+            <Plus className="w-4 h-4 shrink-0" />
+            <span className="hidden sm:inline">Create Song Set</span>
+          </Button>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-2 sm:px-4 py-8">
           {loading ? (
-            <div className="text-center py-4">Loading song sets...</div>
+            <div className="border border-zinc-800/60 rounded-xl bg-zinc-950/30 overflow-hidden">
+              {/* Header skeleton */}
+              <div className="bg-zinc-800 px-2 sm:px-4 py-3 flex items-center gap-3 sm:gap-4 border-b border-zinc-800/80">
+                <Skeleton className="h-4 w-[38%] max-w-[160px]" />
+                <Skeleton className="h-4 w-[24%] max-w-[110px]" />
+                <Skeleton className="h-4 w-[12%] max-w-[60px]" />
+                <Skeleton className="h-7 w-7 rounded-md ml-auto shrink-0" />
+              </div>
+              {/* Row skeletons */}
+              <div className="divide-y divide-zinc-800/60">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 sm:gap-4 px-2 sm:px-4 py-4">
+                    <div className="w-[38%] space-y-1.5">
+                      <Skeleton className="h-4 w-full max-w-[220px]" />
+                      <Skeleton className="h-3 w-2/3 max-w-[140px] sm:hidden" />
+                    </div>
+                    <Skeleton className="h-4 w-[24%] max-w-[150px]" />
+                    <Skeleton className="h-4 w-[10%] max-w-[40px]" />
+                    <Skeleton className="h-8 w-8 rounded-full ml-auto shrink-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : filteredGroups.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">
-              {searchQuery
-                ? 'No song sets match your search criteria'
-                : (userOrganizations.length === 0 && currentUser.role !== 'super_admin')
-                  ? 'You need to join an organization to view song sets. Contact an admin to be added to an organization.'
-                  : 'No song sets available. Create a song set to get started!'}
+            <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-4 border border-zinc-800/60 rounded-xl bg-zinc-950/30">
+              <div className="text-lg px-4">
+                {searchQuery
+                  ? 'No song sets match your search criteria'
+                  : (userOrganizations.length === 0 && currentUser.role !== 'super_admin')
+                    ? 'You need to join an organization to view song sets. Contact an admin to be added to an organization.'
+                    : 'No song sets available. Create a song set to get started!'}
+              </div>
+              {!searchQuery && (userOrganizations.length > 0 || currentUser.role === 'super_admin') && (
+                <Button
+                  onClick={() => setCreateChoiceOpen(true)}
+                  className="gap-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Song Set
+                </Button>
+              )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table className="table-fixed w-full">
+            <div className="overflow-x-auto border border-zinc-800/60 rounded-xl bg-zinc-950/30">
+              <Table className="table-fixed w-full border-collapse">
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="bg-zinc-800 hover:bg-zinc-800 data-[state=selected]:bg-zinc-800 border-b border-zinc-800/80">
                     <TableHead className="w-[42%] px-2 sm:px-4 text-base">Name</TableHead>
                     <TableHead className="w-[28%] px-2 sm:px-4 text-base">
                       <div className="flex items-center">
-                        <Building className="h-4 w-4" />
+                        <Users className="h-4 w-4" />
                         <span className="sr-only">Organization</span>
                       </div>
                     </TableHead>
@@ -183,7 +296,7 @@ const GroupList = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredGroups.map((group) => (
+                  {paginatedGroups.map((group) => (
                     <TableRow
                       key={group.id}
                       className="cursor-pointer"
@@ -243,7 +356,7 @@ const GroupList = () => {
                                   size="icon"
                                   className="h-8 w-8 shrink-0"
                                   title="Delete"
-                                  onClick={() => handleDeleteGroup(group.id)}
+                                  onClick={() => setGroupToDelete(group)}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -256,10 +369,95 @@ const GroupList = () => {
                   ))}
                 </TableBody>
               </Table>
+
+              {totalPages > 1 && (
+                <div className="py-3 border-t border-zinc-800/60">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          className={`cursor-pointer select-none ${safePage <= 1 ? 'pointer-events-none opacity-40' : ''}`}
+                          onClick={() => goToPage(safePage - 1)}
+                        />
+                      </PaginationItem>
+                      {getPageNumbers(safePage, totalPages).map((p, idx) =>
+                        p === 'ellipsis' ? (
+                          <PaginationItem key={`e-${idx}`}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        ) : (
+                          <PaginationItem key={p}>
+                            <PaginationLink
+                              className="cursor-pointer select-none"
+                              isActive={p === safePage}
+                              onClick={() => goToPage(p)}
+                            >
+                              {p}
+                            </PaginationLink>
+                          </PaginationItem>
+                        )
+                      )}
+                      <PaginationItem>
+                        <PaginationNext
+                          className={`cursor-pointer select-none ${safePage >= totalPages ? 'pointer-events-none opacity-40' : ''}`}
+                          onClick={() => goToPage(safePage + 1)}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
+
+      <ConfirmDialog
+        open={!!groupToDelete}
+        onOpenChange={(open) => { if (!open) setGroupToDelete(null); }}
+        icon={<Trash2 />}
+        title="Delete Song Set"
+        description={<>This will permanently delete the song set <span className="font-bold text-white">"{groupToDelete?.name}"</span>. This action cannot be undone.</>}
+        confirmLabel="Delete"
+        onConfirm={handleConfirmDeleteGroup}
+      />
+
+      {/* Create song set: manual vs AI */}
+      <Dialog open={createChoiceOpen} onOpenChange={setCreateChoiceOpen}>
+        <DialogContent className="sm:max-w-sm bg-zinc-950 border-zinc-800">
+          <DialogHeader>
+            <DialogTitle className="text-zinc-100">Create Song Set</DialogTitle>
+            <DialogDescription className="text-zinc-500">
+              How would you like to create it?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 pt-2">
+            <button
+              onClick={handleCreateManually}
+              className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 text-left hover:bg-zinc-800/80 transition-colors"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-800 text-zinc-300">
+                <Pencil className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold text-sm text-zinc-100">Create manually</p>
+                <p className="text-xs text-zinc-500">Name the set and add songs yourself</p>
+              </div>
+            </button>
+            <button
+              onClick={handleCreateWithAI}
+              className="flex items-center gap-3 rounded-xl border border-blue-500/30 bg-blue-500/10 p-4 text-left hover:bg-blue-500/20 transition-colors"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold text-sm text-blue-300">Create with AI</p>
+                <p className="text-xs text-blue-400/70">Let Grace Copilot help build your set</p>
+              </div>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

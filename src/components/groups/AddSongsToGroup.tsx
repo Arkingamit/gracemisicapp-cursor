@@ -1,8 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSongs } from '@/contexts/SongContext';
 import { detectKey } from '@/lib/keyDetection';
 import { useGroups } from '@/contexts/groups';
+import { useAuth, authFetch } from '@/contexts/AuthContext';
+import { Sparkles, Plus } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -28,6 +31,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import { DEFAULT_PAGE_SIZE, getPageNumbers } from '@/lib/pagination';
 
 const MUSICAL_KEYS = [
   // Major keys
@@ -50,6 +63,14 @@ const AddSongsToGroup = ({ groupId, existingSongIds, onCancel }: AddSongsToGroup
   const [languageFilter, setLanguageFilter] = useState<string>('all');
   const [selectedSongs, setSelectedSongs] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // AI search state
+  const { currentUser } = useAuth();
+  const [isAiEnabled, setIsAiEnabled] = useState(false);
+  const [aiResults, setAiResults] = useState<string[] | null>(null);
+  const [aiSearching, setAiSearching] = useState(false);
+  const aiDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  
   const router = useRouter();
   
   // Filter out songs that are already in the group
@@ -72,8 +93,60 @@ const AddSongsToGroup = ({ groupId, existingSongIds, onCancel }: AddSongsToGroup
     return Array.from(langs).sort();
   }, [availableSongs]);
 
+  // AI search function
+  const performAiSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setAiResults(null);
+      setAiSearching(false);
+      return;
+    }
+    setAiSearching(true);
+    try {
+      const res = await authFetch('/api/ai/search', {
+        method: 'POST',
+        body: JSON.stringify({ query }),
+      });
+      const data = await res.json();
+      if (res.ok && data.songIds) {
+        setAiResults(data.songIds);
+      } else {
+        setAiResults([]);
+      }
+    } catch {
+      setAiResults([]);
+    } finally {
+      setAiSearching(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isAiEnabled) {
+      setAiResults(null);
+      return;
+    }
+    if (aiDebounceRef.current) clearTimeout(aiDebounceRef.current);
+    if (!searchQuery.trim()) {
+      setAiResults(null);
+      return;
+    }
+    aiDebounceRef.current = setTimeout(() => {
+      performAiSearch(searchQuery);
+    }, 600);
+
+    return () => {
+      if (aiDebounceRef.current) clearTimeout(aiDebounceRef.current);
+    };
+  }, [searchQuery, isAiEnabled, performAiSearch]);
+
   // Apply search and dropdown filters
-  const filteredSongs = availableSongs.filter(song => {
+  const filteredSongs = useMemo(() => {
+    if (isAiEnabled && aiResults !== null) {
+      return aiResults
+        .map(id => availableSongs.find(s => s.id === id))
+        .filter((s): s is typeof availableSongs[number] => !!s);
+    }
+
+    return availableSongs.filter(song => {
     // 1. Language filter
     if (languageFilter !== 'all' && song.language?.toLowerCase() !== languageFilter.toLowerCase()) {
       return false;
@@ -90,21 +163,42 @@ const AddSongsToGroup = ({ groupId, existingSongIds, onCancel }: AddSongsToGroup
     }
 
     // 3. Text search
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
+    if (!isAiEnabled) {
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return true;
+      
+      if (q.startsWith('key:')) {
+        return songKey.toLowerCase() === q.substring(4).trim();
+      }
     
-    if (q.startsWith('key:')) {
-      return songKey.toLowerCase() === q.substring(4).trim();
+      const searchTokens = q.split(/\s+/).filter(Boolean);
+      return searchTokens.every(token => 
+        songKey.toLowerCase() === token || // exact key match
+        song.title.toLowerCase().includes(token) ||
+        song.artist.toLowerCase().includes(token) ||
+        song.genre.some(g => g.toLowerCase().includes(token)) ||
+        (song.aliases || []).some(alias => alias.toLowerCase().includes(token))
+      );
     }
-    
-    const searchTokens = q.split(/\s+/).filter(Boolean);
-    return searchTokens.every(token => 
-      songKey.toLowerCase() === token || // exact key match
-      song.title.toLowerCase().includes(token) ||
-      song.artist.toLowerCase().includes(token) ||
-      song.genre.some(g => g.toLowerCase().includes(token))
-    );
+    return true;
   });
+  }, [availableSongs, languageFilter, keyFilter, searchQuery, songKeys, isAiEnabled, aiResults]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredSongs.length / DEFAULT_PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedSongs = useMemo(
+    () => filteredSongs.slice((safePage - 1) * DEFAULT_PAGE_SIZE, safePage * DEFAULT_PAGE_SIZE),
+    [filteredSongs, safePage]
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, keyFilter, languageFilter, isAiEnabled]);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(totalPages, page)));
+  };
   
   const handleToggleSelection = (songId: string) => {
     const newSelection = new Set(selectedSongs);
@@ -118,22 +212,20 @@ const AddSongsToGroup = ({ groupId, existingSongIds, onCancel }: AddSongsToGroup
   
   const handleAddSongs = async () => {
     if (selectedSongs.size === 0) return;
-    
+
     setIsSubmitting(true);
-    
-    try {
-      // Add each selected song to the group
-      for (const songId of selectedSongs) {
-        await addSongToGroup(groupId, songId);
-      }
-      
-      // Navigate back to group page
-      router.push(`/groups/view?id=${groupId}`);
-    } catch (error) {
-      console.error('Failed to add songs to group:', error);
-    } finally {
-      setIsSubmitting(false);
+    const songIds = Array.from(selectedSongs);
+    // Optimistic updates land immediately — navigate without waiting on the network
+    router.push(`/groups/view?id=${groupId}`);
+
+    const results = await Promise.allSettled(
+      songIds.map((songId) => addSongToGroup(groupId, songId))
+    );
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    if (failed > 0) {
+      console.error(`Failed to add ${failed} of ${songIds.length} songs to group`);
     }
+    setIsSubmitting(false);
   };
   
   return (
@@ -188,11 +280,50 @@ const AddSongsToGroup = ({ groupId, existingSongIds, onCancel }: AddSongsToGroup
           </Select>
         </div>
         
-        {filteredSongs.length === 0 ? (
-          <div className="text-center py-4 text-muted-foreground">
-            {availableSongs.length === 0 
-              ? 'No songs available to add to this song set' 
-              : 'No songs match your search criteria'}
+        {aiSearching ? (
+          <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-3">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+            >
+              <Sparkles className="w-6 h-6 text-purple-400" />
+            </motion.div>
+            <span className="text-sm">AI is searching...</span>
+          </div>
+        ) : filteredSongs.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-4 border border-zinc-800/60 rounded-xl bg-zinc-950/30 mt-4">
+            <div className="text-lg">
+              {availableSongs.length === 0 
+                ? 'No songs available to add to this song set' 
+                : searchQuery
+                  ? (isAiEnabled ? 'AI couldn\'t find matching songs. Try a different description.' : 'No songs match your search criteria')
+                  : 'No songs available to add to this song set'}
+            </div>
+
+            {searchQuery && (
+              <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
+                {!isAiEnabled && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsAiEnabled(true)}
+                    className="gap-2 rounded-full border-purple-500/30 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 hover:text-purple-300 hover:border-purple-500/50 transition-all font-medium"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Try AI Search
+                  </Button>
+                )}
+                
+                {currentUser && (
+                  <Button 
+                    onClick={() => router.push('/songs/new')} 
+                    className="gap-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all font-medium"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Song
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto border border-zinc-800/60 rounded-xl bg-zinc-950/30 mt-4">
@@ -208,7 +339,7 @@ const AddSongsToGroup = ({ groupId, existingSongIds, onCancel }: AddSongsToGroup
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSongs.map((song) => (
+                {paginatedSongs.map((song) => (
                   <TableRow 
                     key={song.id}
                     className="cursor-pointer select-none transition-colors"
@@ -240,6 +371,44 @@ const AddSongsToGroup = ({ groupId, existingSongIds, onCancel }: AddSongsToGroup
                 ))}
               </TableBody>
             </Table>
+
+            {totalPages > 1 && (
+              <div className="py-3 border-t border-zinc-800/60">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        className={`cursor-pointer select-none ${safePage <= 1 ? 'pointer-events-none opacity-40' : ''}`}
+                        onClick={() => goToPage(safePage - 1)}
+                      />
+                    </PaginationItem>
+                    {getPageNumbers(safePage, totalPages).map((p, idx) =>
+                      p === 'ellipsis' ? (
+                        <PaginationItem key={`e-${idx}`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      ) : (
+                        <PaginationItem key={p}>
+                          <PaginationLink
+                            className="cursor-pointer select-none"
+                            isActive={p === safePage}
+                            onClick={() => goToPage(p)}
+                          >
+                            {p}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )
+                    )}
+                    <PaginationItem>
+                      <PaginationNext
+                        className={`cursor-pointer select-none ${safePage >= totalPages ? 'pointer-events-none opacity-40' : ''}`}
+                        onClick={() => goToPage(safePage + 1)}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

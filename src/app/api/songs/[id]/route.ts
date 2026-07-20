@@ -1,10 +1,45 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { SongModel } from '@/server/models/song';
 import { getAuthUser, authError } from '@/lib/auth';
 import { AuditLogModel } from '@/server/models/auditLog';
 import { UserModel } from '@/server/models/user';
 import { COLLECTIONS } from '@/server/db/collections';
 import { appCache } from '@/server/cache';
+import { validateBody, validateParams } from '@/server/validation/http';
+import {
+  boundedString,
+  genreInput,
+  objectId,
+  songFormatEnum,
+  songStatusEnum,
+  SONG_TITLE_MAX,
+  SONG_ARTIST_MAX,
+  SONG_LANGUAGE_MAX,
+  SONG_LYRICS_MAX,
+} from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
+
+const songUpdateSchema = z
+  .object({
+    title: boundedString(SONG_TITLE_MAX).optional(),
+    artist: boundedString(SONG_ARTIST_MAX).optional(),
+    language: boundedString(SONG_LANGUAGE_MAX).optional(),
+    genre: genreInput.optional(),
+    lyrics: z.string().max(SONG_LYRICS_MAX).optional(),
+    originalKey: z.string().trim().max(20).optional(),
+    externalUrl: z.union([z.literal(''), z.string().trim().url().max(2048)]).optional(),
+    keywords: z.array(boundedString(50)).max(50).optional(),
+    format: songFormatEnum.optional(),
+    status: songStatusEnum.optional(),
+    verifiedBy: objectId.optional(),
+    verifiedAt: z.string().max(40).optional(),
+    rejectionReason: z.string().max(1000).optional(),
+    rejectionCategory: z.string().max(60).optional(),
+    updatedAt: z.string().max(40).optional(),
+  })
+  .strict();
 
 // GET /api/songs/[id] - Get a song by ID
 export async function GET(
@@ -12,12 +47,36 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
     const song = await SongModel.findById(id);
     if (!song) {
       return Response.json({ error: 'Song not found' }, { status: 404 });
     }
-    return new Response(JSON.stringify({ song }), {
+    
+    let createdByName = 'Unknown';
+    let verifiedByName = undefined;
+
+    const creator = await UserModel.findById(song.createdBy);
+    if (creator) {
+      createdByName = creator.displayName || creator.name || 'Unknown';
+    }
+
+    if (song.verifiedBy) {
+      const verifier = await UserModel.findById(song.verifiedBy);
+      if (verifier) {
+        verifiedByName = verifier.displayName || verifier.name || 'Unknown';
+      }
+    }
+
+    return new Response(JSON.stringify({ 
+      song: {
+        ...song,
+        createdByName,
+        verifiedByName
+      } 
+    }), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
@@ -41,7 +100,9 @@ export async function PUT(
       return authError('Not authenticated');
     }
 
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
 
     // Fetch existing song to check ownership
     const existingSong = await SongModel.findById(id);
@@ -67,8 +128,11 @@ export async function PUT(
       );
     }
 
-    const updates = await request.json();
-    const song = await SongModel.update(id, updates);
+    const parsed = await validateBody(request, songUpdateSchema);
+    if (!parsed.ok) return parsed.response;
+    const updates = parsed.data;
+
+    const song = await SongModel.update(id, updates as Parameters<typeof SongModel.update>[1]);
     if (!song) {
       return Response.json({ error: 'Song not found' }, { status: 404 });
     }
@@ -104,7 +168,9 @@ export async function DELETE(
       return authError('Not authenticated');
     }
 
-    const { id } = await params;
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
 
     // Fetch existing song to check ownership
     const existingSong = await SongModel.findById(id);

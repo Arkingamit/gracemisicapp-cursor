@@ -7,22 +7,25 @@ import { authFetch } from '@/contexts/AuthContext';
  * This should only be called once when the user is authenticated.
  * On web, this is a no-op — web push is handled separately via Service Workers.
  */
-export async function initNativePushNotifications(): Promise<void> {
+export async function initNativePushNotifications(userInitiated = false): Promise<'requires_prompt' | 'granted' | 'denied'> {
   // Only run on native platforms (Android/iOS)
-  if (!Capacitor.isNativePlatform()) return;
+  if (!Capacitor.isNativePlatform()) return 'denied';
 
   try {
     // Check current permission status
     let permStatus = await PushNotifications.checkPermissions();
 
     if (permStatus.receive === 'prompt') {
+      if (!userInitiated) {
+        return 'requires_prompt';
+      }
       // Request permission from the user
       permStatus = await PushNotifications.requestPermissions();
     }
 
     if (permStatus.receive !== 'granted') {
       console.log('Push notification permission not granted');
-      return;
+      return 'denied';
     }
 
     // Register with the OS push service (FCM for Android, APNs for iOS)
@@ -48,7 +51,7 @@ export async function initNativePushNotifications(): Promise<void> {
 
     // Listen for registration errors
     PushNotifications.addListener('registrationError', (error) => {
-      console.error('Push registration error:', error);
+      console.error('Error on registration:', JSON.stringify(error));
     });
 
     // Listen for push notifications received while app is in foreground

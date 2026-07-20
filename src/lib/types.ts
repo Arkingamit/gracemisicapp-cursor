@@ -3,7 +3,7 @@ type ObjectId = string;
 import type { SongEditState } from './songEditTypes';
 
 // User roles
-export type UserRole = 'super_admin' | 'editor' | 'manager' | 'user';
+export type UserRole = 'super_admin' | 'editor' | 'verifier' | 'manager' | 'user';
 
 // Organization-level roles (separate from global UserRole)
 export type OrgRole = 'manager' | 'editor' | 'user';
@@ -14,6 +14,8 @@ export interface User {
   username: string; // Required in the interface
   name: string;
   role: UserRole;
+  /** All assigned system roles (supports multi-role users, e.g. editor + verifier) */
+  roles?: UserRole[];
   createdAt: string;
   displayName: string; // Required in the interface
   photoURL: string; // Required in the interface
@@ -21,6 +23,9 @@ export interface User {
   church?: string;
   age?: number;
   instrument?: string;
+  moderationStatus?: 'ok' | 'flagged' | 'restricted';
+  spamReportCount?: number;
+  moderationReason?: string;
 }
 
 export interface MongoUser {
@@ -29,6 +34,7 @@ export interface MongoUser {
   name: string;
   passwordHash: string;
   role: UserRole;
+  roles?: UserRole[];
   createdAt: Date;
   username?: string; // Making this optional for backward compatibility
   displayName?: string; // Making this optional for backward compatibility
@@ -37,6 +43,10 @@ export interface MongoUser {
   church?: string;
   age?: number;
   instrument?: string;
+  moderationStatus?: 'ok' | 'flagged' | 'restricted';
+  spamReportCount?: number;
+  moderationReason?: string;
+  moderatedAt?: Date;
 }
 
 // Add Genre interface
@@ -72,6 +82,45 @@ export interface MongoFeedback {
   createdAt: Date;
 }
 
+export type SongReportCategory =
+  | 'misplaced_chords'
+  | 'incomplete_song'
+  | 'wrong_metadata'
+  | 'other';
+
+export interface SongReport {
+  id: string;
+  songId: string;
+  songTitle: string;
+  songArtist?: string;
+  songCreatedBy: string;
+  reporterId: string;
+  reporterName: string;
+  reporterRole: UserRole;
+  category: SongReportCategory;
+  message?: string;
+  /** When true, also flags the contributor as a spam report from a verifier */
+  reportUserAsSpammer?: boolean;
+  status: 'new' | 'reviewed' | 'dismissed';
+  createdAt: string;
+}
+
+export interface MongoSongReport {
+  _id: ObjectId;
+  songId: string;
+  songTitle: string;
+  songArtist?: string;
+  songCreatedBy: string;
+  reporterId: string;
+  reporterName: string;
+  reporterRole: UserRole;
+  category: SongReportCategory;
+  message?: string;
+  reportUserAsSpammer?: boolean;
+  status: 'new' | 'reviewed' | 'dismissed';
+  createdAt: Date;
+}
+
 export interface Song {
   id: string;
   title: string;
@@ -87,6 +136,12 @@ export interface Song {
   externalUrl?: string;
   keywords?: string[];
   format?: 'auto' | 'chordpro';
+  status?: 'pending' | 'approved' | 'rejected';
+  verifiedBy?: string;
+  verifiedAt?: string;
+  createdByName?: string;
+  verifiedByName?: string;
+  aliases?: string[]; // Alternate titles for this song (e.g. different language, common name)
   structure?: {
     lines: Array<{
       type: 'chord' | 'lyric' | 'both';
@@ -111,6 +166,7 @@ export interface SongInput {
   externalUrl?: string;
   keywords?: string[];
   format?: 'auto' | 'chordpro';
+  status?: 'pending' | 'approved' | 'rejected';
 }
 
 export interface SongUpdateInput {
@@ -124,6 +180,11 @@ export interface SongUpdateInput {
   externalUrl?: string;
   keywords?: string[];
   format?: 'auto' | 'chordpro';
+  status?: 'pending' | 'approved' | 'rejected';
+  verifiedBy?: string;
+  verifiedAt?: string;
+  rejectionReason?: string;
+  rejectionCategory?: string;
 }
 
 export interface MongoSong {
@@ -141,6 +202,9 @@ export interface MongoSong {
   externalUrl?: string;
   keywords?: string[];
   format?: 'auto' | 'chordpro';
+  status?: 'pending' | 'approved' | 'rejected';
+  verifiedBy?: string;
+  verifiedAt?: Date;
   structure?: {
     lines: Array<{
       type: 'chord' | 'lyric' | 'both';
@@ -164,6 +228,8 @@ export interface SongTransposition {
 export interface MusicianAssignment {
   userId: string;
   instrument: string;
+  /** Display name resolved server-side; not persisted */
+  userName?: string | null;
 }
 
 // Rename Group to SongSet in display names, but keep Group internally for now

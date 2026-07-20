@@ -1,7 +1,12 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { GenreModel } from '@/server/models/genre';
 import { UserModel } from '@/server/models/user';
 import { verifyToken } from '@/lib/auth';
+import { validateParams } from '@/server/validation/http';
+import { objectId } from '@/server/validation/schemas';
+
+const idParamsSchema = z.object({ id: objectId });
 
 export async function DELETE(
   request: NextRequest,
@@ -25,10 +30,9 @@ export async function DELETE(
       return Response.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
-    const { id } = await params;
-    if (!id) {
-      return Response.json({ error: 'Genre ID is required' }, { status: 400 });
-    }
+    const parsedParams = validateParams(await params, idParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    const { id } = parsedParams.data;
 
     const deleted = await GenreModel.delete(id);
     if (!deleted) {

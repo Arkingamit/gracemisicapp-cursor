@@ -82,11 +82,42 @@ export async function PATCH(
       return Response.json({ error: 'Song not found' }, { status: 404 });
     }
 
+    const isPrivateToGlobal =
+      !!existingSong.pendingGlobalVerification && !!existingSong.organizationId;
+
     const category = rejectionCategory as SongReportCategory | undefined;
     const reasonLabel = category ? getReportCategoryLabel(category) : undefined;
     const fullReason = category
       ? [reasonLabel, rejectionMessage?.trim()].filter(Boolean).join(' — ')
       : undefined;
+
+    // Private→global: reject only clears the queue flag; keep song in private library
+    if (status === 'rejected' && isPrivateToGlobal) {
+      await SongModel.clearPendingGlobalVerification(id);
+      const song = await SongModel.update(id, {
+        verifiedBy: auth.userId,
+        verifiedAt: new Date().toISOString(),
+        ...(fullReason
+          ? { rejectionReason: fullReason, rejectionCategory: category }
+          : {}),
+      } as any);
+
+      await AuditLogModel.log({
+        collectionName: COLLECTIONS.SONGS,
+        documentId: id,
+        action: 'verify_reject' as any,
+        userId: auth.userId,
+        itemName: fullReason
+          ? `${existingSong.title} — ${existingSong.artist} (kept in private library; ${fullReason})`
+          : `${existingSong.title} — ${existingSong.artist} (kept in private library)`,
+      });
+
+      appCache.invalidate('songs:');
+      return Response.json({
+        song,
+        message: 'Global contribution declined; song remains in the private library',
+      });
+    }
 
     const updates: Record<string, unknown> = {
       status,
@@ -99,9 +130,17 @@ export async function PATCH(
       updates.rejectionCategory = category;
     }
 
-    const song = await SongModel.update(id, updates as any);
+    let song = await SongModel.update(id, updates as any);
     if (!song) {
       return Response.json({ error: 'Failed to update song' }, { status: 500 });
+    }
+
+    // Approve private→global: move into global library
+    if (status === 'approved' && isPrivateToGlobal) {
+      song = await SongModel.makeGlobal(id);
+      if (!song) {
+        return Response.json({ error: 'Failed to move song to global library' }, { status: 500 });
+      }
     }
 
     await AuditLogModel.log({

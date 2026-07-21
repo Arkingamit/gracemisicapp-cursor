@@ -31,6 +31,7 @@ export class SongModel {
       keywords: doc.keywords,
       format: doc.format || 'auto',
       status: doc.status || 'approved', // Legacy songs are considered approved
+      pendingGlobalVerification: doc.pendingGlobalVerification === true,
       verifiedBy: doc.verifiedBy,
       verifiedAt: typeof doc.verifiedAt?.toISOString === 'function' ? doc.verifiedAt.toISOString() : doc.verifiedAt,
       aliases: doc.aliases || [],
@@ -76,11 +77,17 @@ export class SongModel {
       if (songInput.organizationId) {
         newSong.organizationId = songInput.organizationId;
       }
+
+      // Private → global contribution: stays in org library until verified
+      if (songInput.pendingGlobalVerification && songInput.organizationId) {
+        newSong.pendingGlobalVerification = true;
+      }
       
       const result = await collection.insertOne(newSong);
       return {
         id: result.insertedId.toString(),
         ...songInput,
+        pendingGlobalVerification: !!newSong.pendingGlobalVerification,
         createdAt: now.toISOString(),
         updatedAt: now.toISOString()
       };
@@ -134,7 +141,7 @@ export class SongModel {
       await collection.updateOne(
         { _id: new ObjectId(id) },
         { 
-          $unset: { organizationId: "" },
+          $unset: { organizationId: "", pendingGlobalVerification: "" },
           $set: { updatedAt: new Date() }
         }
       );
@@ -142,6 +149,25 @@ export class SongModel {
       return await this.findById(id);
     } catch (error) {
       console.error("Error making song global:", error);
+      throw error;
+    }
+  }
+
+  /** Clear private→global queue flag without changing library / status */
+  static async clearPendingGlobalVerification(id: string): Promise<Song | null> {
+    try {
+      if (!id || !ObjectId.isValid(id)) return null;
+      const collection = await getCollection(COLLECTIONS.SONGS);
+      await collection.updateOne(
+        { _id: new ObjectId(id) },
+        {
+          $unset: { pendingGlobalVerification: "" },
+          $set: { updatedAt: new Date() },
+        }
+      );
+      return await this.findById(id);
+    } catch (error) {
+      console.error("Error clearing pendingGlobalVerification:", error);
       throw error;
     }
   }
@@ -218,10 +244,16 @@ export class SongModel {
       if (filters.createdBy) baseQuery.createdBy = filters.createdBy;
       
       // If status filter is provided, apply it. For 'approved', also match missing status (legacy).
+      // For 'pending', also include org songs queued for global verification.
       if (filters.status === 'approved') {
         baseQuery.$or = [
           { status: 'approved' },
           { status: { $exists: false } }
+        ];
+      } else if (filters.status === 'pending') {
+        baseQuery.$or = [
+          { status: 'pending' },
+          { pendingGlobalVerification: true },
         ];
       } else if (filters.status) {
         baseQuery.status = filters.status;
@@ -268,12 +300,18 @@ export class SongModel {
       // Default pagination behavior
       const query: any = { ...baseQuery };
       if (filters.userOrgIds) {
-        const orgOrCondition = [
+        const orgOrCondition: any[] = [
           { organizationId: { $exists: false } },
           { organizationId: null },
           { organizationId: '' },
           { organizationId: { $in: filters.userOrgIds } }
         ];
+
+        // Private→global contributions must reach the verification queue even if
+        // the verifier is not a member of that organization.
+        if (filters.status === 'pending') {
+          orgOrCondition.push({ pendingGlobalVerification: true });
+        }
 
         if (query.$or) {
           query.$and = [{ $or: query.$or }, { $or: orgOrCondition }];

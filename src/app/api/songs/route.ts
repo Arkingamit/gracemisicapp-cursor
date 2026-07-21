@@ -57,6 +57,7 @@ const songCreateSchema = z
     createdBy: objectId.optional(),
     organizationId: objectId.optional(),
     status: songStatusEnum.optional(),
+    pendingGlobalVerification: z.boolean().optional(),
   })
   .strict();
 
@@ -226,6 +227,8 @@ export async function POST(request: NextRequest) {
       ...body,
       createdBy: auth.userId,
       status, // Will be pending for non-admins submitting global songs
+      // Only meaningful for private-library creates
+      pendingGlobalVerification: !!(body.pendingGlobalVerification && body.organizationId),
     };
 
     if (body.organizationId && !hasAnyRole(roleBearer, 'super_admin')) {

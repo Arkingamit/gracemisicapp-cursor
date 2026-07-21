@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, Medal, Award, User } from 'lucide-react';
+import { Trophy, Medal, Award } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface Contributor {
   id: string;
-  name: string;
   count: number;
 }
 
@@ -53,9 +52,8 @@ const TopContributors = () => {
       <CardContent className="p-4">
         <div className="flex flex-wrap gap-4 items-center">
           {contributors.map((c, idx) => (
-            <div key={c.id} className="flex items-center gap-2 bg-zinc-800/40 px-3 py-1.5 rounded-full border border-zinc-700/30">
+            <div key={c.id || idx} className="flex items-center gap-2 bg-zinc-800/40 px-3 py-1.5 rounded-full border border-zinc-700/30">
               {getRankIcon(idx)}
-              <span className="text-sm font-medium text-zinc-300">{c.name}</span>
               <Badge variant="secondary" className="bg-zinc-950/50 text-xs px-1.5 py-0">
                 {c.count} {c.count === 1 ? 'song' : 'songs'}
               </Badge>

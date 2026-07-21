@@ -76,19 +76,37 @@ export async function PATCH(
       }
     );
 
-    // Reject the pending duplicate
-    await collection.updateOne(
-      { _id: new ObjectId(pendingSongId) },
-      {
-        $set: {
-          status: 'rejected',
-          verifiedBy: auth.userId,
-          verifiedAt: new Date(),
-          rejectionReason: `Duplicate of "${canonicalSong.title}" — title added as alias`,
-          updatedAt: new Date()
+    const isPrivateToGlobal =
+      !!pendingSong.pendingGlobalVerification && !!pendingSong.organizationId;
+
+    if (isPrivateToGlobal) {
+      // Keep the private-library copy; only clear the global-queue flag
+      await collection.updateOne(
+        { _id: new ObjectId(pendingSongId) },
+        {
+          $unset: { pendingGlobalVerification: "" },
+          $set: {
+            verifiedBy: auth.userId,
+            verifiedAt: new Date(),
+            updatedAt: new Date(),
+          },
         }
-      }
-    );
+      );
+    } else {
+      // Reject the pending duplicate
+      await collection.updateOne(
+        { _id: new ObjectId(pendingSongId) },
+        {
+          $set: {
+            status: 'rejected',
+            verifiedBy: auth.userId,
+            verifiedAt: new Date(),
+            rejectionReason: `Duplicate of "${canonicalSong.title}" — title added as alias`,
+            updatedAt: new Date()
+          }
+        }
+      );
+    }
 
     // Log the action
     await AuditLogModel.log({
@@ -105,7 +123,9 @@ export async function PATCH(
     appCache.invalidate(`song:${pendingSongId}`);
 
     return Response.json({
-      message: `Alias "${normalizedAlias}" added to "${canonicalSong.title}". Duplicate rejected.`,
+      message: isPrivateToGlobal
+        ? `Alias "${normalizedAlias}" added to "${canonicalSong.title}". Private library song kept.`
+        : `Alias "${normalizedAlias}" added to "${canonicalSong.title}". Duplicate rejected.`,
       canonicalSong: cleanCanonicalId,
     });
   } catch (error) {

@@ -137,6 +137,8 @@ export interface Song {
   keywords?: string[];
   format?: 'auto' | 'chordpro';
   status?: 'pending' | 'approved' | 'rejected';
+  /** Org-private song submitted for global library verification */
+  pendingGlobalVerification?: boolean;
   verifiedBy?: string;
   verifiedAt?: string;
   createdByName?: string;
@@ -167,6 +169,7 @@ export interface SongInput {
   keywords?: string[];
   format?: 'auto' | 'chordpro';
   status?: 'pending' | 'approved' | 'rejected';
+  pendingGlobalVerification?: boolean;
 }
 
 export interface SongUpdateInput {
@@ -203,8 +206,10 @@ export interface MongoSong {
   keywords?: string[];
   format?: 'auto' | 'chordpro';
   status?: 'pending' | 'approved' | 'rejected';
+  pendingGlobalVerification?: boolean;
   verifiedBy?: string;
   verifiedAt?: Date;
+  aliases?: string[];
   structure?: {
     lines: Array<{
       type: 'chord' | 'lyric' | 'both';

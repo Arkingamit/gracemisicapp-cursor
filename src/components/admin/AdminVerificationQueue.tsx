@@ -843,6 +843,11 @@ const AdminVerificationQueue = () => {
                         {song.language}
                       </Badge>
                     )}
+                    {song.pendingGlobalVerification && song.organizationId && (
+                      <Badge className="text-[10px] px-1.5 bg-sky-500/15 text-sky-300 border border-sky-500/30 hover:bg-sky-500/15">
+                        Private → Global Queue
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-sm text-zinc-400 mt-0.5">
                     {song.artist || 'Unknown Artist'} &nbsp;·&nbsp;

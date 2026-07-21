@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -130,6 +131,7 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
   });
 
   const [selectedOrgId, setSelectedOrgId] = useState<string>(defaultOrgId);
+  const [contributeToGlobal, setContributeToGlobal] = useState(false);
 
   useEffect(() => {
     // Only trigger tour on 'new song' mode, not when editing
@@ -251,17 +253,25 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
           format: data.format,
           createdBy: currentUser.id,
           ...(selectedOrgId && selectedOrgId !== 'global' ? { organizationId: selectedOrgId } : {}),
+          ...(selectedOrgId && selectedOrgId !== 'global' && contributeToGlobal
+            ? { pendingGlobalVerification: true }
+            : {}),
         };
         
         await addSong(songInput);
         
-        const isPending = (!selectedOrgId || selectedOrgId === 'global') && !canAddGlobal;
+        const isGlobalPending = (!selectedOrgId || selectedOrgId === 'global') && !canAddGlobal;
+        const isPrivateContribute = selectedOrgId && selectedOrgId !== 'global' && contributeToGlobal;
         
         toast({
-          title: isPending ? 'Song submitted for verification' : 'Song added',
-          description: isPending 
+          title: isGlobalPending || isPrivateContribute
+            ? 'Song submitted for verification'
+            : 'Song added',
+          description: isGlobalPending
             ? `${data.title} is now pending verification by an administrator.`
-            : `${data.title} has been added successfully`,
+            : isPrivateContribute
+              ? `${data.title} was added to your private library and submitted for global verification.`
+              : `${data.title} has been added successfully`,
         });
       }
       
@@ -744,7 +754,13 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
             {!isEditing && (
               <FormItem>
                 <FormLabel>Visibility</FormLabel>
-                <Select onValueChange={setSelectedOrgId} defaultValue={selectedOrgId}>
+                <Select
+                  onValueChange={(value) => {
+                    setSelectedOrgId(value);
+                    if (value === 'global') setContributeToGlobal(false);
+                  }}
+                  defaultValue={selectedOrgId}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Global (visible to everyone)" />
@@ -767,6 +783,29 @@ const SongForm: React.FC<SongFormProps> = ({ song, onSuccess }) => {
                     : 'Everyone can see this song once verified'}
                 </p>
               </FormItem>
+            )}
+
+            {!isEditing && selectedOrgId && selectedOrgId !== 'global' && (
+              <div className="flex items-start gap-3 rounded-lg border border-zinc-800/80 bg-zinc-900/40 p-3">
+                <Checkbox
+                  id="contribute-to-global"
+                  checked={contributeToGlobal}
+                  onCheckedChange={(checked) => setContributeToGlobal(checked === true)}
+                  className="mt-0.5"
+                />
+                <div className="space-y-1">
+                  <label
+                    htmlFor="contribute-to-global"
+                    className="text-sm font-medium leading-none text-zinc-200 cursor-pointer"
+                  >
+                    Contribute to Global Library
+                  </label>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    If verified as a new song, it will be moved from your private library to the global library.
+                    If verified as an alias, it will be kept in your private library.
+                  </p>
+                </div>
+              </div>
             )}
                         
             <div className="flex justify-between items-center mt-8 pt-6 border-t border-zinc-800/60">

@@ -732,20 +732,6 @@ export default function AIChatBot() {
                     <p className="font-medium text-zinc-200">I'm your worship assistant.</p>
                     <p className="mt-1 text-sm text-zinc-400">Ask me to suggest setlists, check vocal ranges, or find songs in your library.</p>
                   </div>
-                  <div className="mt-4 grid w-full gap-2">
-                    <button
-                      onClick={() => setQuickPrompt("Suggest an upbeat worship set for this Sunday")}
-                      className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-2.5 text-left text-xs text-blue-100/90 transition-colors hover:border-blue-400/40 hover:bg-blue-500/10"
-                    >
-                      "Suggest an upbeat worship set for this Sunday"
-                    </button>
-                    <button
-                      onClick={() => setQuickPrompt("What key is best for a female leading 'Way Maker'?")}
-                      className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-2.5 text-left text-xs text-violet-100/90 transition-colors hover:border-violet-400/40 hover:bg-violet-500/10"
-                    >
-                      "What key is best for a female leading 'Way Maker'?"
-                    </button>
-                  </div>
                 </div>
               )}
 

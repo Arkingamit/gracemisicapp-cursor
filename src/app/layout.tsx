@@ -6,9 +6,6 @@ import "@/index.css";
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  viewportFit: "cover",
-  // Helps mobile browsers / WebViews resize layout when the keyboard opens
-  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

@@ -536,16 +536,16 @@ export default function AIChatBot() {
         </button>
       </motion.div>
 
-      {/* Chat Window — full display; bottom lifts when keyboard is open */}
       <div
         data-tour="ai-chat-panel"
-        className={`fixed inset-x-0 top-0 z-[100] flex w-screen flex-col overflow-hidden bg-background font-ai transition-[opacity,transform] duration-300 ${
+        className={`fixed inset-x-0 top-0 bottom-[var(--keyboard-inset)] z-[100] flex w-full flex-col overflow-hidden bg-background font-ai transition-[opacity,transform] duration-300 md:bottom-24 md:left-auto md:right-6 md:top-auto md:h-[650px] md:max-h-[calc(100vh-8rem)] md:w-[400px] md:rounded-2xl md:border md:border-white/10 md:shadow-2xl ${
           isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
         }`}
-        style={{
-          top: 0,
-          bottom: keyboardInset,
-        }}
+        style={
+          {
+            "--keyboard-inset": `${keyboardInset}px`,
+          } as React.CSSProperties
+        }
       >
         {/* Soft brand wash */}
         <div

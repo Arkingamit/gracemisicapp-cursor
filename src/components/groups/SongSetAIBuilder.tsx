@@ -30,6 +30,7 @@ import SongSetPicker, {
   type ActiveSongSet,
   type ChatSongRef,
 } from "@/components/common/SongSetPicker";
+import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 
 const SONGSET_CONVERSATION_KEY = "grace_ai_songset_conversation_id";
 
@@ -73,7 +74,7 @@ export default function SongSetAIBuilder() {
   >([]);
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
-  const [keyboardInset, setKeyboardInset] = useState(0);
+  const keyboardInset = useKeyboardInset(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputAreaRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
@@ -123,33 +124,13 @@ export default function SongSetAIBuilder() {
     }
   }, [messages, isLoading]);
 
-  // Keep the fixed chat shell above the Android/iOS keyboard
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const updateInset = () => {
-      const inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
-      setKeyboardInset(inset);
-      if (inset > 0) {
-        requestAnimationFrame(() => {
-          messagesEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-          inputAreaRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-        });
-      }
-    };
-
-    updateInset();
-    vv.addEventListener("resize", updateInset);
-    vv.addEventListener("scroll", updateInset);
-    window.addEventListener("resize", updateInset);
-    return () => {
-      vv.removeEventListener("resize", updateInset);
-      vv.removeEventListener("scroll", updateInset);
-      window.removeEventListener("resize", updateInset);
-    };
-  }, []);
+    if (keyboardInset <= 0) return;
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+      inputAreaRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+    });
+  }, [keyboardInset]);
 
   // Load this song-set conversation (or seed welcome for a brand-new one)
   useEffect(() => {
@@ -489,9 +470,8 @@ export default function SongSetAIBuilder() {
       data-tour="ai-songset-panel"
       className="fixed inset-x-0 top-0 z-[60] flex flex-col bg-[#07070a] text-zinc-100 overflow-hidden font-ai"
       style={{
+        top: 0,
         bottom: keyboardInset,
-        height: keyboardInset > 0 ? undefined : "100dvh",
-        maxHeight: keyboardInset > 0 ? undefined : "100dvh",
       }}
     >
       <div

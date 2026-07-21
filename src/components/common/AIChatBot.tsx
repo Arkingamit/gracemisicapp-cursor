@@ -16,6 +16,7 @@ import {
 import { SystemMessage } from "@/components/prompt-kit/system-message";
 import { Button } from "@/components/ui/button";
 import type { Components } from "react-markdown";
+import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 
 const AI_CONVERSATION_SESSION_KEY = "grace_ai_conversation_id";
 
@@ -98,7 +99,7 @@ export default function AIChatBot() {
   >([]);
   const [loadingConversations, setLoadingConversations] = useState(false);
   /** Android/iOS keyboard overlap — lift fixed chat panel above the keyboard */
-  const [keyboardInset, setKeyboardInset] = useState(0);
+  const keyboardInset = useKeyboardInset(isOpen);
 
   // Seed a conversation id; openChat always starts a fresh chat.
   useEffect(() => {
@@ -209,39 +210,14 @@ export default function AIChatBot() {
     }
   }, [messages, isLoading]);
 
-  // Keep chat input above the native keyboard (Capacitor / mobile browsers).
-  // adjustPan alone leaves fixed bottom bars under the keyboard.
+  // When the keyboard opens, keep the latest message / input in view
   useEffect(() => {
-    if (!isOpen || typeof window === "undefined") {
-      setKeyboardInset(0);
-      return;
-    }
-
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const updateInset = () => {
-      const inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
-      setKeyboardInset(inset);
-      if (inset > 0) {
-        // After keyboard animation, ensure the latest message + input stay in view
-        requestAnimationFrame(() => {
-          messagesEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-          inputAreaRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-        });
-      }
-    };
-
-    updateInset();
-    vv.addEventListener("resize", updateInset);
-    vv.addEventListener("scroll", updateInset);
-    window.addEventListener("resize", updateInset);
-    return () => {
-      vv.removeEventListener("resize", updateInset);
-      vv.removeEventListener("scroll", updateInset);
-      window.removeEventListener("resize", updateInset);
-    };
-  }, [isOpen]);
+    if (keyboardInset <= 0) return;
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+      inputAreaRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+    });
+  }, [keyboardInset]);
 
   const handleSubmit = async (e?: FormEvent) => {
     e?.preventDefault();
@@ -567,9 +543,8 @@ export default function AIChatBot() {
           isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
         }`}
         style={{
+          top: 0,
           bottom: keyboardInset,
-          height: keyboardInset > 0 ? undefined : "100dvh",
-          maxHeight: keyboardInset > 0 ? undefined : "100dvh",
         }}
       >
         {/* Soft brand wash */}

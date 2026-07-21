@@ -50,8 +50,16 @@ public class MainActivity extends BridgeActivity {
             "    window.__graceKeyboardHelpersInstalled = true;" +
             "    var vv = window.visualViewport;" +
             "    if (!vv) return;" +
+            "    function isTextFocused() {" +
+            "      var el = document.activeElement;" +
+            "      if (!el) return false;" +
+            "      var tag = (el.tagName || '').toLowerCase();" +
+            "      return tag === 'input' || tag === 'textarea' || !!el.isContentEditable;" +
+            "    }" +
             "    function keyboardInset() {" +
-            "      return Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));" +
+            "      if (!isTextFocused()) return 0;" +
+            "      var inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));" +
+            "      return inset >= 120 ? inset : 0;" +
             "    }" +
             "    function applyInset() {" +
             "      var inset = keyboardInset();" +
@@ -59,11 +67,12 @@ public class MainActivity extends BridgeActivity {
             "      var panels = document.querySelectorAll('[data-tour=\"ai-chat-panel\"], [data-tour=\"ai-songset-panel\"]');" +
             "      for (var i = 0; i < panels.length; i++) {" +
             "        var panel = panels[i];" +
-            "        panel.style.bottom = inset > 0 ? inset + 'px' : '';" +
             "        if (inset > 0) {" +
-            "          panel.style.height = 'auto';" +
-            "          panel.style.maxHeight = 'none';" +
+            "          panel.style.bottom = inset + 'px';" +
+            "          panel.style.height = '';" +
+            "          panel.style.maxHeight = '';" +
             "        } else {" +
+            "          panel.style.bottom = '0px';" +
             "          panel.style.height = '';" +
             "          panel.style.maxHeight = '';" +
             "        }" +

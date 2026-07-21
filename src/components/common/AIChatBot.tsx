@@ -89,6 +89,7 @@ export default function AIChatBot() {
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputAreaRef = useRef<HTMLDivElement>(null);
   const dragControls = useAnimation();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -96,6 +97,8 @@ export default function AIChatBot() {
     { id: string; title: string; messageCount: number; updatedAt: string }[]
   >([]);
   const [loadingConversations, setLoadingConversations] = useState(false);
+  /** Android/iOS keyboard overlap — lift fixed chat panel above the keyboard */
+  const [keyboardInset, setKeyboardInset] = useState(0);
 
   // Seed a conversation id; openChat always starts a fresh chat.
   useEffect(() => {
@@ -205,6 +208,40 @@ export default function AIChatBot() {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isLoading]);
+
+  // Keep chat input above the native keyboard (Capacitor / mobile browsers).
+  // adjustPan alone leaves fixed bottom bars under the keyboard.
+  useEffect(() => {
+    if (!isOpen || typeof window === "undefined") {
+      setKeyboardInset(0);
+      return;
+    }
+
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const updateInset = () => {
+      const inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      setKeyboardInset(inset);
+      if (inset > 0) {
+        // After keyboard animation, ensure the latest message + input stay in view
+        requestAnimationFrame(() => {
+          messagesEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+          inputAreaRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+        });
+      }
+    };
+
+    updateInset();
+    vv.addEventListener("resize", updateInset);
+    vv.addEventListener("scroll", updateInset);
+    window.addEventListener("resize", updateInset);
+    return () => {
+      vv.removeEventListener("resize", updateInset);
+      vv.removeEventListener("scroll", updateInset);
+      window.removeEventListener("resize", updateInset);
+    };
+  }, [isOpen]);
 
   const handleSubmit = async (e?: FormEvent) => {
     e?.preventDefault();
@@ -340,6 +377,17 @@ export default function AIChatBot() {
     setError(null);
   };
 
+  const navigateFromChat = useCallback(
+    (url: string) => {
+      setHistoryOpen(false);
+      setIsOpen(false);
+      // Close first so the fixed overlay doesn't cover the destination page
+      // (AIChatBot lives in the root layout and stays mounted across routes).
+      router.push(url);
+    },
+    [router]
+  );
+
   const markdownComponents: Partial<Components> = useMemo(
     () => ({
       p: ({ children }) => (
@@ -373,22 +421,31 @@ export default function AIChatBot() {
       ),
       a: ({ children, href, ...props }) => {
         const url = typeof href === "string" ? href : "";
+        const isInternal =
+          url.startsWith("/") && !url.startsWith("//");
         const isSongLink = url.includes("/songs/view");
-        if (isSongLink) {
+        if (isInternal) {
           return (
             <a
               {...props}
               href={url}
               onClick={(e) => {
                 e.preventDefault();
-                router.push(url);
+                e.stopPropagation();
+                navigateFromChat(url);
               }}
-              className="my-1 inline-flex max-w-full cursor-pointer items-center gap-1 text-[15px] font-medium text-blue-400 no-underline transition-colors hover:text-blue-300"
+              className={
+                isSongLink
+                  ? "my-1 inline-flex max-w-full cursor-pointer items-center gap-1 text-[15px] font-medium text-blue-400 no-underline transition-colors hover:text-blue-300"
+                  : "inline-flex items-center gap-1 text-blue-400 underline underline-offset-2 hover:text-blue-300"
+              }
             >
               <span className="min-w-0 break-words underline underline-offset-2 decoration-blue-400/80">
                 {children}
               </span>
-              <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-blue-400" />
+              {isSongLink && (
+                <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-blue-400" />
+              )}
             </a>
           );
         }
@@ -469,7 +526,7 @@ export default function AIChatBot() {
         );
       },
     }),
-    [router]
+    [navigateFromChat]
   );
 
   // Dedicated Song Set Builder page — hide FAB Copilot entirely
@@ -503,11 +560,17 @@ export default function AIChatBot() {
         </button>
       </motion.div>
 
-      {/* Chat Window — full display */}
+      {/* Chat Window — full display; bottom lifts when keyboard is open */}
       <div
-        className={`fixed inset-0 z-[100] flex h-screen w-screen flex-col overflow-hidden bg-background font-ai transition-all duration-300 supports-[height:100dvh]:h-[100dvh] ${
+        data-tour="ai-chat-panel"
+        className={`fixed inset-x-0 top-0 z-[100] flex w-screen flex-col overflow-hidden bg-background font-ai transition-[opacity,transform] duration-300 ${
           isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
         }`}
+        style={{
+          bottom: keyboardInset,
+          height: keyboardInset > 0 ? undefined : "100dvh",
+          maxHeight: keyboardInset > 0 ? undefined : "100dvh",
+        }}
       >
         {/* Soft brand wash */}
         <div
@@ -773,7 +836,10 @@ export default function AIChatBot() {
             )}
 
             {/* Input Area */}
-            <div className="relative z-10 space-y-2 border-t border-blue-500/10 bg-zinc-950/80 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md">
+            <div
+              ref={inputAreaRef}
+              className="relative z-10 shrink-0 space-y-2 border-t border-blue-500/10 bg-zinc-950/80 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md"
+            >
               {aiEnabled ? (
                 <PromptInput
                   value={input}

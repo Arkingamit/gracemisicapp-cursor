@@ -11,6 +11,7 @@
     "android:run": "npx cap run android",
     "android:local": "cross-env CAP_SERVER_URL=http://192.168.2.190:3000 npx cap sync android",
     "android:prod": "cross-env CAP_SERVER_URL=https://music.graceahmedabad.org npx cap sync android",
+    "android:bundle": "cross-env CAP_SERVER_URL=https://music.graceahmedabad.org npx cap sync android && cd android && gradlew.bat bundleRelease",
     "android:dev": "cross-env CAP_SERVER_URL=http://10.0.2.2:3000 npx cap sync android && npx cap open android",
     "start": "next start",
     "lint": "next lint"

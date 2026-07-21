@@ -4,7 +4,7 @@ import { parseLineWithChords } from './chordParser';
 import { detectKey } from './keyDetection';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
+import { openExportedPdf } from '@/lib/graceApp';
 
 export type PdfOrientation = 'landscape' | 'portrait';
 
@@ -713,11 +713,10 @@ export const generateSongPdf = async (
         directory: Directory.Cache
       });
       
-      await Share.share({
+      await openExportedPdf({
+        path: filename,
+        uri: savedFile.uri,
         title: filename,
-        text: 'Shared Song Set from Grace Music',
-        url: savedFile.uri,
-        dialogTitle: 'Save or Share PDF'
       });
     } catch (e) {
       console.error('Error saving PDF natively', e);

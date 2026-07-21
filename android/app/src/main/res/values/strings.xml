@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">Grace Music</string>
     <string name="title_activity_main">Grace Music</string>
-    <string name="package_name">com.grace.app</string>
-    <string name="custom_url_scheme">com.grace.app</string>
+    <string name="package_name">org.graceahmedabad.music</string>
+    <string name="custom_url_scheme">org.graceahmedabad.music</string>
     <string name="server_client_id">810353645969-dmsbou0itk6475tap5j8qq7ejvs68dm7.apps.googleusercontent.com</string>
 </resources>

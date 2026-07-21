@@ -3,6 +3,7 @@ import autoTable from 'jspdf-autotable';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { openExportedPdf } from '@/lib/graceApp';
 
 export async function exportToCSV(filename: string, headers: string[], rows: any[][]) {
   const csvContent = [
@@ -62,10 +63,10 @@ export async function exportToPDF(filename: string, title: string, headers: stri
         data: base64Data,
         directory: Directory.Cache,
       });
-      await Share.share({
+      await openExportedPdf({
+        path: `${filename}.pdf`,
+        uri: result.uri,
         title: `${filename}.pdf`,
-        url: result.uri,
-        dialogTitle: 'Save or share PDF',
       });
     } catch (e) {
       console.error('Error saving PDF natively:', e);

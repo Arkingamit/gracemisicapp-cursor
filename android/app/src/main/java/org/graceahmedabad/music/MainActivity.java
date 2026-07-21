@@ -1,8 +1,9 @@
-package com.grace.app;
+package org.graceahmedabad.music;
 
 import android.os.Bundle;
 import android.view.WindowManager;
 import android.webkit.WebView;
+import androidx.core.splashscreen.SplashScreen;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.WebViewListener;
 
@@ -18,6 +19,9 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Must run before super.onCreate so Android 12+ splash hands off correctly
+        SplashScreen.installSplashScreen(this);
+
         registerPlugin(GraceGoogleAuthPlugin.class);
         registerPlugin(GraceAppPlugin.class);
         bridgeBuilder.addWebViewListener(
@@ -37,19 +41,50 @@ public class MainActivity extends BridgeActivity {
 
     private void injectKeyboardHelpers(WebView webView) {
         // language=javascript
+        // Lift fixed chat / focused fields above the keyboard via visualViewport.
+        // Complements website AIChatBot inset logic (works even before site deploy).
         String js =
             "(function () {" +
             "  try {" +
             "    if (window.__graceKeyboardHelpersInstalled) return;" +
             "    window.__graceKeyboardHelpersInstalled = true;" +
+            "    var vv = window.visualViewport;" +
+            "    if (!vv) return;" +
+            "    function keyboardInset() {" +
+            "      return Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));" +
+            "    }" +
+            "    function applyInset() {" +
+            "      var inset = keyboardInset();" +
+            "      document.documentElement.style.setProperty('--grace-keyboard-inset', inset + 'px');" +
+            "      var panels = document.querySelectorAll('[data-tour=\"ai-chat-panel\"], [data-tour=\"ai-songset-panel\"]');" +
+            "      for (var i = 0; i < panels.length; i++) {" +
+            "        var panel = panels[i];" +
+            "        panel.style.bottom = inset > 0 ? inset + 'px' : '';" +
+            "        if (inset > 0) {" +
+            "          panel.style.height = 'auto';" +
+            "          panel.style.maxHeight = 'none';" +
+            "        } else {" +
+            "          panel.style.height = '';" +
+            "          panel.style.maxHeight = '';" +
+            "        }" +
+            "      }" +
+            "    }" +
+            "    vv.addEventListener('resize', applyInset);" +
+            "    vv.addEventListener('scroll', applyInset);" +
+            "    window.addEventListener('resize', applyInset);" +
+            "    applyInset();" +
             "    document.addEventListener('focusin', function (e) {" +
             "      var t = e.target;" +
             "      if (!t) return;" +
             "      var tag = (t.tagName || '').toLowerCase();" +
             "      if (tag !== 'input' && tag !== 'textarea' && !t.isContentEditable) return;" +
             "      setTimeout(function () {" +
-            "        try { t.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' }); } catch (_) {}" +
-            "      }, 300);" +
+            "        applyInset();" +
+            "        try { t.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' }); } catch (_) {}" +
+            "      }, 280);" +
+            "    }, true);" +
+            "    document.addEventListener('focusout', function () {" +
+            "      setTimeout(applyInset, 280);" +
             "    }, true);" +
             "  } catch (e) {" +
             "    console.error('[Grace] keyboard helpers failed', e);" +

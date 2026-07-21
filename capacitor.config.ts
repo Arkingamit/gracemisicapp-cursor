@@ -10,8 +10,10 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const serverUrl =
   process.env.CAP_SERVER_URL || 'https://music.graceahmedabad.org';
 
+const usesHttp = serverUrl.startsWith('http://');
+
 const config: CapacitorConfig = {
-  appId: 'com.grace.app',
+  appId: 'org.graceahmedabad.music',
   appName: 'Grace Music',
   // Fallback assets only — the live site is loaded via server.url
   webDir: 'www',
@@ -27,10 +29,11 @@ const config: CapacitorConfig = {
       '192.168.*.*',
       '*.local',
     ],
-    cleartext: false,
+    // Required for local HTTP (android:local). Production HTTPS keeps this false.
+    cleartext: usesHttp,
   },
   android: {
-    allowMixedContent: false,
+    allowMixedContent: usesHttp,
   },
   ios: {
     contentInset: 'never',

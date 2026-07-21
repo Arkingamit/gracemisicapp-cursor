@@ -37,4 +37,16 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Android 13+ notification permission (requested at runtime by Capacitor) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Android 11+: allow discovering PDF viewers / share targets for export -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="application/pdf" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="application/pdf" />
+        </intent>
+    </queries>
 </manifest>

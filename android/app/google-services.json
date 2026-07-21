@@ -14,11 +14,56 @@
       },
       "oauth_client": [
         {
+          "client_id": "810353645969-dmsbou0itk6475tap5j8qq7ejvs68dm7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyADXMTzY_JDojn0HCS-jjc37M6feSQUt7w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "810353645969-dmsbou0itk6475tap5j8qq7ejvs68dm7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:810353645969:android:473280605f874257636230",
+        "android_client_info": {
+          "package_name": "org.graceahmedabad.music"
+        }
+      },
+      "oauth_client": [
+        {
           "client_id": "810353645969-2e3ktgulj3q8aa9hl6k793m7l2j7vek4.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.grace.app",
+            "package_name": "org.graceahmedabad.music",
             "certificate_hash": "44888f50370e4e2c2166a0251c771045411f1e4a"
+          }
+        },
+        {
+          "client_id": "810353645969-led94o6p3u5s29jf523cgbao9pe2t9sh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.graceahmedabad.music",
+            "certificate_hash": "05aefbcce7a91f9bfe2c0670661a9ffd72ac6e2f"
+          }
+        },
+        {
+          "client_id": "810353645969-un0g9ltuarn5gm95l4tk41qc009crlt5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.graceahmedabad.music",
+            "certificate_hash": "1476b576a38bbd7b3fafbcbf20e065f29efdaf82"
           }
         },
         {

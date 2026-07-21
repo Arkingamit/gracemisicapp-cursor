@@ -73,7 +73,9 @@ export default function SongSetAIBuilder() {
   >([]);
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [keyboardInset, setKeyboardInset] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputAreaRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
 
   const getAuthHeaders = useCallback((): Record<string, string> => {
@@ -120,6 +122,34 @@ export default function SongSetAIBuilder() {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isLoading]);
+
+  // Keep the fixed chat shell above the Android/iOS keyboard
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const updateInset = () => {
+      const inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      setKeyboardInset(inset);
+      if (inset > 0) {
+        requestAnimationFrame(() => {
+          messagesEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+          inputAreaRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+        });
+      }
+    };
+
+    updateInset();
+    vv.addEventListener("resize", updateInset);
+    vv.addEventListener("scroll", updateInset);
+    window.addEventListener("resize", updateInset);
+    return () => {
+      vv.removeEventListener("resize", updateInset);
+      vv.removeEventListener("scroll", updateInset);
+      window.removeEventListener("resize", updateInset);
+    };
+  }, []);
 
   // Load this song-set conversation (or seed welcome for a brand-new one)
   useEffect(() => {
@@ -437,7 +467,11 @@ export default function SongSetAIBuilder() {
   const showMoreSongReplies = awaitingMoreSongs && !isLoading;
 
   const markdownComponents = useMemo(
-    () => createGraceChatMarkdownComponents((href) => router.push(href)),
+    () =>
+      createGraceChatMarkdownComponents((href) => {
+        // Full-screen builder — navigate away so the song page is visible
+        router.push(href);
+      }),
     [router]
   );
 
@@ -451,7 +485,15 @@ export default function SongSetAIBuilder() {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-[#07070a] text-zinc-100 overflow-hidden font-ai">
+    <div
+      data-tour="ai-songset-panel"
+      className="fixed inset-x-0 top-0 z-[60] flex flex-col bg-[#07070a] text-zinc-100 overflow-hidden font-ai"
+      style={{
+        bottom: keyboardInset,
+        height: keyboardInset > 0 ? undefined : "100dvh",
+        maxHeight: keyboardInset > 0 ? undefined : "100dvh",
+      }}
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(99,102,241,0.12),_transparent_55%)]"
@@ -734,7 +776,10 @@ export default function SongSetAIBuilder() {
           </div>
         )}
 
-        <div className="shrink-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2">
+        <div
+          ref={inputAreaRef}
+          className="shrink-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2"
+        >
           {aiEnabled ? (
             <PromptInput
               value={input}

@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { Capacitor } from '@capacitor/core';
+import { Keyboard } from '@capacitor/keyboard';
+
 const KEYBOARD_MIN_PX = 120;
 
 function isTextFieldFocused(): boolean {
@@ -17,8 +20,6 @@ export function measureKeyboardInset(): number {
   if (typeof window === "undefined") return 0;
   const vv = window.visualViewport;
   if (!vv) return 0;
-  // Only lift UI while typing — otherwise Android WebView reports a false inset
-  // that leaves a black gap above the bottom nav.
   if (!isTextFieldFocused()) return 0;
   const inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
   return inset >= KEYBOARD_MIN_PX ? inset : 0;
@@ -26,7 +27,7 @@ export function measureKeyboardInset(): number {
 
 /**
  * Tracks keyboard overlap for fixed full-screen chat panels.
- * Returns 0 when the keyboard is closed so panels stay edge-to-edge.
+ * Uses Capacitor native Keyboard plugin if on mobile, otherwise falls back to VisualViewport.
  */
 export function useKeyboardInset(enabled = true): number {
   const [inset, setInset] = useState(0);
@@ -37,24 +38,41 @@ export function useKeyboardInset(enabled = true): number {
       return;
     }
 
-    const update = () => setInset(measureKeyboardInset());
+    if (Capacitor.isNativePlatform()) {
+      let isMounted = true;
+      const showListener = Keyboard.addListener('keyboardWillShow', info => {
+        if (isMounted) setInset(info.keyboardHeight);
+      });
+      const hideListener = Keyboard.addListener('keyboardWillHide', () => {
+        if (isMounted) setInset(0);
+      });
 
-    update();
-    const vv = window.visualViewport;
-    vv?.addEventListener("resize", update);
-    vv?.addEventListener("scroll", update);
-    window.addEventListener("resize", update);
-    document.addEventListener("focusin", update);
-    document.addEventListener("focusout", update);
+      return () => {
+        isMounted = false;
+        showListener.then(l => l.remove());
+        hideListener.then(l => l.remove());
+        setInset(0);
+      };
+    } else {
+      const update = () => setInset(measureKeyboardInset());
 
-    return () => {
-      vv?.removeEventListener("resize", update);
-      vv?.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
-      document.removeEventListener("focusin", update);
-      document.removeEventListener("focusout", update);
-      setInset(0);
-    };
+      update();
+      const vv = window.visualViewport;
+      vv?.addEventListener("resize", update);
+      vv?.addEventListener("scroll", update);
+      window.addEventListener("resize", update);
+      document.addEventListener("focusin", update);
+      document.addEventListener("focusout", update);
+
+      return () => {
+        vv?.removeEventListener("resize", update);
+        vv?.removeEventListener("scroll", update);
+        window.removeEventListener("resize", update);
+        document.removeEventListener("focusin", update);
+        document.removeEventListener("focusout", update);
+        setInset(0);
+      };
+    }
   }, [enabled]);
 
   return inset;

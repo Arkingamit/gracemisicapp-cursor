@@ -2,7 +2,7 @@
 
 import { LegalPageShell } from "@/components/legal/LegalPageShell";
 
-const CONTACT_EMAIL = "gfagapp@gmail.com";
+const CONTACT_EMAIL = "gamitarkin2@gmail.com";
 const SITE_URL = "https://music.graceahmedabad.org";
 
 export default function PrivacyPolicy() {
@@ -23,7 +23,7 @@ export default function PrivacyPolicy() {
         <li>
           <strong className="text-zinc-100">Account information:</strong> email
           address, name/display name, and authentication details when you sign in
-          with Google or create an account.
+          with Google, Sign in with Apple, or create an account.
         </li>
         <li>
           <strong className="text-zinc-100">Profile details (optional):</strong>{" "}
@@ -61,6 +61,7 @@ export default function PrivacyPolicy() {
       </p>
       <ul>
         <li>Google (Sign-In / OAuth, Firebase Cloud Messaging for push)</li>
+        <li>Apple (Sign in with Apple)</li>
         <li>Hosting and database providers that store app data</li>
         <li>AI providers used for optional assistant features</li>
       </ul>

@@ -35,72 +35,11 @@ public class MainActivity extends BridgeActivity {
             }
         );
         super.onCreate(savedInstanceState);
-        // Prefer pan over resize so fixed modals don't leave a huge grey gap above the keyboard
-        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
     }
 
     private void injectKeyboardHelpers(WebView webView) {
-        // language=javascript
-        // Lift fixed chat / focused fields above the keyboard via visualViewport.
-        // Complements website AIChatBot inset logic (works even before site deploy).
-        String js =
-            "(function () {" +
-            "  try {" +
-            "    if (window.__graceKeyboardHelpersInstalled) return;" +
-            "    window.__graceKeyboardHelpersInstalled = true;" +
-            "    var vv = window.visualViewport;" +
-            "    if (!vv) return;" +
-            "    function isTextFocused() {" +
-            "      var el = document.activeElement;" +
-            "      if (!el) return false;" +
-            "      var tag = (el.tagName || '').toLowerCase();" +
-            "      return tag === 'input' || tag === 'textarea' || !!el.isContentEditable;" +
-            "    }" +
-            "    function keyboardInset() {" +
-            "      if (!isTextFocused()) return 0;" +
-            "      var inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));" +
-            "      return inset >= 120 ? inset : 0;" +
-            "    }" +
-            "    function applyInset() {" +
-            "      var inset = keyboardInset();" +
-            "      document.documentElement.style.setProperty('--grace-keyboard-inset', inset + 'px');" +
-            "      var panels = document.querySelectorAll('[data-tour=\"ai-chat-panel\"], [data-tour=\"ai-songset-panel\"]');" +
-            "      for (var i = 0; i < panels.length; i++) {" +
-            "        var panel = panels[i];" +
-            "        if (inset > 0) {" +
-            "          panel.style.bottom = inset + 'px';" +
-            "          panel.style.height = '';" +
-            "          panel.style.maxHeight = '';" +
-            "        } else {" +
-            "          panel.style.bottom = '0px';" +
-            "          panel.style.height = '';" +
-            "          panel.style.maxHeight = '';" +
-            "        }" +
-            "      }" +
-            "    }" +
-            "    vv.addEventListener('resize', applyInset);" +
-            "    vv.addEventListener('scroll', applyInset);" +
-            "    window.addEventListener('resize', applyInset);" +
-            "    applyInset();" +
-            "    document.addEventListener('focusin', function (e) {" +
-            "      var t = e.target;" +
-            "      if (!t) return;" +
-            "      var tag = (t.tagName || '').toLowerCase();" +
-            "      if (tag !== 'input' && tag !== 'textarea' && !t.isContentEditable) return;" +
-            "      setTimeout(function () {" +
-            "        applyInset();" +
-            "        try { t.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' }); } catch (_) {}" +
-            "      }, 280);" +
-            "    }, true);" +
-            "    document.addEventListener('focusout', function () {" +
-            "      setTimeout(applyInset, 280);" +
-            "    }, true);" +
-            "  } catch (e) {" +
-            "    console.error('[Grace] keyboard helpers failed', e);" +
-            "  }" +
-            "})();";
-
-        webView.post(() -> webView.evaluateJavascript(js, null));
+        // Removed conflicting keyboard helper injection.
+        // We now rely on Capacitor's native Keyboard plugin or standard adjustResize.
     }
 
     /**

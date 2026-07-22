@@ -3,7 +3,11 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { useAuth, authFetch } from './AuthContext';
 import { Capacitor } from '@capacitor/core';
-import { initNativePushNotifications, removeNativePushListeners } from '@/lib/nativePushNotifications';
+import {
+  getNativePushPermission,
+  initNativePushNotifications,
+  removeNativePushListeners,
+} from '@/lib/nativePushNotifications';
 import NativePushPermissionPrompt from '@/components/common/NativePushPermissionPrompt';
 
 export interface Notification {
@@ -42,17 +46,53 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
+function mapNativeToWebPermission(
+  status: Awaited<ReturnType<typeof getNativePushPermission>>
+): NotificationPermission {
+  if (status === 'granted') return 'granted';
+  if (status === 'denied') return 'denied';
+  return 'default';
+}
+
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
   const { currentUser } = useAuth();
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
+  const syncPushPermission = useCallback(async () => {
+    if (typeof window === 'undefined') return;
+
+    if (Capacitor.isNativePlatform()) {
+      const status = await getNativePushPermission();
+      setPushPermission(mapNativeToWebPermission(status));
+      return;
+    }
+
+    if ('Notification' in window) {
       setPushPermission(Notification.permission);
     }
   }, []);
+
+  useEffect(() => {
+    void syncPushPermission();
+  }, [syncPushPermission]);
+
+  // Re-check when returning from Android settings / app resume
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        void syncPushPermission();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [syncPushPermission]);
 
   const fetchNotifications = useCallback(async () => {
     if (!currentUser) return;
@@ -88,7 +128,12 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     if (currentUser && Capacitor.isNativePlatform() && !nativePushInitialized.current) {
       nativePushInitialized.current = true;
       // Do not force the system dialog here — NativePushPermissionPrompt handles UX.
-      initNativePushNotifications(false).catch(console.error);
+      initNativePushNotifications(false)
+        .then((result) => {
+          if (result === 'granted') setPushPermission('granted');
+          else void syncPushPermission();
+        })
+        .catch(console.error);
     }
 
     // Cleanup listeners when user logs out
@@ -96,26 +141,21 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       nativePushInitialized.current = false;
       removeNativePushListeners().catch(console.error);
     }
-  }, [currentUser]);
+  }, [currentUser, syncPushPermission]);
 
-  // Web push permission prompt
-  useEffect(() => {
-    if (currentUser && !Capacitor.isNativePlatform() && typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'default') {
-        requestPushPermission();
-      }
-    }
-  }, [currentUser]);
-
-  const requestPushPermission = async () => {
+  const requestPushPermission = useCallback(async () => {
     if (Capacitor.isNativePlatform()) {
       const result = await initNativePushNotifications(true);
-      setPushPermission(result === 'granted' ? 'granted' : result === 'denied' ? 'denied' : 'default');
+      const next =
+        result === 'granted' ? 'granted' : result === 'denied' ? 'denied' : 'default';
+      setPushPermission(next);
+      // Re-read from Capacitor in case the plugin status lags the dialog result
+      await syncPushPermission();
       return;
     }
 
     if (!('Notification' in window)) return;
-    
+
     const permission = await Notification.requestPermission();
     setPushPermission(permission);
 
@@ -128,18 +168,32 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
         const subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: convertedVapidKey
+          applicationServerKey: convertedVapidKey,
         });
 
         await authFetch('/api/notifications/subscribe', {
           method: 'POST',
-          body: JSON.stringify({ subscription })
+          body: JSON.stringify({ subscription }),
         });
       } catch (error) {
         console.error('Error setting up push notifications:', error);
       }
     }
-  };
+  }, [syncPushPermission]);
+
+  // Web push permission prompt
+  useEffect(() => {
+    if (
+      currentUser &&
+      !Capacitor.isNativePlatform() &&
+      typeof window !== 'undefined' &&
+      'Notification' in window
+    ) {
+      if (Notification.permission === 'default') {
+        void requestPushPermission();
+      }
+    }
+  }, [currentUser, requestPushPermission]);
 
   const markAsRead = async (notificationIds: string[]) => {
     if (notificationIds.length === 0) return;
@@ -173,7 +227,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
     <NotificationContext.Provider
@@ -183,7 +237,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         loading,
         requestPushPermission,
         markAsRead,
-        pushPermission
+        pushPermission,
       }}
     >
       {children}

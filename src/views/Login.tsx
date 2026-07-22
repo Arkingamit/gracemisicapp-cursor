@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Music } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
+import { SignInWithApple, type SignInWithAppleOptions } from '@capacitor-community/apple-sign-in';
 
 export interface LoginProps {
   title?: React.ReactNode;
@@ -19,6 +20,24 @@ export interface LoginProps {
 const GOOGLE_WEB_CLIENT_ID =
   process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
   '810353645969-dmsbou0itk6475tap5j8qq7ejvs68dm7.apps.googleusercontent.com';
+
+/** Apple Services ID (web) or bundle ID (native). */
+const APPLE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || 'org.graceahmedabad.music';
+
+declare global {
+  interface Window {
+    AppleID?: {
+      auth: {
+        init: (config: Record<string, unknown>) => void;
+        signIn: () => Promise<{
+          authorization: { id_token: string; code?: string };
+          user?: { name?: { firstName?: string; lastName?: string } };
+        }>;
+      };
+    };
+  }
+}
 
 function isSignInCanceled(error: unknown): boolean {
   const message =
@@ -37,13 +56,44 @@ function isSignInCanceled(error: unknown): boolean {
   );
 }
 
+function formatAppleFullName(name?: { firstName?: string; lastName?: string }): string | undefined {
+  if (!name) return undefined;
+  const full = [name.firstName, name.lastName].filter(Boolean).join(' ').trim();
+  return full || undefined;
+}
+
+async function loadAppleScript(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  if (window.AppleID) return;
+  await new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector('script[data-apple-signin]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', () => reject(new Error('Apple script failed')));
+      return;
+    }
+    const script = document.createElement('script');
+    script.src =
+      'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+    script.async = true;
+    script.dataset.appleSignin = 'true';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Apple Sign In script'));
+    document.head.appendChild(script);
+  });
+}
+
 const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [nativeError, setNativeError] = useState<string | null>(null);
-  const { loginWithGoogle, currentUser } = useAuth();
+  const { loginWithGoogle, loginWithApple, currentUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = redirectPath || searchParams.get('redirectTo') || '/';
+
+  const platform = Capacitor.getPlatform();
+  const showAppleSignIn =
+    platform === 'ios' || (!Capacitor.isNativePlatform() && !!process.env.NEXT_PUBLIC_APPLE_CLIENT_ID);
 
   useEffect(() => {
     if (currentUser) {
@@ -71,8 +121,6 @@ const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
     setIsSubmitting(true);
     setNativeError(null);
     try {
-      // Always re-init without scopes. A previous init with scopes causes a
-      // second Google consent after account pick that often hangs / cancels.
       await GoogleSignIn.initialize({
         clientId: GOOGLE_WEB_CLIENT_ID,
       });
@@ -100,6 +148,63 @@ const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
     }
   };
 
+  const handleAppleLogin = async () => {
+    setIsSubmitting(true);
+    setNativeError(null);
+    try {
+      if (platform === 'ios') {
+        const options: SignInWithAppleOptions = {
+          clientId: APPLE_CLIENT_ID,
+          redirectURI: 'https://music.graceahmedabad.org/login',
+          scopes: 'email name',
+        };
+        const result = await SignInWithApple.authorize(options);
+        const idToken = result?.response?.identityToken;
+        if (!idToken) {
+          throw new Error('Apple did not return an identity token. Try again.');
+        }
+        const fullName = formatAppleFullName({
+          firstName: result.response?.givenName,
+          lastName: result.response?.familyName,
+        });
+        await loginWithApple(idToken, fullName);
+        router.replace(redirectTo);
+        return;
+      }
+
+      await loadAppleScript();
+      if (!window.AppleID) {
+        throw new Error('Apple Sign In is unavailable in this browser.');
+      }
+
+      window.AppleID.auth.init({
+        clientId: APPLE_CLIENT_ID,
+        scope: 'name email',
+        redirectURI: `${window.location.origin}/login`,
+        usePopup: true,
+      });
+
+      const response = await window.AppleID.auth.signIn();
+      const idToken = response?.authorization?.id_token;
+      if (!idToken) {
+        throw new Error('Apple did not return an identity token. Try again.');
+      }
+      await loginWithApple(idToken, formatAppleFullName(response.user?.name));
+      router.replace(redirectTo);
+    } catch (error: unknown) {
+      if (isSignInCanceled(error)) {
+        setNativeError('Sign-in was canceled. Please try again.');
+        return;
+      }
+      console.error('Apple Login failed:', error);
+      setNativeError(
+        error instanceof Error ? error.message : 'Apple Sign-In failed. Please try again.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-transparent">
       <div className="relative z-10 w-full max-w-md">
@@ -122,7 +227,7 @@ const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
                 </div>
               </div>
 
-              <div className="flex justify-center flex-col items-center gap-6">
+              <div className="flex justify-center flex-col items-center gap-4 w-full">
                 <div className="w-full relative">
                   <div className="relative">
                     {Capacitor.isNativePlatform() ? (
@@ -158,6 +263,20 @@ const Login = ({ title, subtitle, redirectPath }: LoginProps = {}) => {
                     )}
                   </div>
                 </div>
+
+                {showAppleSignIn && (
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => void handleAppleLogin()}
+                    className="w-full bg-white text-black hover:bg-zinc-100 disabled:opacity-60 rounded-full py-3 px-4 flex items-center justify-center gap-3 transition-colors text-[14px] font-medium"
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden fill="currentColor">
+                      <path d="M16.365 1.43c0 1.14-.42 2.2-1.18 3.03-.8.88-2.13 1.56-3.27 1.47-.14-1.1.44-2.27 1.2-3.08.8-.87 2.2-1.5 3.25-1.42zM20.9 17.3c-.55 1.27-.82 1.83-1.53 2.95-.99 1.55-2.39 3.48-4.13 3.5-1.54.02-1.94-.99-4.04-.98-2.1.01-2.55 1-4.09.98-1.74-.02-3.07-1.76-4.06-3.3C1.3 17.2.4 13.4 2.2 10.8c1.13-1.66 2.92-2.63 4.61-2.63 1.72 0 2.8 1 4.23 1 1.38 0 2.22-1.01 4.22-1.01 1.5 0 3.09.81 4.2 2.21-3.7 2.03-3.1 7.32.44 6.93z" />
+                    </svg>
+                    Continue with Apple
+                  </button>
+                )}
 
                 {nativeError && (
                   <p className="text-center text-sm text-red-400 px-2">{nativeError}</p>

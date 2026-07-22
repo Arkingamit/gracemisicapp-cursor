@@ -12,6 +12,7 @@ interface AuthContextType {
   logout: () => void;
   register: (email: string, password: string, username: string) => Promise<void>;
   loginWithGoogle: (credential: string) => Promise<void>;
+  loginWithApple: (idToken: string, fullName?: string) => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   /** Permanently delete the signed-in user's account and personal data. */
   deleteAccount: () => Promise<void>;
@@ -192,6 +193,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const loginWithApple = async (idToken: string, fullName?: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(getFullUrl('/api/auth/apple'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ idToken, fullName }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Apple sign-in failed');
+      }
+
+      setCurrentUser(data.user);
+
+      toast({
+        title: 'Apple Sign-in successful',
+        description: `Welcome, ${data.user.username || data.user.name}!`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Apple Sign-in failed',
+        description:
+          error instanceof Error ? error.message : 'Could not process Apple login token.',
+        variant: 'destructive',
+      });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const refreshUser = async (): Promise<User | null> => {
     try {
       const res = await authFetch('/api/auth/me');
@@ -245,6 +281,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout,
     register,
     loginWithGoogle,
+    loginWithApple,
     updateProfile,
     deleteAccount,
     refreshUser,

@@ -39,6 +39,10 @@ const config: CapacitorConfig = {
     contentInset: 'never',
   },
   plugins: {
+    Keyboard: {
+      resize: 'body',
+      resizeOnFullScreen: true,
+    },
     GoogleSignIn: {
       clientId:
         '810353645969-dmsbou0itk6475tap5j8qq7ejvs68dm7.apps.googleusercontent.com',

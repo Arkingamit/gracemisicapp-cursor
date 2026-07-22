@@ -68,8 +68,12 @@ export function NotificationBell() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={requestPushPermission}
                   className="h-7 text-xs"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void requestPushPermission();
+                  }}
                 >
                   Enable
                 </Button>

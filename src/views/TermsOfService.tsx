@@ -2,7 +2,7 @@
 
 import { LegalPageShell } from "@/components/legal/LegalPageShell";
 
-const CONTACT_EMAIL = "gfagapp@gmail.com";
+const CONTACT_EMAIL = "gamitarkin2@gmail.com";
 const SITE_URL = "https://music.graceahmedabad.org";
 
 export default function TermsOfService() {

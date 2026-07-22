@@ -330,6 +330,24 @@ export default function SongSetAIBuilder() {
     setAwaitingMoreSongs(true);
   };
 
+  const handleCancelSongPicker = () => {
+    setMessages((prev) => {
+      const next = [
+        ...prev.map((m) =>
+          m.selectableSongs?.length ? { ...m, selectableSongs: undefined } : m
+        ),
+        {
+          id: `cancel_picker_${Date.now()}`,
+          role: "assistant" as const,
+          content:
+            "No problem — skipped those songs. Type a song name (or a theme) whenever you want to add some.",
+        },
+      ];
+      void saveHistory(next);
+      return next;
+    });
+  };
+
   const handleDoneAdding = () => {
     setAwaitingMoreSongs(false);
     setMessages((prev) => {
@@ -703,6 +721,7 @@ export default function SongSetAIBuilder() {
                             getAuthHeaders={getAuthHeaders}
                             onSetUpdated={setActiveSongSet}
                             onSongsAdded={handleSongsAdded}
+                            onCancel={handleCancelSongPicker}
                           />
                         )}
                       </>

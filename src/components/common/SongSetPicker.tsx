@@ -34,6 +34,8 @@ interface SongSetPickerProps {
     addedTitles: string[];
     set: ActiveSongSet;
   }) => void;
+  /** Called when user cancels without selecting — parent can collapse the form */
+  onCancel?: () => void;
 }
 
 export default function SongSetPicker({
@@ -42,6 +44,7 @@ export default function SongSetPicker({
   getAuthHeaders,
   onSetUpdated,
   onSongsAdded,
+  onCancel,
 }: SongSetPickerProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState(false);
@@ -206,7 +209,7 @@ export default function SongSetPicker({
               </div>
             </ChatContainerRoot>
           </div>
-          <div className="p-3 border-t border-white/[0.06]">
+          <div className="p-3 border-t border-white/[0.06] space-y-2">
             <Button
               type="button"
               size="sm"
@@ -226,6 +229,18 @@ export default function SongSetPicker({
                 </>
               )}
             </Button>
+            {onCancel && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                disabled={adding}
+                onClick={onCancel}
+                className="w-full rounded-full text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
+              >
+                Cancel
+              </Button>
+            )}
           </div>
         </div>
       )}

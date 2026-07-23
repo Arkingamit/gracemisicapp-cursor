@@ -6,6 +6,8 @@ import "@/index.css";
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Required for env(safe-area-inset-*) under the iOS notch / Dynamic Island
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

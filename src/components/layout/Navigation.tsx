@@ -83,8 +83,8 @@ const Navigation = () => {
   return (
     <>
 
-      <header className="absolute top-0 left-0 right-0 z-50 w-full md:pt-4 md:px-4 pointer-events-none">
-        <div className="w-full md:max-w-5xl mx-auto bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/100 border-b md:border border-border/9 md:shadow-md md:rounded-full pointer-events-auto  ">
+      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/100 pt-[env(safe-area-inset-top,0px)] md:bg-transparent md:backdrop-blur-none md:pt-[calc(1rem+env(safe-area-inset-top,0px))] md:px-4 pointer-events-none">
+        <div className="w-full md:max-w-5xl mx-auto md:bg-black/95 md:backdrop-blur supports-[backdrop-filter]:md:bg-black/100 border-b md:border border-border/9 md:shadow-md md:rounded-full pointer-events-auto">
           <div className="container mx-auto px-4 md:px-6 flex justify-between items-center h-16">
             <div className="flex items-center md:flex-1">
               <Link href="/" className="flex items-center gap-3 text-xl font-bold group">

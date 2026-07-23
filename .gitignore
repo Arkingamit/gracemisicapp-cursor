@@ -50,3 +50,6 @@ next-env.d.ts
 *.log
 /tmp/
 atlas_backup_data/
+
+# local secrets (no leading dot)
+env.local

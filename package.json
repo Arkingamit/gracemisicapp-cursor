@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
+    "postinstall": "node scripts/patch-capacitor-spm-packages.mjs",
     "dev": "next dev -p 3000",
     "build": "next build",
     "build:mobile": "node scripts/build-mobile.mjs",
@@ -21,7 +22,7 @@
   },
   "dependencies": {
     "@capacitor-community/apple-sign-in": "^7.1.0",
-    "@capacitor/core": "^8.2.0",
+    "@capacitor/core": "8.2.0",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/keyboard": "^8.0.5",
     "@capacitor/push-notifications": "^8.1.1",
@@ -111,10 +112,10 @@
     "tar": "^7.5.19"
   },
   "devDependencies": {
-    "@capacitor/android": "^8.2.0",
+    "@capacitor/android": "8.2.0",
     "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^8.2.0",
-    "@capacitor/ios": "^8.2.0",
+    "@capacitor/cli": "8.2.0",
+    "@capacitor/ios": "8.2.0",
     "@tailwindcss/typography": "^0.5.15",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
@@ -129,6 +130,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "patch-package": "^8.0.1",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.11",
     "typescript": "^5.5.3",

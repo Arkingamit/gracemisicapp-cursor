@@ -79,10 +79,6 @@
     padding-right: var(--safe-area-inset-right);
   }
 
-  header {
-    padding-top: env(safe-area-inset-top, 0px);
-  }
-
   /* Bottom nav should also respect bottom safe area */
   .bottom-nav-container {
     padding-bottom: var(--safe-area-inset-bottom);
@@ -284,10 +280,6 @@
 
   .home-genre-img {
     @apply w-full h-full object-cover rounded-md;
-  }
-
-  header {
-    padding-top: env(safe-area-inset-top, 0px);
   }
 
   /* Bottom nav should also respect bottom safe area */

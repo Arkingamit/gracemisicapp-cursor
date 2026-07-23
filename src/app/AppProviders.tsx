@@ -17,7 +17,7 @@ import { GoogleSignIn } from "@capawesome/capacitor-google-sign-in";
 const Navigation = dynamic(() => import("@/components/layout/Navigation"), {
   ssr: false,
   loading: () => (
-    <div className="h-16 border-b bg-background/80 backdrop-blur-sm" />
+    <div className="h-[calc(4rem+env(safe-area-inset-top,0px))] border-b bg-background/80 backdrop-blur-sm" />
   ),
 });
 
@@ -65,10 +65,14 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
                 <PlaylistProvider>
                   <NotificationProvider>
                     <div className="flex flex-col min-h-[100dvh]">
-                      <Suspense fallback={<div className="h-16 border-b bg-background/80" />}>
+                      <Suspense
+                        fallback={
+                          <div className="h-[calc(4rem+env(safe-area-inset-top,0px))] border-b bg-background/80" />
+                        }
+                      >
                         <Navigation />
                       </Suspense>
-                      <main className="min-h-[calc(100vh-64px)] pt-16 md:pt-24 pb-24 md:pb-0 relative">
+                      <main className="min-h-[calc(100dvh-4rem-env(safe-area-inset-top,0px))] pt-[calc(4rem+env(safe-area-inset-top,0px))] md:pt-[calc(6rem+env(safe-area-inset-top,0px))] pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-0 relative">
                         {children}
                       </main>
                       <Suspense fallback={null}>

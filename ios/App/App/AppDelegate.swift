@@ -37,7 +37,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        // Custom scheme: org.graceahmedabad.music://invite/CODE → load https invite
+        // Custom scheme: org.graceahmedabad.music.ios://invite/CODE → load https invite
         if let https = Self.httpsInviteURL(from: url) {
             loadInWebView(https)
             NotificationCenter.default.post(name: .capacitorOpenUniversalLink, object: ["url": https])
@@ -70,7 +70,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     /// Maps custom-scheme invite URLs to the live https invite page.
     private static func httpsInviteURL(from url: URL) -> URL? {
-        guard url.scheme?.lowercased() == "org.graceahmedabad.music" else { return nil }
+        let scheme = url.scheme?.lowercased()
+        guard scheme == "org.graceahmedabad.music.ios" || scheme == "org.graceahmedabad.music" else {
+            return nil
+        }
 
         var code: String?
         if url.host?.lowercased() == "invite" {

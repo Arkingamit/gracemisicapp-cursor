@@ -39,7 +39,7 @@ export default function OpenInviteInApp({ code }: { code: string }) {
     }
 
     // iOS: custom scheme (Universal Links already tried when the https link was tapped)
-    window.location.href = `org.graceahmedabad.music://invite/${encodeURIComponent(code)}`;
+    window.location.href = `org.graceahmedabad.music.ios://invite/${encodeURIComponent(code)}`;
   };
 
   return (

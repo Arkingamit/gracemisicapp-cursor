@@ -5,8 +5,10 @@ import { NextResponse } from "next/server";
  * Team ID is taken from the iOS Xcode project (DEVELOPMENT_TEAM).
  */
 export async function GET() {
-  const teamId = process.env.APPLE_TEAM_ID || "7C99V6842Q";
-  const bundleId = "org.graceahmedabad.music";
+  // Team: arkin gamit (2B633NXZ52). Override with APPLE_TEAM_ID if needed.
+  const teamId = process.env.APPLE_TEAM_ID || "2B633NXZ52";
+  const bundleId =
+    process.env.APPLE_IOS_BUNDLE_ID || "org.graceahmedabad.music.ios";
 
   const body = {
     applinks: {

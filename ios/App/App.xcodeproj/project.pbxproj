@@ -18,6 +18,19 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1F9B23D730123518001F550A /* cordova.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = cordova.js; sourceTree = "<group>"; };
+		1F9B23D830123518001F550A /* cordova_plugins.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = cordova_plugins.js; sourceTree = "<group>"; };
+		1F9B23D930123518001F550A /* index.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = index.html; sourceTree = "<group>"; };
+		1F9B23DA30123518001F550A /* offline.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = offline.html; sourceTree = "<group>"; };
+		1F9B23DC30123518001F550A /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
+		1F9B23DD30123518001F550A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		1F9B23DE30123518001F550A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1F9B23DF30123518001F550A /* capacitor.config.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
+		1F9B23E030123518001F550A /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
+		1F9B23E130123518001F550A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		1F9B23E230123518001F550A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		1F9B23E330123518001F550A /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		1F9B23E530123518001F550A /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -41,11 +54,40 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1F9B23DB30123518001F550A /* public */ = {
+			isa = PBXGroup;
+			children = (
+				1F9B23D730123518001F550A /* cordova.js */,
+				1F9B23D830123518001F550A /* cordova_plugins.js */,
+				1F9B23D930123518001F550A /* index.html */,
+				1F9B23DA30123518001F550A /* offline.html */,
+			);
+			path = public;
+			sourceTree = "<group>";
+		};
+		1F9B23E730123518001F550A /* App */ = {
+			isa = PBXGroup;
+			children = (
+				1F9B23DB30123518001F550A /* public */,
+				1F9B23DC30123518001F550A /* App.entitlements */,
+				1F9B23DD30123518001F550A /* AppDelegate.swift */,
+				1F9B23DE30123518001F550A /* Assets.xcassets */,
+				1F9B23DF30123518001F550A /* capacitor.config.json */,
+				1F9B23E030123518001F550A /* config.xml */,
+				1F9B23E130123518001F550A /* GoogleService-Info.plist */,
+				1F9B23E230123518001F550A /* Info.plist */,
+				1F9B23E430123518001F550A /* LaunchScreen.storyboard */,
+				1F9B23E630123518001F550A /* Main.storyboard */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
 				504EC3061FED79650016851F /* App */,
 				504EC3051FED79650016851F /* Products */,
+				1F9B23E730123518001F550A /* App */,
 			);
 			sourceTree = "<group>";
 		};
@@ -160,6 +202,22 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
+		1F9B23E430123518001F550A /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				1F9B23E330123518001F550A /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+		1F9B23E630123518001F550A /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				1F9B23E530123518001F550A /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -305,7 +363,7 @@
 				);
 				MARKETING_VERSION = 1.0.4;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
-				PRODUCT_BUNDLE_IDENTIFIER = org.graceahmedabad.music;
+				PRODUCT_BUNDLE_IDENTIFIER = org.graceahmedabad.music.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_VERSION = 5.0;
@@ -328,7 +386,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.4;
-				PRODUCT_BUNDLE_IDENTIFIER = org.graceahmedabad.music;
+				PRODUCT_BUNDLE_IDENTIFIER = org.graceahmedabad.music.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_VERSION = 5.0;

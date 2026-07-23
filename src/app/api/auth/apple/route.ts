@@ -18,11 +18,12 @@ const appleAuthSchema = z
   })
   .strict();
 
-/** Native bundle ID + optional web Services ID (comma-separated). */
+/** Native iOS bundle ID(s) + optional web Services ID (comma-separated). */
 const APPLE_CLIENT_IDS = (
   process.env.APPLE_CLIENT_IDS ||
   process.env.NEXT_PUBLIC_APPLE_CLIENT_ID ||
-  'org.graceahmedabad.music'
+  // Prefer current iOS Bundle ID; keep legacy for transition.
+  'org.graceahmedabad.music.ios,org.graceahmedabad.music'
 )
   .split(',')
   .map((s) => s.trim())

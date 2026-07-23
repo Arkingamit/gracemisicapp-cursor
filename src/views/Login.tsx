@@ -23,7 +23,7 @@ const GOOGLE_WEB_CLIENT_ID =
 
 /** Apple Services ID (web) or bundle ID (native). */
 const APPLE_CLIENT_ID =
-  process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || 'org.graceahmedabad.music';
+  process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || 'org.graceahmedabad.music.ios';
 
 declare global {
   interface Window {

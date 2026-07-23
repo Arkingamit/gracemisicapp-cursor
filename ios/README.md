@@ -1,19 +1,16 @@
 # Grace Music — iOS (Capacitor)
 
-Matches Android configuration:
-
 | Setting | Value |
 |--------|--------|
-| Bundle ID | `org.graceahmedabad.music` |
+| Bundle ID (iOS only) | `org.graceahmedabad.music.ios` |
+| Android package (unchanged) | `org.graceahmedabad.music` |
 | Display name | Grace Music |
 | Version | `1.0.4` (build `5`) |
 | Server URL | `https://music.graceahmedabad.org` |
-| Google Sign-In (web client) | Capawesome + `GIDClientID` in Info.plist |
+| Apple Team | `2B633NXZ52` (arkin gamit) |
 
-## Important: build machine
-
-**You cannot produce an `.ipa` / App Store build on Windows.**  
-Use a **Mac with Xcode** (or a cloud Mac CI).
+> Capacitor `appId` stays `org.graceahmedabad.music` for Android.  
+> After every `cap sync ios`, `scripts/set-ios-bundle-id.mjs` restores the iOS Bundle ID.
 
 ## Setup on a Mac
 
@@ -25,41 +22,39 @@ npx cap open ios
 ```
 
 In Xcode:
-1. Select team / signing for `org.graceahmedabad.music`
-2. Product → Archive → Distribute App → App Store Connect
+1. Team: **arkin gamit** (`2B633NXZ52`)
+2. Confirm Bundle ID `org.graceahmedabad.music.ios`
+3. Signing & Capabilities → **Sign In with Apple**
+4. Product → Run (or Archive for App Store)
 
-## Sign in with Apple (required if you offer Google login)
+## Sign in with Apple
 
-### Apple Developer (developer.apple.com)
-1. Certificates, Identifiers & Profiles → **Identifiers**
-2. Select App ID `org.graceahmedabad.music` → enable **Sign In with Apple** → Save
-3. (Optional for web login) Create a **Services ID** e.g. `org.graceahmedabad.music.web`
-   - Enable Sign In with Apple
-   - Domains: `music.graceahmedabad.org`
-   - Return URLs: `https://music.graceahmedabad.org/login`
+### Apple Developer
+1. Identifiers → **+** → App IDs → App
+2. Bundle ID (Explicit): `org.graceahmedabad.music.ios`
+3. Enable **Sign In with Apple** → Register
 
-### Xcode
-1. Open the iOS project → Signing & Capabilities
-2. Confirm **Sign In with Apple** capability (entitlements file is already added)
-3. Team must match App ID
-
-### Env (server / web)
+### Server / env
 ```bash
-# Native audience (bundle ID) — required
-APPLE_CLIENT_IDS=org.graceahmedabad.music
-
-# Optional: also allow web Services ID
-# APPLE_CLIENT_IDS=org.graceahmedabad.music,org.graceahmedabad.music.web
-# NEXT_PUBLIC_APPLE_CLIENT_ID=org.graceahmedabad.music.web
+APPLE_CLIENT_IDS=org.graceahmedabad.music.ios
+APPLE_TEAM_ID=2B633NXZ52
+APPLE_IOS_BUNDLE_ID=org.graceahmedabad.music.ios
 ```
 
-### App Store Connect
-Users & Access / App → enable Sign in with Apple if prompted during submission.
+## Google Sign-In (iOS)
+
+1. Google Cloud → Credentials → Create OAuth client → **iOS**
+2. Bundle ID: `org.graceahmedabad.music.ios`
+3. Put the new client ID in `Info.plist` as `GIDClientID`
+4. URL scheme = reversed client ID (`com.googleusercontent.apps.XXXX`)
+5. Firebase → add/update iOS app with Bundle ID `org.graceahmedabad.music.ios` → download new `GoogleService-Info.plist`
+
+Keep the **Web** client ID for `GoogleSignIn.initialize({ clientId })` / `NEXT_PUBLIC_GOOGLE_CLIENT_ID`.
 
 ## npm scripts
 
 ```bash
-npm run ios:prod   # sync Capacitor to production URL
-npm run ios:sync   # sync iOS
-npm run ios:open   # open Xcode (Mac only)
+npm run ios:prod   # sync Capacitor to production URL + fix iOS Bundle ID
+npm run ios:sync   # sync iOS + fix Bundle ID
+npm run ios:open   # open Xcode
 ```

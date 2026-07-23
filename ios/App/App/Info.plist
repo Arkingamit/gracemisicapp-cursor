@@ -31,7 +31,7 @@
 			<string>GoogleSignIn</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.810353645969-dmsbou0itk6475tap5j8qq7ejvs68dm7</string>
+				<string>com.googleusercontent.apps.810353645969-jkl4llmn217k39e6li2877lopok0kjs4</string>
 			</array>
 		</dict>
 		<dict>
@@ -46,7 +46,7 @@
 		</dict>
 	</array>
 	<key>GIDClientID</key>
-	<string>810353645969-dmsbou0itk6475tap5j8qq7ejvs68dm7.apps.googleusercontent.com</string>
+	<string>810353645969-jkl4llmn217k39e6li2877lopok0kjs4.apps.googleusercontent.com</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIBackgroundModes</key>

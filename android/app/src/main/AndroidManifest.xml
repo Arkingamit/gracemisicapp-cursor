@@ -21,6 +21,26 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- App Links: https://music.graceahmedabad.org/invite/... opens the app -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="music.graceahmedabad.org"
+                    android:pathPrefix="/invite" />
+            </intent-filter>
+
+            <!-- Custom scheme fallback: org.graceahmedabad.music://invite/CODE -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="org.graceahmedabad.music" android:host="invite" />
+                <data android:scheme="org.graceahmedabad.music" android:pathPrefix="/invite" />
+            </intent-filter>
         </activity>
 
         <provider
@@ -35,6 +55,7 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Android 13+ notification permission (requested at runtime by Capacitor) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 

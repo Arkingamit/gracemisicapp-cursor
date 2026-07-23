@@ -44,7 +44,6 @@ import {
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -54,19 +53,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const SONGS_PER_PAGE = 25;
-
-/** Page numbers to render: 1 … around current … last */
-const getPageNumbers = (current: number, total: number): (number | 'ellipsis')[] => {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  const pages: (number | 'ellipsis')[] = [1];
-  if (current > 3) pages.push('ellipsis');
-  for (let p = Math.max(2, current - 1); p <= Math.min(total - 1, current + 1); p++) {
-    pages.push(p);
-  }
-  if (current < total - 2) pages.push('ellipsis');
-  pages.push(total);
-  return pages;
-};
 
 const MUSICAL_KEYS = [
   // Major keys
@@ -721,23 +707,15 @@ const SongList = () => {
                           onClick={() => goToPage(safePage - 1)}
                         />
                       </PaginationItem>
-                      {getPageNumbers(safePage, totalPages).map((p, idx) =>
-                        p === 'ellipsis' ? (
-                          <PaginationItem key={`e-${idx}`}>
-                            <PaginationEllipsis />
-                          </PaginationItem>
-                        ) : (
-                          <PaginationItem key={p}>
-                            <PaginationLink
-                              className="cursor-pointer select-none"
-                              isActive={p === safePage}
-                              onClick={() => goToPage(p)}
-                            >
-                              {p}
-                            </PaginationLink>
-                          </PaginationItem>
-                        )
-                      )}
+                      <PaginationItem>
+                        <PaginationLink
+                          className="pointer-events-none select-none min-w-[2.5rem]"
+                          isActive
+                          aria-current="page"
+                        >
+                          {safePage}
+                        </PaginationLink>
+                      </PaginationItem>
                       <PaginationItem>
                         <PaginationNext
                           className={`cursor-pointer select-none ${safePage >= totalPages ? 'pointer-events-none opacity-40' : ''}`}

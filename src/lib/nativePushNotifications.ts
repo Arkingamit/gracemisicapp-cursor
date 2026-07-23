@@ -53,9 +53,18 @@ export async function initNativePushNotifications(
   try {
     let permStatus = await PushNotifications.checkPermissions();
 
-    if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
+    // User tapped Allow — always invoke the system dialog when not already granted.
+    // (Don't only handle the exact "prompt" string; some Android builds differ.)
+    if (permStatus.receive !== 'granted') {
       if (!userInitiated) {
-        return 'requires_prompt';
+        if (
+          permStatus.receive === 'prompt' ||
+          permStatus.receive === 'prompt-with-rationale'
+        ) {
+          return 'requires_prompt';
+        }
+        console.log('Push notification permission not granted:', permStatus.receive);
+        return 'denied';
       }
       // Shows the Android 13+ system dialog: "Allow Grace Music to send you notifications?"
       permStatus = await PushNotifications.requestPermissions();

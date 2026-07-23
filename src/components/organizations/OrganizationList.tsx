@@ -212,6 +212,10 @@ const OrganizationList = () => {
                   <InputOTP
                     maxLength={6}
                     pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+                    inputMode="text"
+                    autoCapitalize="characters"
+                    autoCorrect="off"
+                    spellCheck={false}
                     value={joinCode}
                     onChange={(value) => setJoinCode(value.toUpperCase())}
                   >

@@ -1,9 +1,17 @@
 package org.graceahmedabad.music;
 
+import android.content.Context;
+import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
+import android.net.Uri;
 import android.os.Bundle;
-import android.view.WindowManager;
 import android.webkit.WebView;
+import androidx.annotation.NonNull;
 import androidx.core.splashscreen.SplashScreen;
+import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.WebViewListener;
 
@@ -14,8 +22,22 @@ import com.getcapacitor.WebViewListener;
  * switches to Capawesome GoogleSignIn, which often cancels after account pick.
  * We register {@link GraceGoogleAuthPlugin} and rewrite the login button to use it,
  * then complete auth via the website's existing /api/auth/login|register endpoints.
+ *
+ * Offline: Capacitor server.errorPath loads www/offline.html. We also watch
+ * connectivity and reload the live site when the device comes back online.
+ *
+ * Deep links: App Links / custom scheme for /invite/... open the invite page
+ * inside the WebView instead of the system browser.
  */
 public class MainActivity extends BridgeActivity {
+
+    private static final String LIVE_HOST = "music.graceahmedabad.org";
+    private static final String CUSTOM_SCHEME = "org.graceahmedabad.music";
+
+    private ConnectivityManager connectivityManager;
+    private ConnectivityManager.NetworkCallback networkCallback;
+    private boolean showingOffline = false;
+    private boolean reloadScheduled = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,99 +50,218 @@ public class MainActivity extends BridgeActivity {
             new WebViewListener() {
                 @Override
                 public void onPageLoaded(WebView webView) {
-                    injectGraceGoogleLogin(webView);
-                    injectKeyboardHelpers(webView);
-                    injectNotificationPermissionPrompt(webView);
+                    String url = webView.getUrl();
+                    if (url != null && url.contains("offline.html")) {
+                        showingOffline = true;
+                        injectOfflineHelpers(webView);
+                    } else {
+                        showingOffline = false;
+                        injectGraceGoogleLogin(webView);
+                    }
+                }
+
+                @Override
+                public void onReceivedError(WebView webView) {
+                    showingOffline = true;
+                }
+
+                @Override
+                public void onPageStarted(WebView webView) {
+                    String url = webView.getUrl();
+                    if (url == null || !url.contains("offline.html")) {
+                        showingOffline = false;
+                    }
                 }
             }
         );
         super.onCreate(savedInstanceState);
+        registerNetworkCallback();
+        // Cold start via App Link / custom scheme (after Bridge is ready)
+        handleIncomingLink(getIntent());
     }
 
-    private void injectKeyboardHelpers(WebView webView) {
-        // Removed conflicting keyboard helper injection.
-        // We now rely on Capacitor's native Keyboard plugin or standard adjustResize.
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIncomingLink(intent);
     }
 
     /**
-     * Until the website prompt UI is deployed, ask for Android notification
-     * permission after login using the system dialog.
+     * Resolve invite deep links into a https URL and load it in the WebView.
      */
-    private void injectNotificationPermissionPrompt(WebView webView) {
-        // language=javascript
-        String js =
-            "(function () {" +
-            "  try {" +
-            "    if (window.__gracePushPromptInstalled) return;" +
-            "    window.__gracePushPromptInstalled = true;" +
-            "    var C = window.Capacitor;" +
-            "    if (!C || !C.Plugins || !C.Plugins.PushNotifications) return;" +
-            "" +
-            "    function dismissedRecently() {" +
-            "      try {" +
-            "        var at = Number(localStorage.getItem('grace_push_prompt_dismissed_at') || '0');" +
-            "        return at && (Date.now() - at) < (3 * 24 * 60 * 60 * 1000);" +
-            "      } catch (_) { return false; }" +
-            "    }" +
-            "" +
-            "    async function ensurePush() {" +
-            "      try {" +
-            "        var me = await fetch('/api/auth/me', { credentials: 'include' });" +
-            "        if (!me.ok) return;" +
-            "        var Push = C.Plugins.PushNotifications;" +
-            "        var status = await Push.checkPermissions();" +
-            "        if (status.receive === 'granted') {" +
-            "          try {" +
-            "            await Push.createChannel({" +
-            "              id: 'default', name: 'Grace Music'," +
-            "              description: 'Song sets, groups, and app updates'," +
-            "              importance: 5, visibility: 1, sound: 'default', vibration: true" +
-            "            });" +
-            "          } catch (_) {}" +
-            "          await Push.register();" +
-            "          return;" +
-            "        }" +
-            "        if (dismissedRecently()) return;" +
-            "        if (status.receive === 'denied') {" +
-            "          var openSettings = window.confirm(" +
-            "            'Notifications are off. Open settings to allow Grace Music notifications?'" +
-            "          );" +
-            "          if (openSettings && C.Plugins.GraceApp) {" +
-            "            await C.Plugins.GraceApp.openNotificationSettings();" +
-            "          } else {" +
-            "            try { localStorage.setItem('grace_push_prompt_dismissed_at', String(Date.now())); } catch (_) {}" +
-            "          }" +
-            "          return;" +
-            "        }" +
-            "        var allow = window.confirm(" +
-            "          'Allow Grace Music to send you notifications for sets and updates?'" +
-            "        );" +
-            "        if (!allow) {" +
-            "          try { localStorage.setItem('grace_push_prompt_dismissed_at', String(Date.now())); } catch (_) {}" +
-            "          return;" +
-            "        }" +
-            "        status = await Push.requestPermissions();" +
-            "        if (status.receive === 'granted') {" +
-            "          try {" +
-            "            await Push.createChannel({" +
-            "              id: 'default', name: 'Grace Music'," +
-            "              description: 'Song sets, groups, and app updates'," +
-            "              importance: 5, visibility: 1, sound: 'default', vibration: true" +
-            "            });" +
-            "          } catch (_) {}" +
-            "          await Push.register();" +
-            "        }" +
-            "      } catch (err) {" +
-            "        console.error('[Grace] push prompt failed', err);" +
-            "      }" +
-            "    }" +
-            "" +
-            "    setTimeout(ensurePush, 2000);" +
-            "  } catch (e) {" +
-            "    console.error('[Grace] push inject failed', e);" +
-            "  }" +
-            "})();";
+    private void handleIncomingLink(Intent intent) {
+        if (intent == null) return;
+        Uri data = intent.getData();
+        if (data == null) return;
 
+        String target = resolveInviteUrl(data);
+        if (target == null) return;
+
+        Bridge bridge = getBridge();
+        if (bridge == null || bridge.getWebView() == null) return;
+
+        final String loadTarget = target;
+        bridge.getWebView().post(() -> {
+            try {
+                showingOffline = false;
+                bridge.getWebView().loadUrl(loadTarget);
+            } catch (Exception ignored) {}
+        });
+    }
+
+    private String resolveInviteUrl(Uri data) {
+        String scheme = data.getScheme();
+        if (scheme == null) return null;
+
+        if ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme)) {
+            String host = data.getHost();
+            String path = data.getPath() != null ? data.getPath() : "";
+            if (LIVE_HOST.equalsIgnoreCase(host) && path.startsWith("/invite")) {
+                return data.toString();
+            }
+            return null;
+        }
+
+        if (CUSTOM_SCHEME.equalsIgnoreCase(scheme)) {
+            // org.graceahmedabad.music://invite/CODE
+            // org.graceahmedabad.music:///invite/CODE
+            String host = data.getHost();
+            String path = data.getPath() != null ? data.getPath() : "";
+            String code = null;
+
+            if ("invite".equalsIgnoreCase(host)) {
+                code = path.startsWith("/") ? path.substring(1) : path;
+            } else if (path.startsWith("/invite/")) {
+                code = path.substring("/invite/".length());
+            } else if (path.equals("/invite") || "invite".equalsIgnoreCase(path)) {
+                code = data.getQueryParameter("code");
+            }
+
+            if (code != null) {
+                code = code.trim().replaceAll("/+$", "");
+            }
+            if (code == null || code.isEmpty()) return null;
+            return "https://" + LIVE_HOST + "/invite/" + Uri.encode(code);
+        }
+
+        return null;
+    }
+
+    @Override
+    public void onDestroy() {
+        unregisterNetworkCallback();
+        super.onDestroy();
+    }
+
+    private void registerNetworkCallback() {
+        connectivityManager =
+            (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager == null) return;
+
+        networkCallback =
+            new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(@NonNull Network network) {
+                    runOnUiThread(() -> {
+                        if (showingOffline || isShowingOfflinePage()) {
+                            reloadLiveApp();
+                        }
+                    });
+                }
+
+                @Override
+                public void onCapabilitiesChanged(
+                    @NonNull Network network,
+                    @NonNull NetworkCapabilities caps
+                ) {
+                    boolean online =
+                        caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                        caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+                    if (online) {
+                        runOnUiThread(() -> {
+                            if (showingOffline || isShowingOfflinePage()) {
+                                reloadLiveApp();
+                            }
+                        });
+                    }
+                }
+            };
+
+        NetworkRequest request =
+            new NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build();
+        try {
+            connectivityManager.registerNetworkCallback(request, networkCallback);
+        } catch (Exception ignored) {
+            // Older devices / missing permission — offline.html still has Try again
+        }
+    }
+
+    private void unregisterNetworkCallback() {
+        if (connectivityManager != null && networkCallback != null) {
+            try {
+                connectivityManager.unregisterNetworkCallback(networkCallback);
+            } catch (Exception ignored) {}
+        }
+        networkCallback = null;
+    }
+
+    private boolean isShowingOfflinePage() {
+        Bridge bridge = getBridge();
+        if (bridge == null || bridge.getWebView() == null) return false;
+        String url = bridge.getWebView().getUrl();
+        return url != null && url.contains("offline.html");
+    }
+
+    private void reloadLiveApp() {
+        if (reloadScheduled) return;
+        Bridge bridge = getBridge();
+        if (bridge == null || bridge.getWebView() == null) return;
+
+        String appUrl = bridge.getServerUrl();
+        if (appUrl == null || appUrl.trim().isEmpty()) {
+            appUrl = bridge.getAppUrl();
+        }
+        if (appUrl == null || appUrl.trim().isEmpty()) {
+            appUrl = "https://music.graceahmedabad.org/";
+        }
+
+        reloadScheduled = true;
+        showingOffline = false;
+        final String target = appUrl;
+        bridge.getWebView().post(() -> {
+            try {
+                bridge.getWebView().loadUrl(target);
+            } finally {
+                // Allow another retry if this load fails again
+                bridge.getWebView().postDelayed(() -> reloadScheduled = false, 2500);
+            }
+        });
+    }
+
+    private void injectOfflineHelpers(WebView webView) {
+        Bridge bridge = getBridge();
+        String appUrl = "https://music.graceahmedabad.org/";
+        if (bridge != null) {
+            String configured = bridge.getServerUrl();
+            if (configured == null || configured.trim().isEmpty()) {
+                configured = bridge.getAppUrl();
+            }
+            if (configured != null && !configured.trim().isEmpty()) {
+                appUrl = configured;
+            }
+        }
+        if (!appUrl.endsWith("/")) {
+            appUrl = appUrl + "/";
+        }
+
+        String escaped = appUrl.replace("\\", "\\\\").replace("'", "\\'");
+        String js =
+            "(function(){ try { window.__GRACE_APP_URL = '" +
+            escaped +
+            "'; } catch(e) {} })();";
         webView.post(() -> webView.evaluateJavascript(js, null));
     }
 

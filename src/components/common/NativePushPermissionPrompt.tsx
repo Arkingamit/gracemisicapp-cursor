@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Capacitor } from "@capacitor/core";
 import { Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   getNativePushPermission,
   initNativePushNotifications,
@@ -28,19 +30,33 @@ function wasRecentlyDismissed(): boolean {
 
 /**
  * Shown on Capacitor Android/iOS when the user is logged in but has not
- * granted notification permission. Tapping Enable opens the system dialog.
+ * granted notification permission. Tapping Allow opens the system dialog.
+ *
+ * Portaled to document.body above Radix dialogs (e.g. profile setup) so the
+ * Allow button remains tappable.
  */
 export default function NativePushPermissionPrompt({
   enabled,
 }: {
   enabled: boolean;
 }) {
+  const { currentUser } = useAuth();
   const [permission, setPermission] = useState<NativePushPermission | null>(null);
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Wait until profile setup is done — that modal's overlay was eating Allow taps
+  const profileReady = !!(
+    currentUser?.church?.trim() && currentUser?.instrument?.trim()
+  );
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const refresh = useCallback(async () => {
-    if (!Capacitor.isNativePlatform() || !enabled) {
+    if (!Capacitor.isNativePlatform() || !enabled || !profileReady) {
       setVisible(false);
       return;
     }
@@ -55,15 +71,18 @@ export default function NativePushPermissionPrompt({
       return;
     }
     setVisible(true);
-  }, [enabled]);
+  }, [enabled, profileReady]);
 
   useEffect(() => {
-    if (!enabled || !Capacitor.isNativePlatform()) return;
+    if (!enabled || !Capacitor.isNativePlatform() || !profileReady) {
+      setVisible(false);
+      return;
+    }
     const timer = window.setTimeout(() => {
       refresh().catch(console.error);
-    }, 1200);
+    }, 800);
     return () => window.clearTimeout(timer);
-  }, [enabled, refresh]);
+  }, [enabled, profileReady, refresh]);
 
   const dismiss = () => {
     try {
@@ -75,6 +94,7 @@ export default function NativePushPermissionPrompt({
   };
 
   const handleEnable = async () => {
+    if (busy) return;
     setBusy(true);
     try {
       if (permission === "denied") {
@@ -82,25 +102,30 @@ export default function NativePushPermissionPrompt({
         return;
       }
       const result = await initNativePushNotifications(true);
-      setPermission(result === "granted" ? "granted" : result === "denied" ? "denied" : "prompt");
       if (result === "granted") {
+        setPermission("granted");
         setVisible(false);
-      } else if (result === "denied") {
-        // User denied the system dialog — offer settings on next tap
+      } else {
         setPermission("denied");
       }
+    } catch (err) {
+      console.error("[Grace] Allow notifications failed:", err);
     } finally {
       setBusy(false);
     }
   };
 
-  if (!visible) return null;
+  if (!mounted || !visible) return null;
 
   const denied = permission === "denied";
 
-  return (
-    <div className="fixed inset-x-3 bottom-24 z-[80] sm:inset-x-auto sm:left-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2">
-      <div className="rounded-2xl border border-white/10 bg-zinc-950/95 p-4 shadow-2xl backdrop-blur-md">
+  return createPortal(
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-[200] flex justify-center px-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-8"
+      role="dialog"
+      aria-label="Turn on notifications"
+    >
+      <div className="pointer-events-auto w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950/95 p-4 shadow-2xl backdrop-blur-md">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-sky-400">
             <Bell className="h-5 w-5" />
@@ -118,9 +143,13 @@ export default function NativePushPermissionPrompt({
                 size="sm"
                 className="bg-sky-500 text-white hover:bg-sky-400"
                 disabled={busy}
-                onClick={handleEnable}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void handleEnable();
+                }}
               >
-                {denied ? "Open Settings" : "Allow"}
+                {busy ? "Please wait…" : denied ? "Open Settings" : "Allow"}
               </Button>
               <Button
                 type="button"
@@ -128,7 +157,11 @@ export default function NativePushPermissionPrompt({
                 variant="ghost"
                 className="text-zinc-400 hover:text-white"
                 disabled={busy}
-                onClick={dismiss}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  dismiss();
+                }}
               >
                 Not now
               </Button>
@@ -138,12 +171,17 @@ export default function NativePushPermissionPrompt({
             type="button"
             aria-label="Dismiss"
             className="rounded-md p-1 text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
-            onClick={dismiss}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              dismiss();
+            }}
           >
             <X className="h-4 w-4" />
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

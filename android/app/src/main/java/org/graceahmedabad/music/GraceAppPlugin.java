@@ -43,6 +43,29 @@ public class GraceAppPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void openNetworkSettings(PluginCall call) {
+        try {
+            Intent intent = new Intent(Settings.ACTION_WIRELESS_SETTINGS);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            call.resolve();
+        } catch (Exception e) {
+            try {
+                Intent fallback = new Intent(Settings.ACTION_SETTINGS);
+                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(fallback);
+                call.resolve();
+            } catch (Exception inner) {
+                call.reject(
+                    inner.getMessage() != null
+                        ? inner.getMessage()
+                        : "Unable to open network settings"
+                );
+            }
+        }
+    }
+
+    @PluginMethod
     public void getAppInfo(PluginCall call) {
         JSObject info = new JSObject();
         info.put("packageName", getContext().getPackageName());

@@ -8,6 +8,7 @@ import { Loader2, Building2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Login from '@/views/Login';
+import OpenInviteInApp from '@/components/organizations/OpenInviteInApp';
 
 export default function InvitePage() {
   const params = useParams();
@@ -135,16 +136,19 @@ export default function InvitePage() {
 
   // User is not logged in: display the Login component with invite-specific text
   return (
-    <Login 
-      title="You've been invited!"
-      subtitle={
-        <>
-          You have received an invitation to join <strong className="text-white">{orgName}</strong> on Grace Music.
-          <br /><br />
-          Please sign in to accept this invitation.
-        </>
-      }
-      redirectPath={`/invite/${code}`}
-    />
+    <>
+      <OpenInviteInApp code={code} />
+      <Login 
+        title="You've been invited!"
+        subtitle={
+          <>
+            You have received an invitation to join <strong className="text-white">{orgName}</strong> on Grace Music.
+            <br /><br />
+            Please sign in to accept this invitation.
+          </>
+        }
+        redirectPath={`/invite/${code}`}
+      />
+    </>
   );
 }

@@ -19,6 +19,8 @@ const config: CapacitorConfig = {
   webDir: 'www',
   server: {
     url: serverUrl,
+    // Shown instead of the default WebView "page not available" screen
+    errorPath: 'offline.html',
     // Allow navigating within the deployed site / local LAN during development
     allowNavigation: [
       'music.graceahmedabad.org',

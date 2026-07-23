@@ -8,6 +8,9 @@ export const viewport: Viewport = {
   initialScale: 1,
   // Required for env(safe-area-inset-*) under the iOS notch / Dynamic Island
   viewportFit: "cover",
+  // Android Chrome/WebView: resize layout viewport with the keyboard so
+  // fixed UI (bottom nav, dialogs) stays above it without a black gap.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

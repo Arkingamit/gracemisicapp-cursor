@@ -41,9 +41,13 @@ const config: CapacitorConfig = {
     contentInset: 'never',
   },
   plugins: {
+    // Avoid Capacitor manually shrinking the WebView/body on Android.
+    // resizeOnFullScreen + body/native resize over-subtracts keyboard height
+    // (esp. edge-to-edge), leaving a large black gap above the keyboard.
+    // adjustResize in AndroidManifest + interactive-widget=resizes-content handle it.
     Keyboard: {
-      resize: 'body',
-      resizeOnFullScreen: true,
+      resize: 'none',
+      resizeOnFullScreen: false,
     },
     GoogleSignIn: {
       clientId:

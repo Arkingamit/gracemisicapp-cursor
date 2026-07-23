@@ -4,10 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Music, Heart, Library, Users, Files } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useKeyboardOpen } from '@/hooks/useKeyboardInset';
 
 const BottomNavigation = () => {
   const pathname = usePathname();
   const { currentUser } = useAuth();
+  const keyboardOpen = useKeyboardOpen(true);
 
   const navItems = [
     { name: 'Songs', path: '/songs', icon: Music, tour: 'nav-songs' },
@@ -23,7 +25,14 @@ const BottomNavigation = () => {
   };
 
   return (
-    <nav className="md:hidden fixed -bottom-1 left-0 right-0 z-50 border-t border-white/5 bg-background pointer-events-auto pb-[calc(env(safe-area-inset-bottom)+4px)] shadow-[0_-4px_20px_rgba(0,0,0,0.6)]">
+    <nav
+      aria-hidden={keyboardOpen}
+      className={`md:hidden fixed -bottom-1 left-0 right-0 z-50 border-t border-white/5 bg-background pb-[calc(env(safe-area-inset-bottom)+4px)] shadow-[0_-4px_20px_rgba(0,0,0,0.6)] transition-transform duration-200 ${
+        keyboardOpen
+          ? 'pointer-events-none translate-y-full opacity-0'
+          : 'pointer-events-auto translate-y-0 opacity-100'
+      }`}
+    >
       <div className="grid grid-cols-5 h-16 w-full mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;

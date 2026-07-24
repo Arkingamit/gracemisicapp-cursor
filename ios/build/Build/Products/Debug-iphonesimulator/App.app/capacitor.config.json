@@ -20,11 +20,13 @@
 		"allowMixedContent": false
 	},
 	"ios": {
-		"contentInset": "never"
+		"contentInset": "never",
+		"scrollEnabled": true,
+		"backgroundColor": "#09090b"
 	},
 	"plugins": {
 		"Keyboard": {
-			"resize": "body",
+			"resize": "none",
 			"resizeOnFullScreen": true
 		},
 		"GoogleSignIn": {

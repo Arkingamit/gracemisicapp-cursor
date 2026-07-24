@@ -57,6 +57,7 @@
 
 @layer base {
   html {
+    height: 100%;
     background-color: hsl(var(--background));
   }
 
@@ -64,8 +65,11 @@
     @apply bg-background text-foreground;
     background-color: hsl(var(--background));
     min-height: 100%;
+    /* Explicit y-scroll — overflow-x-only can freeze WKWebView scrolling */
     overflow-x: hidden;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     padding-left: var(--safe-area-inset-left);
     padding-right: var(--safe-area-inset-right);
   }

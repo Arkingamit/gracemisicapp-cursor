@@ -103,7 +103,7 @@ export default function AIChatBot() {
   const keyboardInset = useKeyboardInset(isOpen);
   /** Native shells: pin panel to visual viewport so the keyboard never leaves a black gap. */
   const pinToViewport = isOpen && Capacitor.getPlatform() === "ios";
-  const viewportBox = useVisualViewportBox(pinToViewport);
+  const viewportBox = useVisualViewportBox(pinToViewport, true);
 
   // Seed a conversation id; openChat always starts a fresh chat.
   useEffect(() => {

@@ -32,11 +32,16 @@ export type VisualViewportBox = {
 
 /**
  * Pin fixed full-screen panels to the Visual Viewport.
- * On Android (and some iOS cases) the keyboard does not shrink the layout
- * viewport — it pans via visualViewport instead. Binding top/height to VV
- * keeps the composer above the keyboard without a black gap.
+ * On iOS the keyboard often pans via visualViewport instead of resizing layout.
+ * Binding top/height to VV keeps composers above the keyboard.
+ *
+ * @param lockDocumentScroll When true, resets window scroll (chat overlays only).
+ *   Do NOT enable for dialogs — it freezes page scroll and can leave a black overlay.
  */
-export function useVisualViewportBox(enabled = true): VisualViewportBox {
+export function useVisualViewportBox(
+  enabled = true,
+  lockDocumentScroll = false
+): VisualViewportBox {
   const [box, setBox] = useState<VisualViewportBox>(() => ({
     top: 0,
     height: typeof window !== "undefined" ? window.innerHeight : 0,
@@ -72,26 +77,31 @@ export function useVisualViewportBox(enabled = true): VisualViewportBox {
     vv?.addEventListener("scroll", sync);
     window.addEventListener("resize", sync);
 
-    // While a fixed chat panel is open, kill document scroll that Android
-    // applies on input focus (that scroll creates the black gap).
-    const lockScroll = () => {
-      if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0) {
-        window.scrollTo(0, 0);
+    const onFocusOrScroll = () => {
+      if (lockDocumentScroll) {
+        if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0) {
+          window.scrollTo(0, 0);
+        }
       }
       sync();
     };
-    document.addEventListener("focusin", lockScroll);
-    window.addEventListener("scroll", lockScroll, { passive: true });
+
+    if (lockDocumentScroll) {
+      document.addEventListener("focusin", onFocusOrScroll);
+      window.addEventListener("scroll", onFocusOrScroll, { passive: true });
+    }
 
     return () => {
       cancelled = true;
       vv?.removeEventListener("resize", sync);
       vv?.removeEventListener("scroll", sync);
       window.removeEventListener("resize", sync);
-      document.removeEventListener("focusin", lockScroll);
-      window.removeEventListener("scroll", lockScroll);
+      if (lockDocumentScroll) {
+        document.removeEventListener("focusin", onFocusOrScroll);
+        window.removeEventListener("scroll", onFocusOrScroll);
+      }
     };
-  }, [enabled]);
+  }, [enabled, lockDocumentScroll]);
 
   return box;
 }

@@ -77,7 +77,7 @@ export default function SongSetAIBuilder() {
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const keyboardInset = useKeyboardInset(true);
   const pinToViewport = Capacitor.getPlatform() === "ios";
-  const viewportBox = useVisualViewportBox(pinToViewport);
+  const viewportBox = useVisualViewportBox(pinToViewport, true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputAreaRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);

@@ -31,7 +31,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Recover from blank/black WKWebView after keyboard/zoom glitches.
         DispatchQueue.main.async {
             guard let bridgeVC = self.window?.rootViewController as? CAPBridgeViewController,
                   let webView = bridgeVC.bridge?.webView else {
@@ -41,7 +40,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             webView.isHidden = false
             webView.alpha = 1
             webView.scrollView.isScrollEnabled = true
-            webView.scrollView.setContentOffset(.zero, animated: false)
+            webView.scrollView.bounces = true
+            // Clear any Keyboard-plugin delegate that freezes scrolling
+            if webView.scrollView.delegate != nil {
+                webView.scrollView.delegate = nil
+            }
         }
     }
 

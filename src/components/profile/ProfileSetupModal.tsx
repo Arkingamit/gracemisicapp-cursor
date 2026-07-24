@@ -109,7 +109,6 @@ export default function ProfileSetupModal() {
               placeholder="e.g. John Doe"
               value={formData.displayName}
               onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
-              onFocus={(e) => e.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" })}
               className="bg-zinc-900 border-white/10"
               required
             />
@@ -121,7 +120,6 @@ export default function ProfileSetupModal() {
               placeholder="e.g. Grace Church"
               value={formData.church}
               onChange={(e) => setFormData(prev => ({ ...prev, church: e.target.value }))}
-              onFocus={(e) => e.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" })}
               className="bg-zinc-900 border-white/10"
               required
             />
@@ -133,7 +131,6 @@ export default function ProfileSetupModal() {
               placeholder="e.g. Acoustic Guitar, Vocals, Keys"
               value={formData.instrument}
               onChange={(e) => setFormData(prev => ({ ...prev, instrument: e.target.value }))}
-              onFocus={(e) => e.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" })}
               className="bg-zinc-900 border-white/10"
               required
             />
@@ -147,7 +144,6 @@ export default function ProfileSetupModal() {
               placeholder="e.g. 25"
               value={formData.age}
               onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value }))}
-              onFocus={(e) => e.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" })}
               className="bg-zinc-900 border-white/10"
               min="1"
               max="120"

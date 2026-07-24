@@ -13,7 +13,6 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { Toaster } from "@/components/ui/toaster";
 import { Capacitor } from "@capacitor/core";
 import { GoogleSignIn } from "@capawesome/capacitor-google-sign-in";
-import { Keyboard } from "@capacitor/keyboard";
 
 const Navigation = dynamic(() => import("@/components/layout/Navigation"), {
   ssr: false,
@@ -55,25 +54,8 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       clientId: GOOGLE_CLIENT_ID,
     }).catch(console.error);
 
-    const recoverIosViewport = () => {
-      if (Capacitor.getPlatform() !== "ios") return;
-      Keyboard.setScroll({ isDisabled: false }).catch(() => {});
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    };
-
-    recoverIosViewport();
-    const onVisible = () => {
-      if (document.visibilityState === "visible") recoverIosViewport();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("pageshow", recoverIosViewport);
-
-    return () => {
-      document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("pageshow", recoverIosViewport);
-    };
+    // Do not call Keyboard.setScroll — toggling it can leave WKWebView's
+    // scrollView.delegate stuck and freeze scrolling on iOS simulator/device.
   }, []);
 
   return (

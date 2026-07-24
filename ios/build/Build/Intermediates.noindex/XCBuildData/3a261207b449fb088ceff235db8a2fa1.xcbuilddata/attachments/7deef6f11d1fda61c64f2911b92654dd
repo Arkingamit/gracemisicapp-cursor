@@ -1,0 +1,4 @@
+module GTMSessionFetcherCore {
+umbrella "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/checkouts/gtm-session-fetcher/Sources/Core/Public"
+export *
+}

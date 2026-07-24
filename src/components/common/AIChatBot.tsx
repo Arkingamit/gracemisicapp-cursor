@@ -530,7 +530,7 @@ export default function AIChatBot() {
         }}
         whileDrag={{ scale: 1.05 }}
         data-tour="ai-chatbot"
-        className={`fixed bottom-20 sm:bottom-6 left-0 z-50 ${isOpen ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"}`}
+        className={`fixed bottom-20 sm:bottom-6 left-0 z-50 w-14 ${isOpen ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"}`}
         style={{ touchAction: "none" }}
       >
         <button
@@ -544,12 +544,14 @@ export default function AIChatBot() {
 
       <div
         data-tour="ai-chat-panel"
-        className={`fixed inset-x-0 top-0 bottom-[var(--keyboard-inset)] z-[100] flex w-full flex-col overflow-hidden bg-background font-ai transition-[opacity,transform] duration-300 md:bottom-24 md:left-auto md:right-6 md:top-auto md:h-[650px] md:max-h-[calc(100vh-8rem)] md:w-[400px] md:rounded-2xl md:border md:border-white/10 md:shadow-2xl ${
+        className={`fixed inset-x-0 top-0 bottom-0 z-[100] flex w-full flex-col overflow-hidden bg-background font-ai transition-[opacity,transform] duration-300 md:bottom-24 md:left-auto md:right-6 md:top-auto md:h-[650px] md:max-h-[calc(100vh-8rem)] md:w-[400px] md:rounded-2xl md:border md:border-white/10 md:shadow-2xl ${
           isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
         }`}
         style={
           {
-            "--keyboard-inset": `${keyboardInset}px`,
+            // iOS overlay keyboard only — Android uses adjustResize (inset stays 0)
+            bottom: keyboardInset > 0 ? keyboardInset : undefined,
+            ["--keyboard-inset" as string]: `${keyboardInset}px`,
           } as React.CSSProperties
         }
       >
@@ -649,7 +651,7 @@ export default function AIChatBot() {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-2 py-3 space-y-1">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-3 space-y-1 [-webkit-overflow-scrolling:touch]">
                 {loadingConversations ? (
                   <div className="flex justify-center py-10">
                     <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
@@ -733,11 +735,11 @@ export default function AIChatBot() {
           </div>
         ) : (
           <>
-            {/* Messages Area */}
-            <div className="relative z-10 flex flex-1 flex-col gap-4 overflow-y-auto bg-transparent p-4">
+            {/* Messages Area — min-h-0 required so flex child can scroll on iOS WKWebView */}
+            <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain bg-transparent p-4 [-webkit-overflow-scrolling:touch]">
               {messages.length === 0 && (
-                <div className="flex h-full flex-col items-center justify-center space-y-4 px-4 text-center text-muted-foreground">
-                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-blue-400/25 bg-blue-500/10 p-2 shadow-lg shadow-blue-500/10">
+                <div className="flex min-h-0 flex-1 flex-col items-center justify-center space-y-4 px-4 py-6 text-center text-muted-foreground">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-blue-400/25 bg-blue-500/10 p-2 shadow-lg shadow-blue-500/10">
                     <img src="/lovable-uploads/gracemain.png" alt="" className="max-h-full max-w-full object-contain" />
                   </div>
                   <div>

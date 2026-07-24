@@ -1,0 +1,19 @@
+{
+  "" : {
+    "diagnostics" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/Build/Intermediates.noindex/CapacitorCommunityAppleSignIn.build/Debug-iphoneos/SignInWithApple.build/Objects-normal/arm64/SignInWithApple-primary.dia",
+    "emit-module-dependencies" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/Build/Intermediates.noindex/CapacitorCommunityAppleSignIn.build/Debug-iphoneos/SignInWithApple.build/Objects-normal/arm64/SignInWithApple-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/Build/Intermediates.noindex/CapacitorCommunityAppleSignIn.build/Debug-iphoneos/SignInWithApple.build/Objects-normal/arm64/SignInWithApple-primary-emit-module.dia",
+    "pch" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/Build/Intermediates.noindex/CapacitorCommunityAppleSignIn.build/Debug-iphoneos/SignInWithApple.build/Objects-normal/arm64/SignInWithApple-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/Build/Intermediates.noindex/CapacitorCommunityAppleSignIn.build/Debug-iphoneos/SignInWithApple.build/Objects-normal/arm64/SignInWithApple-primary.swiftdeps"
+  },
+  "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/node_modules/@capacitor-community/apple-sign-in/ios/Sources/SignInWithApple/Plugin.swift" : {
+    "const-values" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/Build/Intermediates.noindex/CapacitorCommunityAppleSignIn.build/Debug-iphoneos/SignInWithApple.build/Objects-normal/arm64/Plugin.swiftconstvalues",
+    "dependencies" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/Build/Intermediates.noindex/CapacitorCommunityAppleSignIn.build/Debug-iphoneos/SignInWithApple.build/Objects-normal/arm64/Plugin.d",
+    "diagnostics" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/Build/Intermediates.noindex/CapacitorCommunityAppleSignIn.build/Debug-iphoneos/SignInWithApple.build/Objects-normal/arm64/Plugin.dia",
+    "index-unit-output-path" : "/CapacitorCommunityAppleSignIn.build/Debug-iphoneos/SignInWithApple.build/Objects-normal/arm64/Plugin.o",
+    "llvm-bc" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/Build/Intermediates.noindex/CapacitorCommunityAppleSignIn.build/Debug-iphoneos/SignInWithApple.build/Objects-normal/arm64/Plugin.bc",
+    "object" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/Build/Intermediates.noindex/CapacitorCommunityAppleSignIn.build/Debug-iphoneos/SignInWithApple.build/Objects-normal/arm64/Plugin.o",
+    "swift-dependencies" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/Build/Intermediates.noindex/CapacitorCommunityAppleSignIn.build/Debug-iphoneos/SignInWithApple.build/Objects-normal/arm64/Plugin.swiftdeps",
+    "swiftmodule" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/Build/Intermediates.noindex/CapacitorCommunityAppleSignIn.build/Debug-iphoneos/SignInWithApple.build/Objects-normal/arm64/Plugin~partial.swiftmodule"
+  }
+}

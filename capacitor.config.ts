@@ -39,6 +39,8 @@ const config: CapacitorConfig = {
   },
   ios: {
     contentInset: 'never',
+    // Ensure WKWebView vertical scrolling stays enabled
+    scrollEnabled: true,
   },
   plugins: {
     // Avoid Capacitor manually shrinking the WebView/body on Android.

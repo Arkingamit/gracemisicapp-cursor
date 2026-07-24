@@ -1,0 +1,4 @@
+module GoogleSignInPlugin {
+header "GoogleSignInPlugin-Swift.h"
+export *
+}

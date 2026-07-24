@@ -12,8 +12,8 @@ import { PlaylistProvider } from "@/contexts/PlaylistContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { Toaster } from "@/components/ui/toaster";
 import { Capacitor } from "@capacitor/core";
-import { Keyboard } from "@capacitor/keyboard";
 import { GoogleSignIn } from "@capawesome/capacitor-google-sign-in";
+import { Keyboard } from "@capacitor/keyboard";
 
 const Navigation = dynamic(() => import("@/components/layout/Navigation"), {
   ssr: false,
@@ -55,10 +55,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       clientId: GOOGLE_CLIENT_ID,
     }).catch(console.error);
 
-    // iOS: stop WKWebView from scrolling/zooming the page when the keyboard opens
-    // (fixed chat/composer panels manage their own inset instead).
+    // Ensure iOS WKWebView scroll stays enabled (setScroll(true) disables ALL scrolling).
     if (Capacitor.getPlatform() === "ios") {
-      Keyboard.setScroll({ isDisabled: true }).catch(() => {});
+      Keyboard.setScroll({ isDisabled: false }).catch(() => {});
     }
   }, []);
 

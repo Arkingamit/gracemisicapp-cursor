@@ -6,6 +6,8 @@ import { Capacitor } from "@capacitor/core";
 import { Keyboard } from "@capacitor/keyboard";
 
 const KEYBOARD_MIN_PX = 120;
+/** Layout vs visual viewport match → window already resized (no manual inset). */
+const RESIZED_MATCH_PX = 48;
 
 function isTextFieldFocused(): boolean {
   if (typeof document === "undefined") return false;
@@ -25,14 +27,34 @@ function resetViewportAfterKeyboard() {
 
 /**
  * Measure soft-keyboard overlap via VisualViewport.
- * Returns 0 when the layout viewport already resized (adjustResize /
- * interactive-widget=resizes-content), so callers don't double-inset.
+ *
+ * Returns 0 when:
+ * - Capacitor Android (windowSoftInputMode=adjustResize already shrinks the WebView;
+ *   applying a second bottom inset creates a large black gap above the keyboard)
+ * - layout viewport already matches the visual viewport (interactive-widget /
+ *   adjustResize resized the page)
  */
 export function measureKeyboardInset(): number {
   if (typeof window === "undefined") return 0;
+
+  // Android Capacitor: rely on adjustResize only — never double-inset.
+  if (
+    Capacitor.isNativePlatform() &&
+    Capacitor.getPlatform() === "android"
+  ) {
+    return 0;
+  }
+
   const vv = window.visualViewport;
   if (!vv) return 0;
   if (!isTextFieldFocused()) return 0;
+
+  const clientH = document.documentElement.clientHeight;
+  // Layout already matches what the user sees → keyboard was handled by resize.
+  if (Math.abs(clientH - vv.height) <= RESIZED_MATCH_PX) {
+    return 0;
+  }
+
   const inset = Math.max(
     0,
     Math.round(window.innerHeight - vv.height - vv.offsetTop)
@@ -42,16 +64,22 @@ export function measureKeyboardInset(): number {
 
 /**
  * Tracks keyboard overlap for fixed full-screen panels (chat, AI builder).
- * Always measures via VisualViewport so Android adjustResize and Capacitor
- * Keyboard height events never double-count on Android. On iOS, native
- * keyboardHeight is used as a fallback when VisualViewport under-reports
- * (common when the WebView briefly zooms on focus).
+ * Android: always 0 (adjustResize). iOS: VisualViewport + native keyboardHeight.
  */
 export function useKeyboardInset(enabled = true): number {
   const [inset, setInset] = useState(0);
 
   useEffect(() => {
     if (!enabled || typeof window === "undefined") {
+      setInset(0);
+      return;
+    }
+
+    // Android never needs JS inset — skip listeners that could fight adjustResize.
+    if (
+      Capacitor.isNativePlatform() &&
+      Capacitor.getPlatform() === "android"
+    ) {
       setInset(0);
       return;
     }
@@ -82,41 +110,33 @@ export function useKeyboardInset(enabled = true): number {
     const removals: Array<() => void> = [];
 
     if (Capacitor.isNativePlatform()) {
-      const attach = (
-        event:
-          | "keyboardWillShow"
-          | "keyboardDidShow"
-          | "keyboardWillHide"
-          | "keyboardDidHide",
-        handler: (info?: { keyboardHeight?: number }) => void
-      ) => {
-        Keyboard.addListener(event, handler).then((handle) => {
-          if (cancelled) {
-            handle.remove();
-            return;
-          }
-          removals.push(() => {
-            handle.remove();
-          });
-        });
-      };
-
-      attach("keyboardWillShow", (info) => {
-        nativeHeight = info?.keyboardHeight ?? 0;
-        update();
-      });
-      attach("keyboardDidShow", (info) => {
+      const onShow = (info: { keyboardHeight?: number }) => {
         nativeHeight = info?.keyboardHeight ?? nativeHeight;
         update();
-      });
-      attach("keyboardWillHide", () => {
+      };
+      const onHide = () => {
         nativeHeight = 0;
         if (!cancelled) setInset(0);
+      };
+
+      Keyboard.addListener("keyboardWillShow", onShow).then((handle) => {
+        if (cancelled) handle.remove();
+        else removals.push(() => handle.remove());
       });
-      attach("keyboardDidHide", () => {
-        nativeHeight = 0;
-        if (!cancelled) setInset(0);
+      Keyboard.addListener("keyboardDidShow", onShow).then((handle) => {
+        if (cancelled) handle.remove();
+        else removals.push(() => handle.remove());
+      });
+      Keyboard.addListener("keyboardWillHide", onHide).then((handle) => {
+        if (cancelled) handle.remove();
+        else removals.push(() => handle.remove());
+      });
+      Keyboard.addListener("keyboardDidHide", () => {
+        onHide();
         resetViewportAfterKeyboard();
+      }).then((handle) => {
+        if (cancelled) handle.remove();
+        else removals.push(() => handle.remove());
       });
     }
 
@@ -154,7 +174,6 @@ export function useKeyboardOpen(enabled = true): boolean {
     };
 
     const syncFromFocus = () => {
-      // Fallback for web / when native listeners aren't available
       if (!Capacitor.isNativePlatform()) {
         set(isTextFieldFocused() && measureKeyboardInset() > 0);
       } else if (!isTextFieldFocused()) {
@@ -168,32 +187,24 @@ export function useKeyboardOpen(enabled = true): boolean {
     const removals: Array<() => void> = [];
 
     if (Capacitor.isNativePlatform()) {
-      const attach = (
-        event:
-          | "keyboardWillShow"
-          | "keyboardDidShow"
-          | "keyboardWillHide"
-          | "keyboardDidHide",
-        value: boolean
-      ) => {
-        Keyboard.addListener(event, () => {
-          set(value);
-          if (!value) resetViewportAfterKeyboard();
-        }).then((handle) => {
-          if (cancelled) {
-            handle.remove();
-            return;
-          }
-          removals.push(() => {
-            handle.remove();
-          });
+      const track = (p: Promise<{ remove: () => void }>) => {
+        p.then((handle) => {
+          if (cancelled) handle.remove();
+          else removals.push(() => handle.remove());
         });
       };
 
-      attach("keyboardWillShow", true);
-      attach("keyboardDidShow", true);
-      attach("keyboardWillHide", false);
-      attach("keyboardDidHide", false);
+      track(Keyboard.addListener("keyboardWillShow", () => set(true)));
+      track(Keyboard.addListener("keyboardDidShow", () => set(true)));
+      track(Keyboard.addListener("keyboardWillHide", () => set(false)));
+      track(
+        Keyboard.addListener("keyboardDidHide", () => {
+          set(false);
+          if (Capacitor.getPlatform() === "ios") {
+            resetViewportAfterKeyboard();
+          }
+        })
+      );
     } else {
       const vv = window.visualViewport;
       vv?.addEventListener("resize", syncFromFocus);

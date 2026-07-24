@@ -58,7 +58,19 @@
 @layer base {
   html, body {
     background-color: hsl(var(--background));
-    overflow-x: hidden;
+  }
+
+  html {
+    /* Keep page scroll on the document; clipping X only on body avoids iOS scroll lock */
+    height: 100%;
+  }
+
+  body {
+    min-height: 100%;
+    overflow-x: clip;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
   }
 
   * {

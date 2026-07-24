@@ -676,7 +676,7 @@ export default function SongSetAIBuilder() {
       )}
 
       <div className="relative z-10 mx-auto flex w-full max-w-lg flex-1 min-h-0 flex-col">
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3 [-webkit-overflow-scrolling:touch]">
           <div className="flex items-center gap-3 py-2">
             <div className="h-px flex-1 bg-zinc-800/80" />
             <span className="text-[11px] text-zinc-500 font-medium">Today</span>

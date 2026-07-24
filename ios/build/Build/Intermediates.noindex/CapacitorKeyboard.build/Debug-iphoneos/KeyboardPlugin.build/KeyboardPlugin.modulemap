@@ -1,4 +1,0 @@
-module KeyboardPlugin {
-umbrella header "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/node_modules/@capacitor/keyboard/ios/Sources/KeyboardPlugin/include/KeyboardPlugin.h"
-export *
-}

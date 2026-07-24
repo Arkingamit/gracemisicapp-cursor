@@ -28,6 +28,8 @@ function resetViewportAfterKeyboard() {
 export type VisualViewportBox = {
   top: number;
   height: number;
+  /** window.innerHeight captured with the box (for overlap math). */
+  layoutHeight: number;
 };
 
 /**
@@ -42,31 +44,31 @@ export function useVisualViewportBox(
   enabled = true,
   lockDocumentScroll = false
 ): VisualViewportBox {
-  const [box, setBox] = useState<VisualViewportBox>(() => ({
-    top: 0,
-    height: typeof window !== "undefined" ? window.innerHeight : 0,
-  }));
+  const [box, setBox] = useState<VisualViewportBox>(() => {
+    const h = typeof window !== "undefined" ? window.innerHeight : 0;
+    return { top: 0, height: h, layoutHeight: h };
+  });
 
   useEffect(() => {
     if (!enabled || typeof window === "undefined") {
-      setBox({
-        top: 0,
-        height: typeof window !== "undefined" ? window.innerHeight : 0,
-      });
+      const h = typeof window !== "undefined" ? window.innerHeight : 0;
+      setBox({ top: 0, height: h, layoutHeight: h });
       return;
     }
 
     let cancelled = false;
     const sync = () => {
       if (cancelled) return;
+      const layoutHeight = Math.round(window.innerHeight);
       const vv = window.visualViewport;
       if (!vv) {
-        setBox({ top: 0, height: window.innerHeight });
+        setBox({ top: 0, height: layoutHeight, layoutHeight });
         return;
       }
       setBox({
         top: Math.max(0, Math.round(vv.offsetTop)),
         height: Math.max(0, Math.round(vv.height)),
+        layoutHeight,
       });
     };
 
@@ -226,6 +228,23 @@ export function useKeyboardInset(enabled = true): number {
   }, [enabled]);
 
   return inset;
+}
+
+/**
+ * Bottom pad still needed after pinning a panel to the visual viewport.
+ * Capacitor iOS with Keyboard.resize=none often leaves VV full-height while
+ * the IME overlays — useKeyboardInset (native height) fills that gap.
+ */
+export function keyboardPadBeyondViewport(
+  box: VisualViewportBox,
+  keyboardInset: number
+): number {
+  if (keyboardInset <= 0) return 0;
+  const accounted = Math.max(
+    0,
+    Math.round(box.layoutHeight - box.height - box.top)
+  );
+  return Math.max(0, keyboardInset - accounted);
 }
 
 /**

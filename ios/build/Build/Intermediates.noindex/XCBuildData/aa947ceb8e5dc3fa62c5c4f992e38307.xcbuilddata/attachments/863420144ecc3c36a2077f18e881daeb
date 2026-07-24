@@ -1,4 +1,0 @@
-module GoogleUtilities_Environment {
-umbrella "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/checkouts/GoogleUtilities/GoogleUtilities/Environment/Public"
-export *
-}

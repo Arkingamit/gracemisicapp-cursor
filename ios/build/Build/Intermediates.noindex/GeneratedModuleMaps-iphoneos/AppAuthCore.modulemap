@@ -1,4 +1,0 @@
-module AppAuthCore {
-umbrella "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/checkouts/AppAuth-iOS/Sources/AppAuthCore"
-export *
-}

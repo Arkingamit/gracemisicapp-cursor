@@ -1,8 +1,0 @@
-dependencies: \
-  /Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/checkouts/app-check/AppCheckCore/Sources/AppAttestProvider/DCAppAttestService+GACAppAttestService.m \
-  /Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/checkouts/app-check/AppCheckCore/Sources/AppAttestProvider/DCAppAttestService+GACAppAttestService.h \
-  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/include/DarwinFoundation1.modulemap \
-  /Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/checkouts/app-check/AppCheckCore/Sources/Public/AppCheckCore/GACAppCheckAvailability.h \
-  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/Foundation.framework/Modules/module.modulemap \
-  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/DeviceCheck.framework/Modules/module.modulemap \
-  /Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/checkouts/app-check/AppCheckCore/Sources/AppAttestProvider/GACAppAttestService.h

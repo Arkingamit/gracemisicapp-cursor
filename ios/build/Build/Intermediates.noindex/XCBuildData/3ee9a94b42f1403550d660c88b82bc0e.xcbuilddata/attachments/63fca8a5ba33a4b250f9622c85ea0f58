@@ -1,4 +1,0 @@
-module GoogleSignIn {
-umbrella header "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/checkouts/GoogleSignIn-iOS/GoogleSignIn/Sources/Public/GoogleSignIn/GoogleSignIn.h"
-export *
-}

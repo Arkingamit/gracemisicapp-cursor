@@ -16,7 +16,11 @@ import {
 import { SystemMessage } from "@/components/prompt-kit/system-message";
 import { Button } from "@/components/ui/button";
 import type { Components } from "react-markdown";
-import { useKeyboardInset, useVisualViewportBox } from "@/hooks/useKeyboardInset";
+import {
+  keyboardPadBeyondViewport,
+  useKeyboardInset,
+  useVisualViewportBox,
+} from "@/hooks/useKeyboardInset";
 import { Capacitor } from "@capacitor/core";
 
 const AI_CONVERSATION_SESSION_KEY = "grace_ai_conversation_id";
@@ -104,6 +108,13 @@ export default function AIChatBot() {
   /** Native shells: pin panel to visual viewport so the keyboard never leaves a black gap. */
   const pinToViewport = isOpen && Capacitor.getPlatform() === "ios";
   const viewportBox = useVisualViewportBox(pinToViewport, true);
+  /** When VV doesn't shrink (common on Capacitor iOS), still lift by native keyboard height. */
+  const iosKeyboardPad = pinToViewport
+    ? keyboardPadBeyondViewport(viewportBox, keyboardInset)
+    : 0;
+  const pinnedHeight = pinToViewport
+    ? Math.max(0, viewportBox.height - iosKeyboardPad)
+    : 0;
 
   // Seed a conversation id; openChat always starts a fresh chat.
   useEffect(() => {
@@ -528,27 +539,37 @@ export default function AIChatBot() {
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Floating Button — sit fully above bottom nav + iOS home indicator */}
       <motion.div
         drag
         dragMomentum={false}
+        dragConstraints={{ top: -400, bottom: 0, left: 0, right: 0 }}
         animate={dragControls}
-        onDragEnd={(e, info) => {
-          if (typeof window !== 'undefined') {
-            dragControls.start({ x: window.innerWidth - 72, y: 0, rotate: 0, transition: { type: "spring", bounce: 0.2, duration: 0.5 } });
+        onDragEnd={() => {
+          if (typeof window !== "undefined") {
+            dragControls.start({
+              x: window.innerWidth - 72,
+              y: 0,
+              rotate: 0,
+              transition: { type: "spring", bounce: 0.2, duration: 0.5 },
+            });
           }
         }}
         whileDrag={{ scale: 1.05 }}
         data-tour="ai-chatbot"
-        className={`fixed bottom-20 sm:bottom-6 left-0 z-50 w-14 ${isOpen ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"}`}
+        className={`fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] sm:bottom-6 left-0 z-[60] w-14 ${
+          isOpen
+            ? "translate-x-full opacity-0 pointer-events-none"
+            : "translate-x-0 opacity-100"
+        }`}
         style={{ touchAction: "none" }}
       >
         <button
           onClick={openChat}
-          className="ml-2 w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-violet-600 text-white border border-white/15 shadow-lg shadow-blue-600/40 hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300 flex items-center justify-center cursor-grab active:cursor-grabbing"
+          className="ml-2 flex h-14 w-14 cursor-grab items-center justify-center rounded-full border border-white/15 bg-gradient-to-br from-blue-500 via-blue-600 to-violet-600 text-white shadow-lg shadow-blue-600/40 transition-all duration-300 hover:scale-105 hover:shadow-blue-500/50 active:cursor-grabbing"
           aria-label="Open AI Assistant"
         >
-          <Sparkles className="w-7 h-7 pointer-events-none" />
+          <Sparkles className="pointer-events-none h-7 w-7" />
         </button>
       </motion.div>
 
@@ -562,9 +583,9 @@ export default function AIChatBot() {
           pinToViewport
             ? {
                 top: viewportBox.top,
-                height: viewportBox.height,
+                height: pinnedHeight,
                 bottom: "auto",
-                maxHeight: viewportBox.height,
+                maxHeight: pinnedHeight,
               }
             : {
                 bottom:
@@ -830,7 +851,15 @@ export default function AIChatBot() {
             {/* Input Area */}
             <div
               ref={inputAreaRef}
-              className="relative z-10 shrink-0 space-y-2 border-t border-blue-500/10 bg-zinc-950/80 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md"
+              className="relative z-10 shrink-0 space-y-2 border-t border-blue-500/10 bg-zinc-950/80 p-3 backdrop-blur-md"
+              style={{
+                // Drop home-indicator padding while the keyboard is up — that
+                // inset sits above the IME and was pushing the field under it.
+                paddingBottom:
+                  keyboardInset > 0 || iosKeyboardPad > 0
+                    ? "0.75rem"
+                    : "max(0.75rem, env(safe-area-inset-bottom))",
+              }}
             >
               {aiEnabled ? (
                 <PromptInput
@@ -846,9 +875,11 @@ export default function AIChatBot() {
                     placeholder="Ask Grace Copilot..."
                     className="text-base text-zinc-100 placeholder:text-zinc-500 md:text-sm"
                     onFocus={() => {
-                      // Stop Android WebView from scrolling the document under the panel
-                      window.scrollTo(0, 0);
-                      requestAnimationFrame(() => window.scrollTo(0, 0));
+                      // Android only — on iOS this fights visualViewport / keyboard lift
+                      if (Capacitor.getPlatform() === "android") {
+                        window.scrollTo(0, 0);
+                        requestAnimationFrame(() => window.scrollTo(0, 0));
+                      }
                     }}
                   />
                   <PromptInputActions className="justify-end pt-1">

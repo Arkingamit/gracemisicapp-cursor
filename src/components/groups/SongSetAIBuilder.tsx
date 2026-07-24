@@ -30,7 +30,11 @@ import SongSetPicker, {
   type ActiveSongSet,
   type ChatSongRef,
 } from "@/components/common/SongSetPicker";
-import { useKeyboardInset, useVisualViewportBox } from "@/hooks/useKeyboardInset";
+import {
+  keyboardPadBeyondViewport,
+  useKeyboardInset,
+  useVisualViewportBox,
+} from "@/hooks/useKeyboardInset";
 import { Capacitor } from "@capacitor/core";
 
 const SONGSET_CONVERSATION_KEY = "grace_ai_songset_conversation_id";
@@ -78,6 +82,12 @@ export default function SongSetAIBuilder() {
   const keyboardInset = useKeyboardInset(true);
   const pinToViewport = Capacitor.getPlatform() === "ios";
   const viewportBox = useVisualViewportBox(pinToViewport, true);
+  const iosKeyboardPad = pinToViewport
+    ? keyboardPadBeyondViewport(viewportBox, keyboardInset)
+    : 0;
+  const pinnedHeight = pinToViewport
+    ? Math.max(0, viewportBox.height - iosKeyboardPad)
+    : 0;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputAreaRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
@@ -499,9 +509,9 @@ export default function SongSetAIBuilder() {
         pinToViewport
           ? {
               top: viewportBox.top,
-              height: viewportBox.height,
+              height: pinnedHeight,
               bottom: "auto",
-              maxHeight: viewportBox.height,
+              maxHeight: pinnedHeight,
             }
           : {
               top: 0,
@@ -794,7 +804,13 @@ export default function SongSetAIBuilder() {
 
         <div
           ref={inputAreaRef}
-          className="shrink-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2"
+          className="shrink-0 px-4 pt-2"
+          style={{
+            paddingBottom:
+              keyboardInset > 0 || iosKeyboardPad > 0
+                ? "1rem"
+                : "max(1rem, env(safe-area-inset-bottom))",
+          }}
         >
           {aiEnabled ? (
             <PromptInput

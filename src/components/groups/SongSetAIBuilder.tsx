@@ -795,7 +795,7 @@ export default function SongSetAIBuilder() {
                     ? "Type a song name to add more…"
                     : "Ask Grace to build your set…"
                 }
-                className="text-zinc-100 placeholder:text-zinc-500"
+                className="text-base text-zinc-100 placeholder:text-zinc-500 md:text-sm"
               />
               <PromptInputActions className="justify-end pt-1">
                 <PromptInputAction

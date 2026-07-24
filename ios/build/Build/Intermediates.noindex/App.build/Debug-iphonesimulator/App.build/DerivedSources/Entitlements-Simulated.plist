@@ -4,6 +4,8 @@
 <dict>
 	<key>application-identifier</key>
 	<string>2B633NXZ52.org.graceahmedabad.music.ios</string>
+	<key>aps-environment</key>
+	<string>development</string>
 	<key>com.apple.developer.applesignin</key>
 	<array>
 		<string>Default</string>

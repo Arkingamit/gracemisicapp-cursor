@@ -355,8 +355,14 @@ export default function AIChatBot() {
 
   const navigateFromChat = useCallback(
     (url: string) => {
+      if (typeof document !== "undefined") {
+        (document.activeElement as HTMLElement | null)?.blur?.();
+      }
       setHistoryOpen(false);
       setIsOpen(false);
+      if (typeof window !== "undefined") {
+        window.scrollTo(0, 0);
+      }
       // Close first so the fixed overlay doesn't cover the destination page
       // (AIChatBot lives in the root layout and stays mounted across routes).
       router.push(url);
@@ -599,8 +605,14 @@ export default function AIChatBot() {
             <button
               type="button"
               onClick={() => {
+                if (typeof document !== "undefined") {
+                  (document.activeElement as HTMLElement | null)?.blur?.();
+                }
                 setHistoryOpen(false);
                 setIsOpen(false);
+                if (typeof window !== "undefined") {
+                  window.scrollTo(0, 0);
+                }
               }}
               className="rounded-full p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
               aria-label="Close"
@@ -813,7 +825,7 @@ export default function AIChatBot() {
                 >
                   <PromptInputTextarea
                     placeholder="Ask Grace Copilot..."
-                    className="text-zinc-100 placeholder:text-zinc-500"
+                    className="text-base text-zinc-100 placeholder:text-zinc-500 md:text-sm"
                   />
                   <PromptInputActions className="justify-end pt-1">
                     <PromptInputAction

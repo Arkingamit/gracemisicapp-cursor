@@ -13,13 +13,13 @@
           "location" : "https://github.com/ionic-team/capacitor-swift-pm.git",
           "name" : "capacitor-swift-pm"
         },
-        "path" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/artifacts/capacitor-swift-pm/Cordova/Cordova.xcframework",
+        "path" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/artifacts/capacitor-swift-pm/Capacitor/Capacitor.xcframework",
         "source" : {
-          "checksum" : "f552659b3803e7fa1790316b5dcf79ec165005d51be6a17a05b7f1dc0f8b8a44",
+          "checksum" : "52f15c772da02248cdd159f396b31455dfe3acf36c14b37c68e3c24032131963",
           "type" : "remote",
-          "url" : "https://github.com/ionic-team/capacitor-swift-pm/releases/download/8.2.0/Cordova.xcframework.zip"
+          "url" : "https://github.com/ionic-team/capacitor-swift-pm/releases/download/8.2.0/Capacitor.xcframework.zip"
         },
-        "targetName" : "Cordova"
+        "targetName" : "Capacitor"
       },
       {
         "kind" : {
@@ -33,13 +33,13 @@
           "location" : "https://github.com/ionic-team/capacitor-swift-pm.git",
           "name" : "capacitor-swift-pm"
         },
-        "path" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/artifacts/capacitor-swift-pm/Capacitor/Capacitor.xcframework",
+        "path" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/artifacts/capacitor-swift-pm/Cordova/Cordova.xcframework",
         "source" : {
-          "checksum" : "52f15c772da02248cdd159f396b31455dfe3acf36c14b37c68e3c24032131963",
+          "checksum" : "f552659b3803e7fa1790316b5dcf79ec165005d51be6a17a05b7f1dc0f8b8a44",
           "type" : "remote",
-          "url" : "https://github.com/ionic-team/capacitor-swift-pm/releases/download/8.2.0/Capacitor.xcframework.zip"
+          "url" : "https://github.com/ionic-team/capacitor-swift-pm/releases/download/8.2.0/Cordova.xcframework.zip"
         },
-        "targetName" : "Capacitor"
+        "targetName" : "Cordova"
       }
     ],
     "dependencies" : [
@@ -49,7 +49,7 @@
           "identity" : "app-check",
           "kind" : "remoteSourceControl",
           "location" : "https://github.com/google/app-check.git",
-          "name" : "app-check"
+          "name" : "AppCheck"
         },
         "state" : {
           "checkoutState" : {
@@ -66,7 +66,7 @@
           "identity" : "appauth-ios",
           "kind" : "remoteSourceControl",
           "location" : "https://github.com/openid/AppAuth-iOS.git",
-          "name" : "AppAuth-iOS"
+          "name" : "AppAuth"
         },
         "state" : {
           "checkoutState" : {
@@ -83,7 +83,7 @@
           "identity" : "apple-sign-in",
           "kind" : "fileSystem",
           "location" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/node_modules/@capacitor-community/apple-sign-in",
-          "name" : "apple-sign-in"
+          "name" : "CapacitorCommunityAppleSignIn"
         },
         "state" : {
           "name" : "fileSystem",
@@ -97,7 +97,7 @@
           "identity" : "capacitor-google-sign-in",
           "kind" : "fileSystem",
           "location" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/node_modules/@capawesome/capacitor-google-sign-in",
-          "name" : "capacitor-google-sign-in"
+          "name" : "CapawesomeCapacitorGoogleSignIn"
         },
         "state" : {
           "name" : "fileSystem",
@@ -142,7 +142,7 @@
           "identity" : "filesystem",
           "kind" : "fileSystem",
           "location" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/node_modules/@capacitor/filesystem",
-          "name" : "filesystem"
+          "name" : "CapacitorFilesystem"
         },
         "state" : {
           "name" : "fileSystem",
@@ -156,7 +156,7 @@
           "identity" : "googlesignin-ios",
           "kind" : "remoteSourceControl",
           "location" : "https://github.com/google/GoogleSignIn-iOS",
-          "name" : "GoogleSignIn-iOS"
+          "name" : "GoogleSignIn"
         },
         "state" : {
           "checkoutState" : {
@@ -190,7 +190,7 @@
           "identity" : "gtm-session-fetcher",
           "kind" : "remoteSourceControl",
           "location" : "https://github.com/google/gtm-session-fetcher.git",
-          "name" : "gtm-session-fetcher"
+          "name" : "GTMSessionFetcher"
         },
         "state" : {
           "checkoutState" : {
@@ -224,7 +224,7 @@
           "identity" : "interop-ios-for-google-sdks",
           "kind" : "remoteSourceControl",
           "location" : "https://github.com/google/interop-ios-for-google-sdks.git",
-          "name" : "interop-ios-for-google-sdks"
+          "name" : "InteropForGoogle"
         },
         "state" : {
           "checkoutState" : {
@@ -241,7 +241,7 @@
           "identity" : "ion-ios-filesystem",
           "kind" : "remoteSourceControl",
           "location" : "https://github.com/ionic-team/ion-ios-filesystem.git",
-          "name" : "ion-ios-filesystem"
+          "name" : "IONFilesystemLib"
         },
         "state" : {
           "checkoutState" : {
@@ -258,7 +258,7 @@
           "identity" : "keyboard",
           "kind" : "fileSystem",
           "location" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/node_modules/@capacitor/keyboard",
-          "name" : "keyboard"
+          "name" : "CapacitorKeyboard"
         },
         "state" : {
           "name" : "fileSystem",
@@ -272,7 +272,7 @@
           "identity" : "promises",
           "kind" : "remoteSourceControl",
           "location" : "https://github.com/google/promises.git",
-          "name" : "promises"
+          "name" : "Promises"
         },
         "state" : {
           "checkoutState" : {
@@ -289,7 +289,7 @@
           "identity" : "push-notifications",
           "kind" : "fileSystem",
           "location" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/node_modules/@capacitor/push-notifications",
-          "name" : "push-notifications"
+          "name" : "CapacitorPushNotifications"
         },
         "state" : {
           "name" : "fileSystem",
@@ -303,7 +303,7 @@
           "identity" : "share",
           "kind" : "fileSystem",
           "location" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/node_modules/@capacitor/share",
-          "name" : "share"
+          "name" : "CapacitorShare"
         },
         "state" : {
           "name" : "fileSystem",

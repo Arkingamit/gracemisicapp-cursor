@@ -15,6 +15,14 @@ function isTextFieldFocused(): boolean {
   return tag === "input" || tag === "textarea" || !!el.isContentEditable;
 }
 
+/** Undo residual iOS WebView scroll/offset after the keyboard dismisses. */
+function resetViewportAfterKeyboard() {
+  if (typeof window === "undefined") return;
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+}
+
 /**
  * Measure soft-keyboard overlap via VisualViewport.
  * Returns 0 when the layout viewport already resized (adjustResize /
@@ -35,7 +43,9 @@ export function measureKeyboardInset(): number {
 /**
  * Tracks keyboard overlap for fixed full-screen panels (chat, AI builder).
  * Always measures via VisualViewport so Android adjustResize and Capacitor
- * Keyboard height events never double-count.
+ * Keyboard height events never double-count on Android. On iOS, native
+ * keyboardHeight is used as a fallback when VisualViewport under-reports
+ * (common when the WebView briefly zooms on focus).
  */
 export function useKeyboardInset(enabled = true): number {
   const [inset, setInset] = useState(0);
@@ -47,8 +57,17 @@ export function useKeyboardInset(enabled = true): number {
     }
 
     let cancelled = false;
+    let nativeHeight = 0;
+    const isIos = Capacitor.getPlatform() === "ios";
+
     const update = () => {
-      if (!cancelled) setInset(measureKeyboardInset());
+      if (cancelled) return;
+      const vvInset = measureKeyboardInset();
+      if (isIos && nativeHeight >= KEYBOARD_MIN_PX) {
+        setInset(Math.max(vvInset, nativeHeight));
+        return;
+      }
+      setInset(vvInset);
     };
 
     update();
@@ -63,14 +82,13 @@ export function useKeyboardInset(enabled = true): number {
     const removals: Array<() => void> = [];
 
     if (Capacitor.isNativePlatform()) {
-      // Native events are triggers only — height comes from visualViewport.
       const attach = (
         event:
           | "keyboardWillShow"
           | "keyboardDidShow"
           | "keyboardWillHide"
           | "keyboardDidHide",
-        handler: () => void
+        handler: (info?: { keyboardHeight?: number }) => void
       ) => {
         Keyboard.addListener(event, handler).then((handle) => {
           if (cancelled) {
@@ -83,13 +101,22 @@ export function useKeyboardInset(enabled = true): number {
         });
       };
 
-      attach("keyboardWillShow", update);
-      attach("keyboardDidShow", update);
+      attach("keyboardWillShow", (info) => {
+        nativeHeight = info?.keyboardHeight ?? 0;
+        update();
+      });
+      attach("keyboardDidShow", (info) => {
+        nativeHeight = info?.keyboardHeight ?? nativeHeight;
+        update();
+      });
       attach("keyboardWillHide", () => {
+        nativeHeight = 0;
         if (!cancelled) setInset(0);
       });
       attach("keyboardDidHide", () => {
+        nativeHeight = 0;
         if (!cancelled) setInset(0);
+        resetViewportAfterKeyboard();
       });
     }
 
@@ -149,7 +176,10 @@ export function useKeyboardOpen(enabled = true): boolean {
           | "keyboardDidHide",
         value: boolean
       ) => {
-        Keyboard.addListener(event, () => set(value)).then((handle) => {
+        Keyboard.addListener(event, () => {
+          set(value);
+          if (!value) resetViewportAfterKeyboard();
+        }).then((handle) => {
           if (cancelled) {
             handle.remove();
             return;

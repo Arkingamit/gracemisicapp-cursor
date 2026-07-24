@@ -1,4 +1,0 @@
-module SignInWithApple {
-header "SignInWithApple-Swift.h"
-export *
-}

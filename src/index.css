@@ -56,15 +56,18 @@
 }
 
 @layer base {
-  html, body {
+  html {
     background-color: hsl(var(--background));
-    /* Prefer hidden over clip — clip + overflow-y:auto can blank WKWebView on iOS */
-    overflow-x: hidden;
   }
 
   body {
+    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
     min-height: 100%;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    padding-left: var(--safe-area-inset-left);
+    padding-right: var(--safe-area-inset-right);
   }
 
   * {
@@ -79,12 +82,6 @@
     display: none;
   }
 
-  body {
-    @apply bg-background text-foreground;
-    padding-left: var(--safe-area-inset-left);
-    padding-right: var(--safe-area-inset-right);
-  }
-
   /*
    * iOS WKWebView auto-zooms focused fields under 16px and often leaves the
    * page stuck zoomed after blur. Keep form controls at ≥16px on small screens.
@@ -93,7 +90,7 @@
     input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]),
     textarea,
     select {
-      font-size: 16px;
+      font-size: 16px !important;
     }
   }
 

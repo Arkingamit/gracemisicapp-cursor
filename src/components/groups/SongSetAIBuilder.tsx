@@ -76,7 +76,7 @@ export default function SongSetAIBuilder() {
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const keyboardInset = useKeyboardInset(true);
-  const pinToViewport = Capacitor.isNativePlatform();
+  const pinToViewport = Capacitor.getPlatform() === "ios";
   const viewportBox = useVisualViewportBox(pinToViewport);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputAreaRef = useRef<HTMLDivElement>(null);

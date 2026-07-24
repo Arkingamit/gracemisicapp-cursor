@@ -35,8 +35,8 @@ const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, style, onOpenAutoFocus, ...props }, ref) => {
-  // Native WebViews often pan instead of resizing — pin dialog into the visible viewport.
-  const pinToViewport = Capacitor.isNativePlatform();
+  // Android uses native WebView resize; iOS pins dialogs into the visual viewport.
+  const pinToViewport = Capacitor.getPlatform() === "ios";
   const viewportBox = useVisualViewportBox(pinToViewport);
 
   const keyboardAwareStyle: React.CSSProperties | undefined = pinToViewport

@@ -31,6 +31,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
+        // Recover from blank/black WKWebView after keyboard/zoom glitches.
+        DispatchQueue.main.async {
+            guard let bridgeVC = self.window?.rootViewController as? CAPBridgeViewController,
+                  let webView = bridgeVC.bridge?.webView else {
+                return
+            }
+            webView.isOpaque = true
+            webView.isHidden = false
+            webView.alpha = 1
+            webView.scrollView.isScrollEnabled = true
+            webView.scrollView.setContentOffset(.zero, animated: false)
+        }
     }
 
     func applicationWillTerminate(_ application: UIApplication) {

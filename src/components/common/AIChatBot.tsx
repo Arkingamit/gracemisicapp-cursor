@@ -102,7 +102,7 @@ export default function AIChatBot() {
   /** Android/iOS keyboard overlap — lift fixed chat panel above the keyboard */
   const keyboardInset = useKeyboardInset(isOpen);
   /** Native shells: pin panel to visual viewport so the keyboard never leaves a black gap. */
-  const pinToViewport = isOpen && Capacitor.isNativePlatform();
+  const pinToViewport = isOpen && Capacitor.getPlatform() === "ios";
   const viewportBox = useVisualViewportBox(pinToViewport);
 
   // Seed a conversation id; openChat always starts a fresh chat.

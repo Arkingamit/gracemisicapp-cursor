@@ -55,14 +55,25 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       clientId: GOOGLE_CLIENT_ID,
     }).catch(console.error);
 
-    if (Capacitor.getPlatform() === "ios") {
-      // Ensure WKWebView scroll stays enabled (isDisabled:true blanks/locks the page).
+    const recoverIosViewport = () => {
+      if (Capacitor.getPlatform() !== "ios") return;
       Keyboard.setScroll({ isDisabled: false }).catch(() => {});
-      // Recover from a stuck post-keyboard viewport offset.
       window.scrollTo(0, 0);
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
-    }
+    };
+
+    recoverIosViewport();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") recoverIosViewport();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", recoverIosViewport);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", recoverIosViewport);
+    };
   }, []);
 
   return (

@@ -45,13 +45,13 @@ const config: CapacitorConfig = {
     backgroundColor: '#09090b',
   },
   plugins: {
-    // Avoid Capacitor manually shrinking the WebView/body on Android.
-    // resizeOnFullScreen + body/native resize over-subtracts keyboard height
-    // (esp. edge-to-edge), leaving a large black gap above the keyboard.
-    // adjustResize in AndroidManifest + interactive-widget=resizes-content handle it.
+    // iOS: leave WebView size alone (panels use visualViewport / keyboard inset).
+    // Android: resizeOnFullScreen shrinks the WebView with the IME. Combined with
+    // MainActivity adjustResize + decorFitsSystemWindows, this avoids overlay gaps.
+    // JS keyboard inset stays 0 on Android so we never double-subtract.
     Keyboard: {
       resize: 'none',
-      resizeOnFullScreen: false,
+      resizeOnFullScreen: true,
     },
     GoogleSignIn: {
       clientId:

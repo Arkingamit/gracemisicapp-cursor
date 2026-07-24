@@ -8,9 +8,11 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.WindowManager;
 import android.webkit.WebView;
 import androidx.annotation.NonNull;
 import androidx.core.splashscreen.SplashScreen;
+import androidx.core.view.WindowCompat;
 import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.WebViewListener;
@@ -75,6 +77,12 @@ public class MainActivity extends BridgeActivity {
             }
         );
         super.onCreate(savedInstanceState);
+
+        // Android 15+ edge-to-edge ignores adjustResize unless decor fits system windows.
+        // Without this, the keyboard overlays the WebView and JS "gaps" appear.
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+
         registerNetworkCallback();
         // Cold start via App Link / custom scheme (after Bridge is ready)
         handleIncomingLink(getIntent());

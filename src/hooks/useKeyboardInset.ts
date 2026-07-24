@@ -17,7 +17,7 @@ function isTextFieldFocused(): boolean {
   return tag === "input" || tag === "textarea" || !!el.isContentEditable;
 }
 
-/** Undo residual iOS WebView scroll/offset after the keyboard dismisses. */
+/** Undo residual WebView scroll/offset after the keyboard dismisses. */
 function resetViewportAfterKeyboard() {
   if (typeof window === "undefined") return;
   window.scrollTo(0, 0);
@@ -25,19 +25,84 @@ function resetViewportAfterKeyboard() {
   document.body.scrollTop = 0;
 }
 
+export type VisualViewportBox = {
+  top: number;
+  height: number;
+};
+
 /**
- * Measure soft-keyboard overlap via VisualViewport.
- *
- * Returns 0 when:
- * - Capacitor Android (windowSoftInputMode=adjustResize already shrinks the WebView;
- *   applying a second bottom inset creates a large black gap above the keyboard)
- * - layout viewport already matches the visual viewport (interactive-widget /
- *   adjustResize resized the page)
+ * Pin fixed full-screen panels to the Visual Viewport.
+ * On Android (and some iOS cases) the keyboard does not shrink the layout
+ * viewport — it pans via visualViewport instead. Binding top/height to VV
+ * keeps the composer above the keyboard without a black gap.
+ */
+export function useVisualViewportBox(enabled = true): VisualViewportBox {
+  const [box, setBox] = useState<VisualViewportBox>(() => ({
+    top: 0,
+    height: typeof window !== "undefined" ? window.innerHeight : 0,
+  }));
+
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined") {
+      setBox({
+        top: 0,
+        height: typeof window !== "undefined" ? window.innerHeight : 0,
+      });
+      return;
+    }
+
+    let cancelled = false;
+    const sync = () => {
+      if (cancelled) return;
+      const vv = window.visualViewport;
+      if (!vv) {
+        setBox({ top: 0, height: window.innerHeight });
+        return;
+      }
+      setBox({
+        top: Math.max(0, Math.round(vv.offsetTop)),
+        height: Math.max(0, Math.round(vv.height)),
+      });
+    };
+
+    sync();
+
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", sync);
+    vv?.addEventListener("scroll", sync);
+    window.addEventListener("resize", sync);
+
+    // While a fixed chat panel is open, kill document scroll that Android
+    // applies on input focus (that scroll creates the black gap).
+    const lockScroll = () => {
+      if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0) {
+        window.scrollTo(0, 0);
+      }
+      sync();
+    };
+    document.addEventListener("focusin", lockScroll);
+    window.addEventListener("scroll", lockScroll, { passive: true });
+
+    return () => {
+      cancelled = true;
+      vv?.removeEventListener("resize", sync);
+      vv?.removeEventListener("scroll", sync);
+      window.removeEventListener("resize", sync);
+      document.removeEventListener("focusin", lockScroll);
+      window.removeEventListener("scroll", lockScroll);
+    };
+  }, [enabled]);
+
+  return box;
+}
+
+/**
+ * Measure soft-keyboard overlap via VisualViewport (iOS / mobile web).
+ * Android Capacitor returns 0 — use useVisualViewportBox for panels instead.
  */
 export function measureKeyboardInset(): number {
   if (typeof window === "undefined") return 0;
 
-  // Android Capacitor: rely on adjustResize only — never double-inset.
   if (
     Capacitor.isNativePlatform() &&
     Capacitor.getPlatform() === "android"
@@ -50,7 +115,6 @@ export function measureKeyboardInset(): number {
   if (!isTextFieldFocused()) return 0;
 
   const clientH = document.documentElement.clientHeight;
-  // Layout already matches what the user sees → keyboard was handled by resize.
   if (Math.abs(clientH - vv.height) <= RESIZED_MATCH_PX) {
     return 0;
   }
@@ -63,8 +127,8 @@ export function measureKeyboardInset(): number {
 }
 
 /**
- * Tracks keyboard overlap for fixed full-screen panels (chat, AI builder).
- * Android: always 0 (adjustResize). iOS: VisualViewport + native keyboardHeight.
+ * Extra bottom inset for fixed panels (iOS overlay keyboard).
+ * Always 0 on Capacitor Android — panels should use useVisualViewportBox.
  */
 export function useKeyboardInset(enabled = true): number {
   const [inset, setInset] = useState(0);
@@ -75,7 +139,6 @@ export function useKeyboardInset(enabled = true): number {
       return;
     }
 
-    // Android never needs JS inset — skip listeners that could fight adjustResize.
     if (
       Capacitor.isNativePlatform() &&
       Capacitor.getPlatform() === "android"
@@ -175,7 +238,10 @@ export function useKeyboardOpen(enabled = true): boolean {
 
     const syncFromFocus = () => {
       if (!Capacitor.isNativePlatform()) {
-        set(isTextFieldFocused() && measureKeyboardInset() > 0);
+        const vv = window.visualViewport;
+        const shrunk =
+          !!vv && window.innerHeight - vv.height - vv.offsetTop >= KEYBOARD_MIN_PX;
+        set(isTextFieldFocused() && shrunk);
       } else if (!isTextFieldFocused()) {
         set(false);
       }
@@ -200,9 +266,7 @@ export function useKeyboardOpen(enabled = true): boolean {
       track(
         Keyboard.addListener("keyboardDidHide", () => {
           set(false);
-          if (Capacitor.getPlatform() === "ios") {
-            resetViewportAfterKeyboard();
-          }
+          resetViewportAfterKeyboard();
         })
       );
     } else {

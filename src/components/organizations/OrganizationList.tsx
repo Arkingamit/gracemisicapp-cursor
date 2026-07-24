@@ -218,6 +218,10 @@ const OrganizationList = () => {
                     spellCheck={false}
                     value={joinCode}
                     onChange={(value) => setJoinCode(value.toUpperCase())}
+                    onFocus={() => {
+                      window.scrollTo(0, 0);
+                      requestAnimationFrame(() => window.scrollTo(0, 0));
+                    }}
                   >
                     <InputOTPGroup>
                       {[0, 1, 2, 3, 4, 5].map((i) => (

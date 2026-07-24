@@ -41,6 +41,8 @@ const config: CapacitorConfig = {
     contentInset: 'never',
     // Ensure WKWebView vertical scrolling stays enabled
     scrollEnabled: true,
+    // Match app chrome while remote HTML loads (avoids a harsh flash)
+    backgroundColor: '#09090b',
   },
   plugins: {
     // Avoid Capacitor manually shrinking the WebView/body on Android.

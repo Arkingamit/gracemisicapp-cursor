@@ -30,7 +30,8 @@ import SongSetPicker, {
   type ActiveSongSet,
   type ChatSongRef,
 } from "@/components/common/SongSetPicker";
-import { useKeyboardInset } from "@/hooks/useKeyboardInset";
+import { useKeyboardInset, useVisualViewportBox } from "@/hooks/useKeyboardInset";
+import { Capacitor } from "@capacitor/core";
 
 const SONGSET_CONVERSATION_KEY = "grace_ai_songset_conversation_id";
 
@@ -75,6 +76,8 @@ export default function SongSetAIBuilder() {
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const keyboardInset = useKeyboardInset(true);
+  const pinToViewport = Capacitor.isNativePlatform();
+  const viewportBox = useVisualViewportBox(pinToViewport);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputAreaRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
@@ -118,19 +121,24 @@ export default function SongSetAIBuilder() {
     loadSettings();
   }, []);
 
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+  const scrollMessagesToEnd = useCallback((smooth = true) => {
+    const end = messagesEndRef.current;
+    const scroller = end?.parentElement;
+    if (!scroller) return;
+    if (smooth) {
+      scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+    } else {
+      scroller.scrollTop = scroller.scrollHeight;
     }
-  }, [messages, isLoading]);
+  }, []);
 
   useEffect(() => {
-    if (keyboardInset <= 0) return;
-    requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-      inputAreaRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-    });
-  }, [keyboardInset]);
+    scrollMessagesToEnd(true);
+  }, [messages, isLoading, scrollMessagesToEnd]);
+
+  useEffect(() => {
+    requestAnimationFrame(() => scrollMessagesToEnd(false));
+  }, [viewportBox.height, keyboardInset, scrollMessagesToEnd]);
 
   // Load this song-set conversation (or seed welcome for a brand-new one)
   useEffect(() => {
@@ -487,10 +495,19 @@ export default function SongSetAIBuilder() {
     <div
       data-tour="ai-songset-panel"
       className="fixed inset-x-0 top-0 z-[60] flex flex-col bg-[#07070a] text-zinc-100 overflow-hidden font-ai"
-      style={{
-        top: 0,
-        bottom: keyboardInset,
-      }}
+      style={
+        pinToViewport
+          ? {
+              top: viewportBox.top,
+              height: viewportBox.height,
+              bottom: "auto",
+              maxHeight: viewportBox.height,
+            }
+          : {
+              top: 0,
+              bottom: keyboardInset,
+            }
+      }
     >
       <div
         aria-hidden
@@ -796,6 +813,10 @@ export default function SongSetAIBuilder() {
                     : "Ask Grace to build your set…"
                 }
                 className="text-base text-zinc-100 placeholder:text-zinc-500 md:text-sm"
+                onFocus={() => {
+                  window.scrollTo(0, 0);
+                  requestAnimationFrame(() => window.scrollTo(0, 0));
+                }}
               />
               <PromptInputActions className="justify-end pt-1">
                 <PromptInputAction

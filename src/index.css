@@ -58,19 +58,13 @@
 @layer base {
   html, body {
     background-color: hsl(var(--background));
-  }
-
-  html {
-    /* Keep page scroll on the document; clipping X only on body avoids iOS scroll lock */
-    height: 100%;
+    /* Prefer hidden over clip — clip + overflow-y:auto can blank WKWebView on iOS */
+    overflow-x: hidden;
   }
 
   body {
     min-height: 100%;
-    overflow-x: clip;
-    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: none;
   }
 
   * {

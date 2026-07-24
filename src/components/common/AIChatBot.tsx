@@ -16,7 +16,8 @@ import {
 import { SystemMessage } from "@/components/prompt-kit/system-message";
 import { Button } from "@/components/ui/button";
 import type { Components } from "react-markdown";
-import { useKeyboardInset } from "@/hooks/useKeyboardInset";
+import { useKeyboardInset, useVisualViewportBox } from "@/hooks/useKeyboardInset";
+import { Capacitor } from "@capacitor/core";
 
 const AI_CONVERSATION_SESSION_KEY = "grace_ai_conversation_id";
 
@@ -100,6 +101,9 @@ export default function AIChatBot() {
   const [loadingConversations, setLoadingConversations] = useState(false);
   /** Android/iOS keyboard overlap — lift fixed chat panel above the keyboard */
   const keyboardInset = useKeyboardInset(isOpen);
+  /** Native shells: pin panel to visual viewport so the keyboard never leaves a black gap. */
+  const pinToViewport = isOpen && Capacitor.isNativePlatform();
+  const viewportBox = useVisualViewportBox(pinToViewport);
 
   // Seed a conversation id; openChat always starts a fresh chat.
   useEffect(() => {
@@ -203,21 +207,27 @@ export default function AIChatBot() {
     }
   }, [getAuthHeaders, conversationId]);
 
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+  // Auto-scroll messages inside the panel only — never scrollIntoView on the
+  // document (Android pans the page and leaves a black gap above the keyboard).
+  const scrollMessagesToEnd = useCallback((smooth = true) => {
+    const end = messagesEndRef.current;
+    const scroller = end?.parentElement;
+    if (!scroller) return;
+    if (smooth) {
+      scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+    } else {
+      scroller.scrollTop = scroller.scrollHeight;
     }
-  }, [messages, isLoading]);
+  }, []);
 
-  // When the keyboard opens, keep the latest message / input in view
   useEffect(() => {
-    if (keyboardInset <= 0) return;
-    requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-      inputAreaRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-    });
-  }, [keyboardInset]);
+    scrollMessagesToEnd(true);
+  }, [messages, isLoading, scrollMessagesToEnd]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    requestAnimationFrame(() => scrollMessagesToEnd(false));
+  }, [isOpen, viewportBox.height, keyboardInset, scrollMessagesToEnd]);
 
   const handleSubmit = async (e?: FormEvent) => {
     e?.preventDefault();
@@ -545,14 +555,21 @@ export default function AIChatBot() {
       <div
         data-tour="ai-chat-panel"
         className={`fixed inset-x-0 top-0 bottom-0 z-[100] flex w-full flex-col overflow-hidden bg-background font-ai transition-[opacity,transform] duration-300 md:bottom-24 md:left-auto md:right-6 md:top-auto md:h-[650px] md:max-h-[calc(100vh-8rem)] md:w-[400px] md:rounded-2xl md:border md:border-white/10 md:shadow-2xl ${
-          isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+          isOpen ? "opacity-100 translate-y-0" : "hidden"
         }`}
+        aria-hidden={!isOpen}
         style={
-          {
-            // iOS overlay keyboard only — Android uses adjustResize (inset stays 0)
-            bottom: keyboardInset > 0 ? keyboardInset : undefined,
-            ["--keyboard-inset" as string]: `${keyboardInset}px`,
-          } as React.CSSProperties
+          pinToViewport
+            ? {
+                top: viewportBox.top,
+                height: viewportBox.height,
+                bottom: "auto",
+                maxHeight: viewportBox.height,
+              }
+            : {
+                bottom:
+                  isOpen && keyboardInset > 0 ? keyboardInset : undefined,
+              }
         }
       >
         {/* Soft brand wash */}
@@ -828,6 +845,11 @@ export default function AIChatBot() {
                   <PromptInputTextarea
                     placeholder="Ask Grace Copilot..."
                     className="text-base text-zinc-100 placeholder:text-zinc-500 md:text-sm"
+                    onFocus={() => {
+                      // Stop Android WebView from scrolling the document under the panel
+                      window.scrollTo(0, 0);
+                      requestAnimationFrame(() => window.scrollTo(0, 0));
+                    }}
                   />
                   <PromptInputActions className="justify-end pt-1">
                     <PromptInputAction

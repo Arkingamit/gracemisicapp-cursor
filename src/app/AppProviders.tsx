@@ -55,9 +55,13 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       clientId: GOOGLE_CLIENT_ID,
     }).catch(console.error);
 
-    // Ensure iOS WKWebView scroll stays enabled (setScroll(true) disables ALL scrolling).
     if (Capacitor.getPlatform() === "ios") {
+      // Ensure WKWebView scroll stays enabled (isDisabled:true blanks/locks the page).
       Keyboard.setScroll({ isDisabled: false }).catch(() => {});
+      // Recover from a stuck post-keyboard viewport offset.
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
     }
   }, []);
 

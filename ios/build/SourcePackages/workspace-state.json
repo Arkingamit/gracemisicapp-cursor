@@ -13,13 +13,13 @@
           "location" : "https://github.com/ionic-team/capacitor-swift-pm.git",
           "name" : "capacitor-swift-pm"
         },
-        "path" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/artifacts/capacitor-swift-pm/Capacitor/Capacitor.xcframework",
+        "path" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/artifacts/capacitor-swift-pm/Cordova/Cordova.xcframework",
         "source" : {
-          "checksum" : "52f15c772da02248cdd159f396b31455dfe3acf36c14b37c68e3c24032131963",
+          "checksum" : "f552659b3803e7fa1790316b5dcf79ec165005d51be6a17a05b7f1dc0f8b8a44",
           "type" : "remote",
-          "url" : "https://github.com/ionic-team/capacitor-swift-pm/releases/download/8.2.0/Capacitor.xcframework.zip"
+          "url" : "https://github.com/ionic-team/capacitor-swift-pm/releases/download/8.2.0/Cordova.xcframework.zip"
         },
-        "targetName" : "Capacitor"
+        "targetName" : "Cordova"
       },
       {
         "kind" : {
@@ -33,13 +33,13 @@
           "location" : "https://github.com/ionic-team/capacitor-swift-pm.git",
           "name" : "capacitor-swift-pm"
         },
-        "path" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/artifacts/capacitor-swift-pm/Cordova/Cordova.xcframework",
+        "path" : "/Users/blessonvarghesemm/Desktop/gracemisicapp-cursor/ios/build/SourcePackages/artifacts/capacitor-swift-pm/Capacitor/Capacitor.xcframework",
         "source" : {
-          "checksum" : "f552659b3803e7fa1790316b5dcf79ec165005d51be6a17a05b7f1dc0f8b8a44",
+          "checksum" : "52f15c772da02248cdd159f396b31455dfe3acf36c14b37c68e3c24032131963",
           "type" : "remote",
-          "url" : "https://github.com/ionic-team/capacitor-swift-pm/releases/download/8.2.0/Cordova.xcframework.zip"
+          "url" : "https://github.com/ionic-team/capacitor-swift-pm/releases/download/8.2.0/Capacitor.xcframework.zip"
         },
-        "targetName" : "Cordova"
+        "targetName" : "Capacitor"
       }
     ],
     "dependencies" : [

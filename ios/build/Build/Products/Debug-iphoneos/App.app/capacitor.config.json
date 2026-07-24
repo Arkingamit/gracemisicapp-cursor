@@ -21,7 +21,8 @@
 	},
 	"ios": {
 		"contentInset": "never",
-		"scrollEnabled": true
+		"scrollEnabled": true,
+		"backgroundColor": "#09090b"
 	},
 	"plugins": {
 		"Keyboard": {
